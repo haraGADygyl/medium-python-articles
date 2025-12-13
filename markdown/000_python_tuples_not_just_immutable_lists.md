@@ -2,7 +2,7 @@
 ### Unpacking Python’s most misunderstood data type
 
 **By Tihomir Manushev**  
-*Oct 12, 2025*
+*Oct 12, 2025 · 8 min read*
 
 ---
 
