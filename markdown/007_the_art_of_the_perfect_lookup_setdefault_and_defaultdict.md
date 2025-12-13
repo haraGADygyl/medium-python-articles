@@ -1,7 +1,7 @@
 # The Art of the Perfect Lookup: setdefault and defaultdict
 #### A guide to moving beyond clumsy if/else checks by mastering Python’s elegant and efficient dictionary lookup methods.
 
-**By Tihomir Manushev**
+**By Tihomir Manushev**  
 *Oct 19, 2025 · 8 min read*
 
 ---
