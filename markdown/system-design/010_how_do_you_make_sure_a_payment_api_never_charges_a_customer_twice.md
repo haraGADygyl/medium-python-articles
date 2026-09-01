@@ -8,11 +8,7 @@
 
 ---
 
-This is the interview question, and the standard answer is "use an idempotency key with a unique constraint."
-
-That answer is not wrong.
-
-It is also not sufficient, and the gap between those two things is where real money goes missing.
+This is the interview question, and the standard answer is "use an idempotency key with a unique constraint." That answer is not wrong. It is also not sufficient, and the gap between those two things is where real money goes missing.
 
 Everything below was run against PostgreSQL 17.6 with eight concurrent requests hitting the same key. The numbers are from those runs, not from reasoning about them.
 
@@ -20,19 +16,9 @@ Everything below was run against PostgreSQL 17.6 with eight concurrent requests 
 
 ### The question
 
-**Ratko:** A rider taps to pay for a bike rental.
+**Ratko:** A rider taps to pay for a bike rental. The mobile client times out and retries. How do you guarantee they are charged once?
 
-The mobile client times out and retries.
-
-How do you guarantee they are charged once?
-
-**Tihomir:** The client sends an idempotency key with the request.
-
-Something stable that identifies the attempt, not the retry — `RIDE-8842`.
-
-The server checks whether it has seen that key.
-
-If it has, it returns the original result instead of charging again.
+**Tihomir:** The client sends an idempotency key with the request — something stable that identifies the attempt rather than the retry, like `RIDE-8842`. The server checks whether it has seen that key, and if it has, it returns the original result instead of charging again.
 
 **Ratko:** Show me the handler.
 
@@ -53,9 +39,7 @@ with conn.cursor() as cur:
 conn.commit()
 ```
 
-**Ratko:** Good.
-
-Now eight retries arrive at the same moment.
+**Ratko:** Good. Now eight retries arrive at the same moment.
 
 ---
 
@@ -65,15 +49,11 @@ Now eight retries arrive at the same moment.
 
 ![Two requests both pass the check before either writes](diagrams/010-idempotent-payments/01-race.png)
 
-All eight see no rows.
-
-All eight call the provider.
+All eight see no rows, so all eight call the provider.
 
 **Ratko:** How confident are you?
 
-**Tihomir:** I ran it.
-
-Eight threads, released from a barrier so they arrive together:
+**Tihomir:** I ran it. Eight threads, released from a barrier so they arrive together:
 
 ```
 requests sent:      8
@@ -85,9 +65,7 @@ The rider paid for one ride eight times.
 
 **Ratko:** So what do you add?
 
-**Tihomir:** A unique constraint on `idempotency_key`.
-
-The database refuses the duplicate rows.
+**Tihomir:** A unique constraint on `idempotency_key`, so the database refuses the duplicate rows.
 
 ---
 
@@ -106,49 +84,27 @@ times money moved:  8
 
 **Ratko:** One row.
 
-**Tihomir:** One row.
-
-And eight charges.
+**Tihomir:** One row, and eight charges.
 
 **Ratko:** Explain that.
 
-**Tihomir:** The constraint protected the database.
-
-It did not protect the money.
-
-By the time the `INSERT` is rejected, the provider call has already happened — it is an HTTP request, and it does not roll back when my transaction does.
+**Tihomir:** The constraint protected the database. It did not protect the money. By the time the `INSERT` is rejected, the provider call has already happened — it is an HTTP request, and it does not roll back when my transaction does.
 
 **Ratko:** So the table looks correct.
 
-**Tihomir:** The table looks perfect.
-
-That is what makes this the dangerous version.
-
-An engineer checks the data, sees one payment row, and closes the ticket.
-
-The rider paid $28.00 for a $3.50 ride, and nothing in the schema disagrees.
+**Tihomir:** The table looks perfect, and that is what makes this the dangerous version. An engineer checks the data, sees one payment row, and closes the ticket. The rider paid $28.00 for a $3.50 ride, and nothing in the schema disagrees.
 
 **Ratko:** This is the part most answers skip.
 
-**Tihomir:** Because the unique constraint feels like the finish line.
-
-It is only the finish line if the entire operation lives inside the transaction.
-
-A payment does not.
+**Tihomir:** Because the unique constraint feels like the finish line. It is only the finish line if the entire operation lives inside the transaction, and a payment does not.
 
 ---
 
 ### The third trap
 
-**Ratko:** Raise the isolation level.
+**Ratko:** Raise the isolation level. `SERIALIZABLE` prevents write skew — does it fix this?
 
-`SERIALIZABLE` prevents write skew.
-
-Does it fix this?
-
-**Tihomir:** No.
-
-Same eight requests, same code, `SERIALIZABLE`:
+**Tihomir:** No. Same eight requests, same code, `SERIALIZABLE`:
 
 ```
   1 x 201 charged
@@ -159,17 +115,11 @@ times money moved:  8
 
 **Ratko:** Identical.
 
-**Tihomir:** Identical, because isolation levels govern what the database does with concurrent transactions.
-
-The charge is not in the database.
-
-Postgres correctly serialized eight transactions and correctly rejected seven of them — after all eight had already spent the rider's money.
+**Tihomir:** Identical, because isolation levels govern what the database does with concurrent transactions, and the charge is not in the database. Postgres correctly serialized eight transactions and correctly rejected seven of them — after all eight had already spent the rider's money.
 
 **Ratko:** So no isolation level saves you.
 
-**Tihomir:** None of them can.
-
-The provider call is outside the system that provides the guarantee.
+**Tihomir:** None of them can. The provider call is outside the system that provides the guarantee.
 
 ---
 
@@ -177,9 +127,7 @@ The provider call is outside the system that provides the guarantee.
 
 **Ratko:** Then what is the actual answer?
 
-**Tihomir:** Reverse the order.
-
-Claim the key *before* calling the provider, not after.
+**Tihomir:** Reverse the order. Claim the key *before* calling the provider, not after.
 
 ![Charge-first versus claim-first](diagrams/010-idempotent-payments/02-order.png)
 
@@ -204,11 +152,7 @@ cur.execute("UPDATE ride_payment SET status='charged', provider_ref=%s"
 
 **Ratko:** Why does that work when the constraint alone did not?
 
-**Tihomir:** Because the constraint is now arbitrating *who is allowed to call the provider*, instead of auditing who already did.
-
-`ON CONFLICT DO NOTHING ... RETURNING` gives exactly one caller a row.
-
-Everyone else gets `None` and stops before spending anything.
+**Tihomir:** Because the constraint is now arbitrating *who is allowed to call the provider*, instead of auditing who already did. `ON CONFLICT DO NOTHING ... RETURNING` gives exactly one caller a row; everyone else gets `None` and stops before spending anything.
 
 **Ratko:** Numbers.
 
@@ -225,11 +169,7 @@ times money moved:  1
 
 ### The fourth trap
 
-**Ratko:** Your worker calls the provider.
-
-The provider succeeds.
-
-The worker is killed before the `UPDATE`.
+**Ratko:** Your worker calls the provider. The provider succeeds. The worker is killed before the `UPDATE`.
 
 **Tihomir:** Then the row is stranded.
 
@@ -243,9 +183,7 @@ I killed the process at exactly that point:
  RIDE-2001       | pending | (none)       |            1
 ```
 
-Money moved.
-
-Status says `pending`.
+Money moved, and the status says `pending`.
 
 **Ratko:** And the client retries.
 
@@ -259,9 +197,7 @@ The claim is doing its job — it refuses to let anyone charge again — but not
 
 **Ratko:** So the fix has its own failure mode.
 
-**Tihomir:** Every fix does.
-
-I traded "charged twice" for "charged once and stuck," which is strictly better but not finished.
+**Tihomir:** Every fix does. I traded "charged twice" for "charged once and stuck," which is strictly better but not finished.
 
 ---
 
@@ -283,13 +219,7 @@ For each one, call the provider again with the same idempotency key.
 
 **Ratko:** You are re-calling a provider that may have already charged.
 
-**Tihomir:** Which is safe *only* because the provider dedupes on that key.
-
-That is the load-bearing assumption in the whole design, and it is why the key has to travel all the way to the provider rather than stopping at my database.
-
-Stripe, Adyen and PayPal all support it.
-
-If a provider does not, you cannot build this, and you need a reconciliation file instead.
+**Tihomir:** Which is safe *only* because the provider dedupes on that key. That is the load-bearing assumption in the whole design, and it is why the key has to travel all the way to the provider rather than stopping at my database. Stripe, Adyen and PayPal all support it. If a provider does not, you cannot build this, and you need a reconciliation file instead.
 
 **Ratko:** Result?
 
@@ -304,9 +234,7 @@ stuck payments found: 1
  RIDE-2001       | charged | ch_70        |            1
 ```
 
-Still one charge.
-
-`FOR UPDATE SKIP LOCKED` keeps two sweeper instances off the same row.
+Still one charge, and `FOR UPDATE SKIP LOCKED` keeps two sweeper instances off the same row.
 
 ---
 
@@ -314,9 +242,7 @@ Still one charge.
 
 **Ratko:** What did you give up?
 
-**Tihomir:** Throughput.
-
-`pgbench`, 8 clients, 20 seconds, comparing a plain insert against claim-plus-update:
+**Tihomir:** Throughput. `pgbench`, 8 clients, 20 seconds, comparing a plain insert against claim-plus-update:
 
 | | latency | tps |
 |---|---|---|
@@ -327,27 +253,17 @@ About **21% fewer transactions per second**, and an extra 0.35 ms.
 
 **Ratko:** That is not nothing.
 
-**Tihomir:** It is not, and I would not present it as free.
-
-Most of it is the second round trip — the `UPDATE` that closes the claim.
-
-The unique index costs storage too: 3.9 MB against an 8.9 MB table at 93,561 rows, so roughly 44% of the table size.
+**Tihomir:** It is not, and I would not present it as free. Most of it is the second round trip — the `UPDATE` that closes the claim. The unique index costs storage too: 3.9 MB against an 8.9 MB table at 93,561 rows, so roughly 44% of the table size.
 
 **Ratko:** Would you take that trade?
 
-**Tihomir:** For payments, without hesitating.
-
-For a notification service, probably not — a duplicate push notification is an annoyance, and 21% throughput is real money at scale.
-
-The pattern is correct.
-
-Whether it is *worth* it depends entirely on what a duplicate costs you, and that is a product question, not an architecture one.
+**Tihomir:** For payments, without hesitating. For a notification service, probably not — a duplicate push notification is an annoyance, and 21% throughput is real money at scale. The pattern is correct; whether it is *worth* it depends entirely on what a duplicate costs you, and that is a product question rather than an architecture one.
 
 ---
 
 ### Conclusion
 
-The summary Ratko was waiting for is four lines:
+The summary Ratko was waiting for is four lines.
 
 **Claim the key before the side effect, not after.** The unique constraint has to gate the provider call, not audit it.
 
