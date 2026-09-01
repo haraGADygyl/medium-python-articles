@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant A as Request A
+    participant B as Request B
+    participant DB as Database
+    participant P as Payment Provider
+    A->>DB: SELECT ... WHERE key = 'RIDE-8842'
+    DB-->>A: no rows
+    B->>DB: SELECT ... WHERE key = 'RIDE-8842'
+    DB-->>B: no rows
+    A->>P: POST /charges  (350)
+    B->>P: POST /charges  (350)
+    P-->>A: ch_1
+    P-->>B: ch_2
+    Note over P: rider charged twice

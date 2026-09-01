@@ -1,0 +1,13 @@
+stateDiagram-v2
+    direction TB
+    [*] --> pending
+    pending --> charged
+    pending --> failed
+    charged --> [*]
+    failed --> [*]
+    note right of pending
+        A worker that dies after the
+        provider call leaves the row
+        here — money moved, status
+        still says pending.
+    end note

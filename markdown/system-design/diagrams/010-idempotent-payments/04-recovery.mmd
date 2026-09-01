@@ -1,0 +1,6 @@
+flowchart LR
+    A[Sweeper] --> B{"pending<br/>older than 5s?"}
+    B -->|yes| C[Re-call provider<br/>same idempotency key]
+    C --> D[Provider returns<br/>the original charge]
+    D --> E[UPDATE to charged]
+    B -->|no| F[Leave it alone]

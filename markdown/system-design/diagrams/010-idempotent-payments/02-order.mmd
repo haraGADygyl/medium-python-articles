@@ -1,0 +1,9 @@
+flowchart LR
+    subgraph C["Claim first — the fix"]
+        direction LR
+        C1[Claim key] --> C2[Call provider] --> C3[Mark charged]
+    end
+    subgraph N["Charge first — the bug"]
+        direction LR
+        N1[Check key] --> N2[Call provider] --> N3[Write row]
+    end
