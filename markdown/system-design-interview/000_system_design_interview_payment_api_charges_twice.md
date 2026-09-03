@@ -1,4 +1,4 @@
-# How Do You Make Sure a Payment API Never Charges a Customer Twice?
+# System Design Interview: How Do You Make Sure a Payment API Never Charges a Customer Twice?
 
 #### Every answer to this question stops one layer too early. Here is the layer underneath, with the numbers from actually running it.
 
@@ -47,7 +47,7 @@ conn.commit()
 
 **Tihomir:** Then every one of them runs the `SELECT` before any of them runs the `INSERT`.
 
-![Two requests both pass the check before either writes](diagrams/010-idempotent-payments/01-race.png)
+![Two requests both pass the check before either writes](assets/000/01-race.png)
 
 All eight see no rows, so all eight call the provider.
 
@@ -129,7 +129,7 @@ times money moved:  8
 
 **Tihomir:** Reverse the order. Claim the key *before* calling the provider, not after.
 
-![Charge-first versus claim-first](diagrams/010-idempotent-payments/02-order.png)
+![Charge-first versus claim-first](assets/000/02-order.png)
 
 The insert becomes the lock.
 
@@ -173,7 +173,7 @@ times money moved:  1
 
 **Tihomir:** Then the row is stranded.
 
-![The pending state a dead worker leaves behind](diagrams/010-idempotent-payments/03-states.png)
+![The pending state a dead worker leaves behind](assets/000/03-states.png)
 
 I killed the process at exactly that point:
 
@@ -207,7 +207,7 @@ The claim is doing its job — it refuses to let anyone charge again — but not
 
 **Tihomir:** A sweeper reconciles rows that have been `pending` too long.
 
-![The reconciliation path](diagrams/010-idempotent-payments/04-recovery.png)
+![The reconciliation path](assets/000/04-recovery.png)
 
 ```python
 cur.execute("SELECT payment_id, idempotency_key FROM ride_payment"
