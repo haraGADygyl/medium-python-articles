@@ -8,6 +8,8 @@
 
 ---
 
+A payments team at a bike-share company, hiring a senior backend engineer. The interviewer is Ratko.
+
 This is the interview question, and the standard answer is "use an idempotency key with a unique constraint." That answer is not wrong. It is also not sufficient, and the gap between those two things is where real money goes missing.
 
 Everything below was run against PostgreSQL 17.6 with eight concurrent requests hitting the same key. The numbers are from those runs, not from reasoning about them.
