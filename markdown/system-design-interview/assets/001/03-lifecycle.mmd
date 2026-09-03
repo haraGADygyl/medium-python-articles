@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> free
+    free --> held: added to a cart
+    held --> sold: checkout completes
+    held --> free: held_until passes
+    free --> sold: direct purchase
+    sold --> [*]
+    note right of held
+        Nothing performs this
+        transition. The claim
+        query must treat an
+        expired hold as free.
+    end note

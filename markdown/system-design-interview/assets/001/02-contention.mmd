@@ -1,0 +1,12 @@
+flowchart TB
+    subgraph F["FOR UPDATE — all 16 want the lowest free seat"]
+        direction TB
+        W1["worker 1"] -->|holds lock| S1["seat 4201"]
+        W2["workers 2-16"] -.->|blocked, waiting| S1
+    end
+    subgraph K["FOR UPDATE SKIP LOCKED — locked rows are stepped over"]
+        direction TB
+        K1["worker 1"] --> KS1["seat 4201"]
+        K2["worker 2"] --> KS2["seat 4202"]
+        K3["worker 3"] --> KS3["seat 4203"]
+    end

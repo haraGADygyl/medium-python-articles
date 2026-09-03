@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant A as Buyer A
+    participant B as Buyer B
+    participant C as Buyer C
+    participant DB as seat row 1
+    A->>DB: SELECT status
+    DB-->>A: free
+    B->>DB: SELECT status
+    DB-->>B: free
+    C->>DB: SELECT status
+    DB-->>C: free
+    A->>DB: UPDATE ... status='sold'
+    B->>DB: UPDATE ... status='sold'
+    C->>DB: UPDATE ... status='sold'
+    Note over DB: one seat, three confirmations
