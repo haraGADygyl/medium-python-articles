@@ -1,0 +1,7 @@
+flowchart LR
+    A["GET key"] --> B{"present?"}
+    B -->|no| C["cold start:<br/>build it"] --> S["serve"]
+    B -->|yes| D{"time + early >= exp?<br/>(early scales with<br/>rebuild cost)"}
+    D -->|no| S
+    D -->|yes| E["spawn background<br/>refresh"] --> S
+    S --> F["reader never blocks"]

@@ -1,0 +1,7 @@
+flowchart TB
+    A["GET key"] -->|hit| B["serve"]
+    A -->|miss| C{"SET lock NX<br/>did I win?"}
+    C -->|yes| D["query origin<br/>265 ms"] --> E["SET key, DEL lock"] --> B
+    C -->|no| F["poll until the key appears"]
+    F --> B
+    F -.->|"holder dies:<br/>everyone waits<br/>for the lock TTL"| G["stall"]

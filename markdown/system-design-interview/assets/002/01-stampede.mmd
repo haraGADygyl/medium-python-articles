@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant R as Redis
+    participant W as 50 web workers
+    participant DB as Postgres
+    Note over R: key expires
+    W->>R: GET dashboard:trending
+    R-->>W: (nil) x25
+    W->>DB: 25 identical 265 ms aggregates
+    Note over DB: contending for the same buffers
+    DB-->>W: after 5,046 ms
+    W->>R: SET (25 times, same value)
