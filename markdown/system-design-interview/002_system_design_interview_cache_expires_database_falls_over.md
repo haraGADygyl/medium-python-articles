@@ -22,12 +22,36 @@ Everything below ran on PostgreSQL 17.6 and Redis 7, against three million job p
 
 **Tihomir:** Cache it. The data is minutes-stale by nature — nobody needs a hiring dashboard accurate to the second — so cache-aside with a short TTL. Read the key, and on a miss compute it and write it back.
 
+The pieces every version below shares:
+
+```python
+import redis
+
+R = redis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
+KEY = "dashboard:trending"
+LOCK = "dashboard:trending:lock"
+TTL = 5
+
+
+def query_origin() -> str:
+    """The 265 ms aggregate over three million postings, as JSON."""
+    conn = psycopg2.connect(PG)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(TRENDING_SQL)
+            return json.dumps(cur.fetchall(), default=str)
+    finally:
+        conn.close()
+```
+
+The naive reader:
+
 ```python
 def naive_reader():
     hit = R.get(KEY)
     if hit is not None:
         return hit
-    value = query_origin()          # the 265 ms aggregate
+    value = query_origin()
     R.set(KEY, value, ex=TTL)
     return value
 ```
@@ -130,47 +154,89 @@ rebuild lock, TTL=5s, 50 readers, 20s
 
 **Tihomir:** The mistake is treating expiry as the moment to rebuild. If the value is allowed to go stale, there is no reason anyone should ever wait for a rebuild — refresh it *before* it expires, in the background, and keep serving the old value while that happens.
 
-The cached entry carries its own metadata: the payload, the moment it stops being fresh, and how long it took to build. Redis's TTL becomes a backstop rather than the mechanism.
+The cached entry stops being a bare string. It carries the payload, the moment it stops being fresh, and how long it took to build. Redis's own TTL becomes a backstop rather than the mechanism.
+
+```python
+FRESH_FOR = 5.0                # after this the value is stale, but still served
+HARD_TTL = 60                  # Redis only evicts if refreshes stop completely
+EARLY_REFRESH_FACTOR = 1.0
+
+
+def store(payload: str, build_seconds: float) -> None:
+    """Cache the value with when it goes stale and what it cost to build."""
+    R.set(KEY, json.dumps({
+        "payload": payload,
+        "fresh_until": time.time() + FRESH_FOR,
+        "build_seconds": build_seconds,
+    }), ex=HARD_TTL)
+
+
+def refresh() -> None:
+    """Rebuild the value. One caller at a time; the rest simply skip it."""
+    if not R.set(LOCK, "1", nx=True, ex=30):
+        return
+    try:
+        started = time.perf_counter()
+        payload = query_origin()
+        store(payload, time.perf_counter() - started)
+    finally:
+        R.delete(LOCK)
+```
+
+**Haruki:** And the read path?
+
+**Tihomir:** It never blocks. It reads the entry, decides whether to kick off a refresh in the background, and returns the payload either way.
 
 ```python
 def swr_reader():
     raw = R.get(KEY)
-    if raw is None:                              # cold start only
-        _refresh()
-        return
+    if raw is None:                          # cold start: nothing to serve yet
+        refresh()
+        return json.loads(R.get(KEY))["payload"]
 
-    env = json.loads(raw)
-    # The closer to expiry and the more expensive the rebuild,
-    # the likelier this reader is the one that refreshes.
-    early = (env["d"] / 1000.0) * BETA * -math.log(random.random())
-    if time.time() + early >= env["exp"]:
-        threading.Thread(target=_refresh, daemon=True).start()
-    return env["v"]                              # stale or not, it is served
+    entry = json.loads(raw)
+
+    # How far ahead of the deadline this reader is willing to volunteer.
+    # Scales with the rebuild cost; the log of a random number makes every
+    # reader pick a different moment, so they do not all volunteer at once.
+    head_start = entry["build_seconds"] * EARLY_REFRESH_FACTOR * -math.log(random.random())
+
+    if time.time() + head_start >= entry["fresh_until"]:
+        threading.Thread(target=refresh, daemon=True).start()
+
+    return entry["payload"]                  # served immediately, fresh or not
 ```
 
 **Haruki:** Explain the logarithm.
 
-**Tihomir:** It is probabilistic early expiry. Each reader rolls a random number and asks whether it should refresh *now* rather than at the deadline. The window scales with how expensive the rebuild is, so a costly value gets refreshed further ahead of time than a cheap one. The result is that one reader usually volunteers early, alone, instead of everyone discovering the miss together — the randomness is what stops them from synchronizing again.
+**Tihomir:** `head_start` is a duration: how long before the deadline this particular reader is prepared to rebuild. Two things set it. It scales with `build_seconds`, so an expensive value gets refreshed further ahead of time than a cheap one. And `-math.log(random.random())` draws a different random number for every reader on every request, so they each pick a different moment.
+
+That randomness is the whole trick. Without it, all fifty readers would decide to refresh at the same instant — which is the stampede again, just moved earlier. With it, one reader usually crosses the threshold alone, a second or two before the deadline, and rebuilds while the other forty-nine keep getting served the old value. `refresh()` takes the lock, so if two do volunteer together, the second one returns immediately instead of running the query.
+
+**Haruki:** And `EARLY_REFRESH_FACTOR`?
+
+**Tihomir:** A dial. Above 1.0 readers volunteer earlier and you burn more origin queries for a smaller chance anyone ever sees an expired key; below 1.0, the reverse. I left it at 1.0 because that is the published default and I had no measurement justifying anything else.
 
 ![The reader never blocks](assets/002/03-refresh.png)
 
 ```
 early refresh + serve stale, 50 readers, 20s
-  requests served:        96085
+  requests served:        95872
   origin queries:         8   (2.0 per expiry)
-  cache-hit p99:          1.6 ms
-  non-hit p50 / p99:      2 ms / 38 ms
+  origin query p50 / max: 291 ms / 326 ms
+  cache-hit p99:          1.7 ms
+  non-hit p50 / p99:      2 ms / 31 ms
 ```
 
 **Haruki:** Nobody waits.
 
-**Tihomir:** 38 milliseconds at p99 against 5,466 for the naive version, and that is a cold start rather than a stampede. The three together:
+**Tihomir:** 31 milliseconds at p99 against 5,466 for the naive version, and that is the cold start at the beginning of the run rather than a stampede. The three together:
 
 | | requests served | origin queries | origin p50 | worst reader wait |
 |---|---|---|---|---|
 | plain cache-aside | 50,247 | 100 | 5,046 ms | 5,466 ms |
 | rebuild lock | 90,222 | 4 | 284 ms | 323 ms |
-| early refresh + stale | 96,085 | 8 | 283 ms | 38 ms |
+| early refresh + stale | 95,872 | 8 | 291 ms | 31 ms |
 
 ---
 
@@ -182,7 +248,7 @@ early refresh + serve stale, 50 readers, 20s
 
 Second, readers are served stale data. Not much — the refresh starts before the deadline — but "how stale is acceptable" is now a product decision that has to be written down rather than a side effect of the TTL. For a hiring dashboard it is obviously fine. For an account balance it is obviously not.
 
-Third, the code got harder. Cache-aside is four lines. This is an envelope format, a background thread, a lock, and a constant called `BETA` whose value I would have to justify to whoever is on call.
+Third, the code got harder. Cache-aside is four lines. This is an envelope format, a background thread, a lock, and a tuning constant whose value I would have to justify to whoever is on call.
 
 **Haruki:** When would you not do this?
 
@@ -200,6 +266,6 @@ And I have not tested this across processes at real scale. One Redis, fifty thre
 
 **A rebuild lock fixes the database and not the user.** One origin query per expiry, but every reader still waits 285 ms — and if the lock holder dies, the fleet blocks until the lock's TTL runs out.
 
-**Refresh before expiry and serve stale while you do.** 38 ms worst case instead of 5,466, at the price of twice the origin queries and a stated staleness budget.
+**Refresh before expiry and serve stale while you do.** 31 ms worst case instead of 5,466, at the price of twice the origin queries and a stated staleness budget.
 
 The question is asked because the naive answer is genuinely correct — a cache *does* fix the 265 ms query, for 99.9% of requests. The interesting engineering is entirely in the other 0.1%, and it only shows up if you measure the moment the key goes away.
