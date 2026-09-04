@@ -180,7 +180,7 @@ The cached entry stops being a bare string. It carries the payload, the moment i
 ```python
 FRESH_FOR = 5.0                # after this the value is stale, but still served
 HARD_TTL = 60                  # Redis only evicts if refreshes stop completely
-EARLY_REFRESH_FACTOR = 1.0
+EARLY_REFRESH_FACTOR = 1.0     # beta, from the XFetch paper; 1.0 is its default
 
 
 def store(payload: str, build_seconds: float) -> None:
@@ -236,7 +236,11 @@ That randomness is the whole trick. Without it, all fifty readers would decide t
 
 **Haruki:** And `EARLY_REFRESH_FACTOR`?
 
-**Tihomir:** A dial. Above 1.0 readers volunteer earlier and you burn more origin queries for a smaller chance anyone ever sees an expired key; below 1.0, the reverse. I left it at 1.0 because that is the published default and I had no measurement justifying anything else.
+**Tihomir:** It is beta from XFetch — the algorithm in *Optimal Probabilistic Cache Stampede Prevention*, Vattani, Chierichetti and Lowenstein, VLDB 2015. Their rule is `now - delta * beta * log(rand()) >= expiry`, where `delta` is the last rebuild's duration. My line is the same thing rearranged, with the negated log moved across as a head start.
+
+**Haruki:** And turning it?
+
+**Tihomir:** Above 1.0, readers volunteer earlier and more often — fewer occasions where anyone finds a genuinely cold key, at the cost of more origin queries. Below 1.0 they hug the deadline, which is cheaper and riskier. The paper argues 1.0 is close to optimal in the general case, and I left it there because I had no measurement of my own that justified moving it.
 
 ![The reader never blocks](assets/002/03-refresh.png)
 
