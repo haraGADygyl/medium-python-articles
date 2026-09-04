@@ -24,21 +24,35 @@ Everything below was run against PostgreSQL 17.6 with eight concurrent requests 
 
 **Ratko:** Show me the handler.
 
-**Tihomir:**
+**Tihomir:** The two collaborators it leans on, first — the provider call is an ordinary HTTP request to Stripe or Adyen, and the two helpers just shape a response:
 
 ```python
-with conn.cursor() as cur:
-    cur.execute("SELECT payment_id FROM ride_payment WHERE idempotency_key = %s", (KEY,))
-    if cur.fetchone():
-        return already_charged()
+def charge_provider(idempotency_key: str) -> str:
+    """POST /charges at the payment provider. Returns their charge id."""
+    ...
 
-ref = charge_provider(KEY)          # money moves here
 
-with conn.cursor() as cur:
-    cur.execute(
-        "INSERT INTO ride_payment (idempotency_key, rider_id, amount_cents, provider_ref)"
-        " VALUES (%s, %s, %s, %s)", (KEY, 4471, 350, ref))
-conn.commit()
+def already_charged() -> str: ...
+def in_flight_or_done() -> str: ...
+```
+
+And the handler:
+
+```python
+def handle_purchase(conn, KEY: str) -> str:
+    with conn.cursor() as cur:
+        cur.execute("SELECT payment_id FROM ride_payment WHERE idempotency_key = %s", (KEY,))
+        if cur.fetchone():
+            return already_charged()
+
+    ref = charge_provider(KEY)          # money moves here
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO ride_payment (idempotency_key, rider_id, amount_cents, provider_ref)"
+            " VALUES (%s, %s, %s, %s)", (KEY, 4471, 350, ref))
+    conn.commit()
+    return "confirmed"
 ```
 
 **Ratko:** Good. Now eight retries arrive at the same moment.
@@ -136,20 +150,22 @@ times money moved:  8
 The insert becomes the lock.
 
 ```python
-cur.execute(
-    "INSERT INTO ride_payment (idempotency_key, rider_id, amount_cents, status)"
-    " VALUES (%s, %s, %s, 'pending')"
-    " ON CONFLICT (idempotency_key) DO NOTHING"
-    " RETURNING payment_id", (KEY, 4471, 350))
-claimed = cur.fetchone()
+def handle_purchase(cur, KEY: str) -> str:
+    cur.execute(
+        "INSERT INTO ride_payment (idempotency_key, rider_id, amount_cents, status)"
+        " VALUES (%s, %s, %s, 'pending')"
+        " ON CONFLICT (idempotency_key) DO NOTHING"
+        " RETURNING payment_id", (KEY, 4471, 350))
+    claimed = cur.fetchone()
 
-if claimed is None:
-    return in_flight_or_done()      # someone else owns this key
+    if claimed is None:
+        return in_flight_or_done()      # someone else owns this key
 
-ref = charge_provider(KEY)
+    ref = charge_provider(KEY)
 
-cur.execute("UPDATE ride_payment SET status='charged', provider_ref=%s"
-            " WHERE payment_id=%s", (ref, claimed[0]))
+    cur.execute("UPDATE ride_payment SET status='charged', provider_ref=%s"
+                " WHERE payment_id=%s", (ref, claimed[0]))
+    return "confirmed"
 ```
 
 **Ratko:** Why does that work when the constraint alone did not?
@@ -212,9 +228,14 @@ The claim is doing its job — it refuses to let anyone charge again — but not
 ![The reconciliation path](assets/000/04-recovery.png)
 
 ```python
-cur.execute("SELECT payment_id, idempotency_key FROM ride_payment"
-            " WHERE status='pending' AND created_at < now() - interval '5 seconds'"
-            " FOR UPDATE SKIP LOCKED")
+def sweep(cur) -> None:
+    cur.execute("SELECT payment_id, idempotency_key FROM ride_payment"
+                " WHERE status='pending' AND created_at < now() - interval '5 seconds'"
+                " FOR UPDATE SKIP LOCKED")
+    for payment_id, key in cur.fetchall():
+        ref = charge_provider(key)      # safe: the provider dedupes on this key
+        cur.execute("UPDATE ride_payment SET status='charged', provider_ref=%s"
+                    " WHERE payment_id=%s", (ref, payment_id))
 ```
 
 For each one, call the provider again with the same idempotency key.

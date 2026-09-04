@@ -23,13 +23,15 @@ Everything below ran on PostgreSQL 17.6 against a 234,000-seat schema (50 shows)
 **Tihomir:** The handler checks whether the seat is free, and if it is, marks it sold and writes the order.
 
 ```python
-with conn.cursor() as cur:
-    cur.execute("SELECT status FROM seat WHERE seat_id = %s", (SEAT,))
-    if cur.fetchone()[0] != "free":
-        return "sold out"
-    cur.execute("UPDATE seat SET status='sold', order_ref=%s WHERE seat_id=%s",
-                (order_ref, SEAT))
-conn.commit()
+def buy_seat(conn, seat_id: int, order_ref: str) -> str:
+    with conn.cursor() as cur:
+        cur.execute("SELECT status FROM seat WHERE seat_id = %s", (seat_id,))
+        if cur.fetchone()[0] != "free":
+            return "sold out"
+        cur.execute("UPDATE seat SET status='sold', order_ref=%s WHERE seat_id=%s",
+                    (order_ref, seat_id))
+    conn.commit()
+    return "confirmed"
 ```
 
 **Amara:** Ten buyers, same instant, same seat. How many tickets do you sell?
@@ -65,10 +67,11 @@ Ten confirmation emails. One seat. Nine people fly to another city and find some
 **Tihomir:** Stop asking and start telling. Put the condition inside the write, so the check and the act are the same statement.
 
 ```python
-cur.execute(
-    "UPDATE seat SET status='sold', order_ref=%s"
-    " WHERE seat_id=%s AND status='free'", (order_ref, SEAT))
-return "confirmed" if cur.rowcount == 1 else "sold out"
+def buy_seat(cur, seat_id: int, order_ref: str) -> str:
+    cur.execute(
+        "UPDATE seat SET status='sold', order_ref=%s"
+        " WHERE seat_id=%s AND status='free'", (order_ref, seat_id))
+    return "confirmed" if cur.rowcount == 1 else "sold out"
 ```
 
 `rowcount` is the answer. One means you got it, zero means somebody else did. Same ten buyers:
