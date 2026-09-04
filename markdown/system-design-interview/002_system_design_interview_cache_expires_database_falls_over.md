@@ -25,8 +25,14 @@ Everything below ran on PostgreSQL 17.6 and Redis 7, against three million job p
 The pieces every version below shares:
 
 ```python
-import json, math, random, threading, time
-import psycopg2, redis
+import json
+import math
+import random
+import threading
+import time
+
+import psycopg2
+import redis
 
 PG = "host=127.0.0.1 port=5432 dbname=jobboard user=postgres password=demo"
 R = redis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
