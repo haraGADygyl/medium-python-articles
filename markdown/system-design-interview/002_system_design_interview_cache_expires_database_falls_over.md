@@ -25,12 +25,27 @@ Everything below ran on PostgreSQL 17.6 and Redis 7, against three million job p
 The pieces every version below shares:
 
 ```python
-import redis
+import json, math, random, threading, time
+import psycopg2, redis
 
+PG = "host=127.0.0.1 port=5432 dbname=jobboard user=postgres password=demo"
 R = redis.Redis(host="127.0.0.1", port=6379, decode_responses=True)
+
 KEY = "dashboard:trending"
 LOCK = "dashboard:trending:lock"
 TTL = 5
+
+TRENDING_SQL = """
+SELECT role_family, city,
+       count(*) AS openings,
+       round(avg(salary_cents)/100000.0, 1) AS avg_k,
+       round(100.0 * count(*) FILTER (WHERE is_remote) / count(*), 1) AS remote_pct
+FROM posting
+WHERE posted_at >= now() - interval '30 days'
+GROUP BY role_family, city
+ORDER BY openings DESC
+LIMIT 20
+"""
 
 
 def query_origin() -> str:
