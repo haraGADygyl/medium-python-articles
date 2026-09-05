@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> Acquired: SET NX succeeds
+    Acquired --> Working: render tiles
+    Working --> Released: finish before the TTL
+    Working --> Zombie: TTL expires first
+    Zombie --> Released: write, then DEL
+    note right of Zombie
+      The process cannot tell it is here.
+      Every local variable still says
+      "I own lock:S2A-0007".
+      Only the resource knows.
+    end note
+    note right of Released
+      Under fencing the write from
+      Zombie is refused here, and
+      the process finds out.
+    end note
+    Released --> [*]

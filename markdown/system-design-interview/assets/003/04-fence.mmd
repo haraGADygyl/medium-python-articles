@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant A as Worker A
+    participant R as Redis
+    participant DB as Postgres
+    participant B as Worker B
+    A->>R: SET lock NX PX 2000
+    A->>R: INCR fence:S2A-0007
+    R-->>A: 7
+    Note over A: FROZEN past the TTL
+    B->>R: SET lock NX PX 2000
+    B->>R: INCR fence:S2A-0007
+    R-->>B: 8
+    B->>DB: UPSERT ... WHERE fence_token < 8
+    DB-->>B: 1 row — accepted
+    Note over A: A resumes with token 7
+    A->>DB: UPSERT ... WHERE fence_token < 7
+    DB-->>A: 0 rows — refused
+    Note over A: A learns it lost the lock<br/>from the resource, not from Redis

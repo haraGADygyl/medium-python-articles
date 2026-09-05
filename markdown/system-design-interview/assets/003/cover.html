@@ -1,0 +1,90 @@
+<!doctype html>
+<meta charset="utf-8">
+<!--
+  Cover template for the "System Design Interview" series.
+
+  Everything outside the BODY SLOT is fixed and must not change between
+  articles — the eyebrow, palette, rule, kicker and footer positions are what
+  make the covers read as a set in a Medium feed.
+
+  To make a cover: copy this file to assets/NNN/cover.html, fill the four
+  slots marked EDIT, pick ONE body variant, delete the other two, then
+  ./render.sh cover NNN
+-->
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:1500px; height:750px; }
+  body {
+    background:#0d1117;
+    font-family:'Liberation Sans','DejaVu Sans',sans-serif;
+    color:#e6edf3;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:0 100px; position:relative; overflow:hidden;
+  }
+  /* ---- fixed series identity ------------------------------------------ */
+  .glow { position:absolute; right:-200px; top:-220px; width:820px; height:820px;
+          border-radius:50%;
+          background:radial-gradient(circle,rgba(248,81,73,.18) 0%,transparent 66%); }
+  .eyebrow {
+    position:absolute; top:56px; left:100px;
+    font-size:21px; font-weight:700; letter-spacing:4.5px;
+    color:#6e7681; text-transform:uppercase;
+  }
+  .eyebrow b { color:#f85149; font-weight:700; }
+  .rule { height:2px; background:#21262d; margin-bottom:34px; }
+  .kicker { font-size:46px; font-weight:700; letter-spacing:-.8px; line-height:1.14; }
+  .kicker em { color:#f85149; font-style:normal; }
+  .foot { margin-top:22px; font-size:24px; color:#6e7681;
+          display:flex; gap:16px; align-items:center; }
+  .dot { width:6px; height:6px; border-radius:50%; background:#30363d; }
+
+  /* ---- body variants --------------------------------------------------- */
+  .cols { display:flex; align-items:center; margin-bottom:64px; }
+  .col { flex:1; display:flex; align-items:center; gap:44px; }
+  .col.right { padding-left:88px; border-left:2px solid #21262d; }
+  .num { font-family:'DejaVu Sans Mono','Liberation Mono',monospace;
+         font-size:270px; line-height:.80; letter-spacing:-12px; font-weight:700; }
+  .num.ok  { color:#6e7681; }
+  .num.bad { color:#f85149; text-shadow:0 0 60px rgba(248,81,73,.45); }
+  .lbl { font-size:35px; font-weight:700; line-height:1.26; max-width:400px; }
+  .col.left  .lbl { color:#7d8590; }
+  .col.right .lbl { color:#e6edf3; }
+
+  .hero { display:flex; align-items:center; gap:56px; margin-bottom:64px; }
+  .hero .num { font-size:290px; }
+  .hero .lbl { max-width:720px; color:#e6edf3; font-size:38px; }
+
+  .ask { font-size:76px; font-weight:700; line-height:1.12; letter-spacing:-1.6px;
+         margin-bottom:64px; max-width:1180px; }
+  .ask em { color:#f85149; font-style:normal; }
+</style>
+
+<div class="glow"></div>
+<!-- EDIT 1: episode number, zero-padded to two digits -->
+<div class="eyebrow">System Design Interview &nbsp;·&nbsp; <b>No.&nbsp;04</b></div>
+
+<!-- ============ BODY SLOT — keep exactly one of the three ============== -->
+
+<!-- VARIANT A: two-number contrast. -->
+<div class="cols">
+  <div class="col left">
+    <div class="num ok">1</div>
+    <div class="lbl">lock key<br>in Redis</div>
+  </div>
+  <div class="col right">
+    <div class="num bad">24</div>
+    <div class="lbl">jobs with two<br>live owners at once</div>
+  </div>
+</div>
+
+<!-- ==================================================================== -->
+
+<div class="rule"></div>
+<!-- EDIT 2: the kicker. One line, <em> wraps the red words. -->
+<div class="kicker">Your lock expired while you were still using it</div>
+<!-- EDIT 3: the credibility footer. Always three items, always real. -->
+<div class="foot">
+  <span>Redis 7.4.11</span><span class="dot"></span>
+  <span>6 worker processes</span><span class="dot"></span>
+  <span>measured, not assumed</span>
+</div>

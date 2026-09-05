@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant A as Worker A
+    participant R as Redis
+    participant B as Worker B
+    participant C as Worker C
+    A->>R: SET lock NX PX 2000 (value A)
+    Note over A: FROZEN past the TTL
+    R-->>R: key expires
+    B->>R: SET lock NX PX 2000 (value B)
+    R-->>B: OK — B is the owner
+    Note over A: A resumes, finishes, releases
+    A->>R: DEL lock
+    Note over R: A just deleted B's lock
+    C->>R: SET lock NX PX 2000 (value C)
+    R-->>C: OK
+    Note over B,C: B and C now both hold "the" lock,<br/>and B was never touched by the bug

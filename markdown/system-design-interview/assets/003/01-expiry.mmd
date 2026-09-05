@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant A as Worker A
+    participant R as Redis
+    participant DB as Postgres
+    participant B as Worker B
+    A->>R: SET lock:S2A-0007 A NX PX 2000
+    R-->>A: OK
+    Note over A: renders tiles (0.9 s)
+    Note over A,R: t+2.0 s — key expires. Nobody is told.
+    rect rgb(255,236,236)
+    Note over A: FROZEN (stop-the-world, 3.1 s)<br/>A still believes it holds the lock
+    B->>R: SET lock:S2A-0007 B NX PX 2000
+    R-->>B: OK
+    B->>DB: write checksum = 4f1c… (B)
+    end
+    Note over A: A resumes
+    A->>DB: write checksum = 91ab… (A, stale)
+    DB-->>A: accepted
+    Note over DB: the surviving row is the older result
