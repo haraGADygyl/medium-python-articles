@@ -1,0 +1,11 @@
+flowchart TD
+    A["Capacity dips for 0.8 s<br/>40 slots become 8"] --> B["Queue wait passes<br/>the 300 ms timeout"]
+    B --> C["Caller gives up<br/>and retries"]
+    C --> D["Offered load 1200 to 2069 rps<br/>3.72 attempts per job"]
+    D --> E["Arrivals exceed the 1600 rps<br/>the service can serve"]
+    E --> B
+    E --> F["Queue grows 570 req/s<br/>1251 deep at t=7 s, 31741 at t=60 s"]
+    F --> G["1455 rps of work completed,<br/>159 rps delivered to a caller"]
+    style A fill:#fff3cd,stroke:#856404
+    style E fill:#f8d7da,stroke:#721c24
+    style G fill:#f8d7da,stroke:#721c24

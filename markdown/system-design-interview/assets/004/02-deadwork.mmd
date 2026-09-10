@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    participant C as Caller (300 ms budget)
+    participant Q as Admission queue
+    participant W as Worker slots (40)
+    Note over Q: t=10 s, 3802 requests queued
+    C->>Q: attempt 1
+    C--xC: timeout at 300 ms
+    C->>Q: attempt 2 at 400 ms
+    C--xC: timeout at 700 ms
+    C->>Q: attempt 3 at 900 ms
+    Q->>W: attempt 1 reaches a slot at 2.4 s
+    W-->>C: 200 OK for a request<br/>abandoned 2.1 s ago
+    Note over C: caller failed the job<br/>at 1.5 s and moved on
+    Note over Q,W: 1 job, 5 attempts,<br/>5 slots of work, 0 delivered

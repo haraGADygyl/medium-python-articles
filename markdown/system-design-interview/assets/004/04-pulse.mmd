@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant F as 2000 callers,<br/>one shared breaker
+    participant D as Degraded dependency<br/>(320 rps)
+    Note over F,D: half-open admits every caller
+    F->>D: t=6.0-6.4 s: 483 requests
+    Note over D: queue 354, all time out
+    Note over F: t=6.5-7.1 s: exactly 0 requests
+    F->>D: t=7.2-7.5 s: 423 requests
+    Note over D: queue 417, all time out
+    Note over F: t=7.6-8.2 s: exactly 0 requests
+    F->>D: t=8.3-8.6 s: 450 requests
+    Note over D: queue 523, all time out
+    Note over F,D: single-flight probe: 8 requests<br/>across the run instead of 1101
