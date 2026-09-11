@@ -1,0 +1,11 @@
+blip-naive         amp= 3.72 offered= 1578 peak= 2190 qmax= 32154 dead= 82.6% recovered= None failed= 18880 ok= 14787
+blip-jitter        amp= 3.86 offered= 1642 peak= 2180 qmax= 37612 dead= 83.1% recovered= None failed= 21964 ok= 13752
+blip-budget        amp= 1.00 offered= 1060 peak= 1840 qmax=   612 dead=  2.7% recovered=    8 failed=  1751 ok= 69117
+blip-breaker       amp= 0.86 offered=  569 peak= 1220 qmax=   334 dead=  0.6% recovered=   15 failed= 10588 ok= 61052
+out-naive          amp= 3.81 offered= 1953 peak= 7470 qmax= 40564 dead= 82.2% recovered= None failed= 19875 ok= 12697
+out-jitter         amp= 3.91 offered= 1368 peak= 4960 qmax= 31363 dead= 83.2% recovered= None failed= 21722 ok= 11622
+out-budget         amp= 1.01 offered= 1025 peak= 2480 qmax=  7244 dead= 37.0% recovered=   32 failed= 24369 ok= 42149
+out-breaker-exp    amp= 0.72 offered=  371 peak= 1940 qmax=   512 dead=  1.7% recovered=   23 failed= 20731 ok= 50838
+out-breaker-all    amp= 0.89 offered=  401 peak= 2360 qmax=  1000 dead=  6.1% recovered=   16 failed= 11733 ok= 59110
+out-breaker-cap    amp= 0.85 offered=  383 peak= 3690 qmax=   907 dead=  6.3% recovered=   21 failed= 14266 ok= 56399
+SWEEP DONE
