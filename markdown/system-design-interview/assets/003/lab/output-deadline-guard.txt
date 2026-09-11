@@ -1,0 +1,48 @@
+
+=== guard-stall-in-work: 6 workers, ttl=2500ms, guard=2.0s, stall=(2.2, 3.4)s ===
+  rows in scene_product              80 / 80
+  work executions                    111
+  stop-the-world stalls              31
+  guard: write skipped               31
+    ... skipped while still newest   3
+  guard: passed at (max)             1506 ms
+  scenes with two live owners        23
+  longest double ownership           1.41 s
+  writes attempted                   80
+  writes made without the lock       0
+    ... of those, accepted           0
+  writes rejected by the db          0
+  newer result overwritten           0
+  wall clock                         51.4s
+
+=== guard-stall-after-check: 6 workers, ttl=2500ms, guard=2.0s, stall=(2.2, 3.4)s ===
+  rows in scene_product              80 / 80
+  work executions                    105
+  stop-the-world stalls              31
+  guard: write skipped               0
+    ... skipped while still newest   0
+  guard: passed at (max)             1113 ms
+  scenes with two live owners        24
+  longest double ownership           1.32 s
+  writes attempted                   105
+  writes made without the lock       31
+    ... of those, accepted           31
+  writes rejected by the db          0
+  newer result overwritten           11
+  wall clock                         51.4s
+
+=== guard-fenced-after-check: 6 workers, ttl=2500ms, guard=2.0s, stall=(2.2, 3.4)s ===
+  rows in scene_product              80 / 80
+  work executions                    105
+  stop-the-world stalls              30
+  guard: write skipped               0
+    ... skipped while still newest   0
+  guard: passed at (max)             1050 ms
+  scenes with two live owners        23
+  longest double ownership           1.42 s
+  writes attempted                   105
+  writes made without the lock       30
+    ... of those, accepted           18
+  writes rejected by the db          12
+  newer result overwritten           0
+  wall clock                         51.4s
