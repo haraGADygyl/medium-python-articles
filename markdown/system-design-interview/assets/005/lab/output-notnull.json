@@ -1,0 +1,30 @@
+{
+  "direct": [
+    {
+      "sql": "ALTER COLUMN panel_serial SET NOT NULL",
+      "seconds": 3.84,
+      "queries_served": 5,
+      "p99_ms": 3836.76
+    }
+  ],
+  "staged": [
+    {
+      "sql": "ADD CONSTRAINT panel_serial_present CHECK (panel_serial IS",
+      "seconds": 0.0,
+      "queries_served": 0,
+      "p99_ms": null
+    },
+    {
+      "sql": "VALIDATE CONSTRAINT panel_serial_present",
+      "seconds": 1.81,
+      "queries_served": 1383,
+      "p99_ms": 0.9
+    },
+    {
+      "sql": "ALTER COLUMN panel_serial SET NOT NULL",
+      "seconds": 0.0,
+      "queries_served": 0,
+      "p99_ms": null
+    }
+  ]
+}

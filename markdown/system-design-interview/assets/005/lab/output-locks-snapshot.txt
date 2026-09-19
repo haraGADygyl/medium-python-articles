@@ -1,0 +1,14 @@
+ pid |                     query                      |        mode         | granted | waited_s 
+-----+------------------------------------------------+---------------------+---------+----------
+ 184 | SELECT pg_sleep($1)                            | AccessShareLock     | t       | 02.612
+ 185 | ALTER TABLE meter_reading ADD COLUMN firmware_ | AccessExclusiveLock | f       | 02.111
+ 179 | SELECT watt_hours FROM meter_reading WHERE inv | AccessShareLock     | f       | 02.111
+ 180 | SELECT watt_hours FROM meter_reading WHERE inv | AccessShareLock     | f       | 02.111
+ 181 | SELECT watt_hours FROM meter_reading WHERE inv | AccessShareLock     | f       | 02.109
+ 177 | SELECT watt_hours FROM meter_reading WHERE inv | AccessShareLock     | f       | 02.109
+ 176 | SELECT watt_hours FROM meter_reading WHERE inv | AccessShareLock     | f       | 02.109
+ 182 | SELECT watt_hours FROM meter_reading WHERE inv | AccessShareLock     | f       | 02.109
+ 178 | SELECT watt_hours FROM meter_reading WHERE inv | AccessShareLock     | f       | 02.109
+ 183 | SELECT watt_hours FROM meter_reading WHERE inv | AccessShareLock     | f       | 02.109
+(10 rows)
+

@@ -1,0 +1,13 @@
+flowchart TD
+    D0["DIRECT — one statement"] --> D1["ALTER COLUMN panel_serial<br/>SET NOT NULL"]
+    D1 --> D2["AccessExclusive + full scan"]
+    D2 --> D3["3.84 s blocked<br/>5 queries served, p99 3836 ms"]
+    S0["STAGED — three statements"] --> S1["ADD CONSTRAINT ... CHECK<br/>(panel_serial IS NOT NULL) NOT VALID"]
+    S1 --> S2["0.00 s, no scan"]
+    S2 --> S3["VALIDATE CONSTRAINT"]
+    S3 --> S4["ShareUpdateExclusive, 1.81 s<br/>1383 queries served, p99 0.9 ms"]
+    S4 --> S5["ALTER COLUMN ... SET NOT NULL"]
+    S5 --> S6["0.00 s — reuses the validated constraint"]
+    style D3 fill:#f8d7da,stroke:#721c24
+    style S4 fill:#d4edda,stroke:#155724
+    style S6 fill:#d4edda,stroke:#155724

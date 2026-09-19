@@ -1,0 +1,11 @@
+flowchart TD
+    A["ALTER TABLE ... ADD COLUMN"] --> B{"Is the DEFAULT<br/>volatile?"}
+    B -->|"no default, or<br/>DEFAULT 'fw-unknown'"| C["Metadata only:<br/>one catalog row"]
+    C --> D["0.00 s, 2333 MB unchanged<br/>lock held for microseconds"]
+    B -->|"DEFAULT gen_random_uuid()"| E["Full table rewrite:<br/>every row copied"]
+    E --> F["56.85 s, 2333 to 3263 MB<br/>AccessExclusive held throughout"]
+    F --> G["lock_timeout cannot help here:<br/>you are holding the lock, not waiting"]
+    style C fill:#d4edda,stroke:#155724
+    style D fill:#d4edda,stroke:#155724
+    style F fill:#f8d7da,stroke:#721c24
+    style G fill:#f8d7da,stroke:#721c24

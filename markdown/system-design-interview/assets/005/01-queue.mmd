@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    participant R as Analytics txn
+    participant T as meter_reading<br/>lock queue
+    participant A as ALTER TABLE
+    participant S as 8 API readers
+    R->>T: AccessShare — GRANTED
+    Note over R: holds it for 12 s
+    A->>T: AccessExclusive — conflicts, QUEUES
+    S->>T: AccessShare x8 — compatible with R,<br/>but they queue behind the ALTER
+    Note over T: nobody jumps the queue:<br/>9 waiters, 11 s, p50 0.22 ms to 11017 ms
+    R-->>T: commit, lock released
+    T-->>A: AccessExclusive granted, runs in 0.00 s
+    T-->>S: 8 readers resume
