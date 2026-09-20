@@ -1,4 +1,4 @@
-# Lab — 000, JSON vs. MessagePack
+# Lab — 012, JSON vs. MessagePack
 
 Python 3.12.3, `msgpack==1.1.0`, `zstandard==0.23.0`, Ryzen 5 3600. The payload is
 the series' shared dataset, generated in memory by `../../payload/make_payload.py`.
