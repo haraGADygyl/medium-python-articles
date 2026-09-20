@@ -10,7 +10,7 @@
 
 MessagePack sells itself in five words on its own home page: "It's like JSON. but fast and small." That is the version everyone repeats, and it is the version that sends people migrating a payload for the wrong reason.
 
-I measured it on 50,000 harbour buoy observations — mixed floats, integers, booleans, nulls, nested objects and arrays, the shape telemetry actually has. MessagePack came out 17% smaller than JSON. Then I compressed both, the way anything crossing a network already is, and MessagePack came out **31% larger**.
+Everything below ran on Python 3.12 with `msgpack` 1.1.0. I measured it on 50,000 harbour buoy observations — mixed floats, integers, booleans, nulls, nested objects and arrays, the shape telemetry actually has. MessagePack came out 17% smaller than JSON. Then I compressed both, the way anything crossing a network already is, and MessagePack came out **31% larger**.
 
 The speed claim held up. The size claim inverted. Here is where the line actually falls.
 
@@ -52,8 +52,15 @@ as_msgpack = msgpack.packb(reading)
 
 print(len(as_json), len(as_msgpack))     # 188 154
 print(as_msgpack[:14])                   # b'\x87\xaeobservation_'
-print(msgpack.unpackb(as_msgpack) == reading)   # True
+print(msgpack.unpackb(as_msgpack, raw=False) == reading)   # True
 ```
+
+`raw=False` is worth typing even though it is the default in `msgpack` 1.0 and
+later. Before 1.0 the default was `raw=True`, which hands back every string as
+`bytes` — including the keys — so the comparison above prints `False` and your
+dictionary lookups start failing with `KeyError`. Passing it explicitly works on
+both. The timestamp example further down needs `msgpack` 1.0 or later, where the
+packer learned the `datetime` option.
 
 Those first two bytes are the whole design. `\x87` means "a map with seven pairs" — the count is in the type byte itself, so there is no `{`, no `}`, no commas to scan for. `\xae` means "a string of 14 bytes", so the parser reads a length and then jumps, instead of walking forward looking for an unescaped closing quote.
 
@@ -117,7 +124,8 @@ The gap is wider on encode than decode for a reason worth knowing: encoding JSON
 Two smaller things come with it. MessagePack has integers with a declared width, so the id that JavaScript silently mangles round-trips intact:
 
 ```python
-print(msgpack.unpackb(as_msgpack)["observation_id"])   # 9007199254740993
+print(msgpack.unpackb(as_msgpack, raw=False)["observation_id"])
+# 9007199254740993
 ```
 
 And it has a real timestamp type, which JSON does not:
@@ -130,7 +138,7 @@ stamped = msgpack.packb(
     datetime=True)
 
 print(len(stamped))                                     # 19
-print(msgpack.unpackb(stamped, timestamp=3)["recorded_at"])
+print(msgpack.unpackb(stamped, raw=False, timestamp=3)["recorded_at"])
 # 2026-02-11 04:15:00+00:00
 ```
 
@@ -140,7 +148,7 @@ The third thing is framing. Concatenated MessagePack values are self-delimiting,
 
 ```python
 stream = b"".join(msgpack.packb(r) for r in [reading, reading, reading])
-unpacker = msgpack.Unpacker()
+unpacker = msgpack.Unpacker(raw=False)
 
 unpacker.feed(stream[:40])
 print([r["buoy_id"] for r in unpacker])   # []
