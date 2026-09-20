@@ -1,0 +1,6 @@
+50000 records of each shape, 3 fields per record
+shape                    JSON    msgpack  raw diff    JSON gz  msgpack gz  gz diff
+rounded floats      1,525,258  1,700,003    -11.5%    389,483     425,197    -9.2%
+small integers      1,217,722    554,065     54.5%    242,104     229,615     5.2%
+booleans + nulls    1,499,902    500,003     66.7%     26,417      21,810    17.4%
+free text           7,039,772  6,535,615      7.2%    702,689     841,533   -19.8%

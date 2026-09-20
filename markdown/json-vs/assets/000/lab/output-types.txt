@@ -1,0 +1,10 @@
+64-bit id                 16 B json     9 B msgpack
+timestamp                 27 B json     6 B msgpack
+float 2.37                 4 B json     9 B msgpack
+true                       4 B json     1 B msgpack
+null                       4 B json     1 B msgpack
+key 'wave_height_m'       15 B json    14 B msgpack
+
+id survives msgpack round trip: True (9007199254740993)
+timestamp comes back as: datetime.datetime(2026, 2, 11, 4, 15, tzinfo=datetime.timezone.utc)
+json has no such type; it returns '2026-02-11T04:15:00+00:00'
