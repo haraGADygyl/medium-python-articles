@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    participant C as Client paging<br/>with an offset
+    participant L as Leaderboard<br/>(2000 writes/s)
+    C->>L: ZREVRANGE 0 99
+    L-->>C: page 1, ends at some player X
+    Note over L: a climber enters the top 100<br/>everyone below shifts down one
+    C->>L: ZREVRANGE 100 199
+    L-->>C: page 2 begins at player X again
+    Note over C: X shown twice
+    Note over L: a player drops out of the top 10000<br/>everyone below shifts up one
+    C->>L: ZREVRANGE 200 299
+    L-->>C: page 3 skips the row that moved up
+    Note over C: 36 duplicates, 312 players never shown,<br/>out of 10000 rows

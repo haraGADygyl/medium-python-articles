@@ -1,0 +1,7 @@
+eleven rows centred on a random rank, 40 samples
+  redis ZREVRANGE rank-5..rank+5   p50      0.13 ms   p99      1.96 ms
+  postgres ORDER BY ... OFFSET n   p50   1062.55 ms   p99   4191.94 ms   (8 samples)
+
+exact paging needs a snapshot:
+  ZRANGESTORE top 10000           6.0 ms, 10,000 members, +991 KiB
+  whole sorted set                 50,000,000 members, 4.50 GiB (97 bytes/member)

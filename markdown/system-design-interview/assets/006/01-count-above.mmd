@@ -1,0 +1,11 @@
+flowchart TD
+    Q["rank of one player<br/>among 50,000,000"] --> A["Postgres: count the rows above"]
+    Q --> B["Redis: ZREVRANK on a sorted set"]
+    A --> A1["Index Cond: score > 124881<br/>Parallel Index Only Scan"]
+    A1 --> A2["14,964,345 index entries read<br/>948,691 buffer hits + 57,345 reads"]
+    A2 --> A3["p50 912 ms, p99 1938 ms<br/>rank() window form: 18,741 ms"]
+    B --> B1["skiplist keeps a rank count<br/>on every forward pointer"]
+    B1 --> B2["about 26 nodes touched<br/>log2(50M) levels"]
+    B2 --> B3["p50 0.11 ms, p99 10.5 ms"]
+    style A3 fill:#f8d7da,stroke:#721c24
+    style B3 fill:#d4edda,stroke:#155724

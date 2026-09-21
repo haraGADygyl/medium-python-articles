@@ -1,0 +1,9 @@
+flowchart LR
+    S["231 players share<br/>the top score 250,000"] --> Z["ZREVRANK"]
+    S --> C["ZSCORE + ZCOUNT<br/>(score, +inf)"]
+    Z --> Z1["p10015500 -> 230<br/>p10328933 -> 229<br/>p10434365 -> 228"]
+    Z1 --> Z2["distinct ranks, ordered by<br/>member name. 0.11 ms"]
+    C --> C1["p10015500 -> 0 above<br/>p10328933 -> 0 above<br/>p10434365 -> 0 above"]
+    C1 --> C2["all rank 1, same as SQL<br/>rank(). 0.22 ms"]
+    style Z2 fill:#f8d7da,stroke:#721c24
+    style C2 fill:#d4edda,stroke:#155724

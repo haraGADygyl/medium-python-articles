@@ -1,0 +1,7 @@
+ZREVRANK (ordinal)              p50   0.11 ms   p99   1.18 ms
+ZSCORE + ZCOUNT (competition)   p50   0.22 ms   p99   0.87 ms
+
+the 231 players on score 250,000:
+  p10015500    ZREVRANK  230   ZCOUNT above    0
+  p10328933    ZREVRANK  229   ZCOUNT above    0
+  p10434365    ZREVRANK  228   ZCOUNT above    0

@@ -1,0 +1,21 @@
+most-shared score in postgres: 268 players on score 35,602
+
+three SQL answers for the same six players:
+player            rank  dense_rank  row_number
+p702256              1           1           1
+p1198171             1           1           2
+p2389604             1           1           3
+p2511619             1           1           4
+p2720608             1           1           5
+p3003212             1           1           6
+
+redis members on the top score 250,000: 231
+  p10015500      ZREVRANK -> 230
+  p10328933      ZREVRANK -> 229
+  p10434365      ZREVRANK -> 228
+  p10507136      ZREVRANK -> 227
+  p10574448      ZREVRANK -> 226
+  p11032281      ZREVRANK -> 225
+
+redis orders equal scores lexicographically by member, so rank
+inside a tie group is alphabetical, not chronological or fair.

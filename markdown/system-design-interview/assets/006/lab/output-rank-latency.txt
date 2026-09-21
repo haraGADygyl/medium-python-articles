@@ -1,0 +1,29 @@
+rank of one player among 50,000,000, 40 random players
+method                        p50 ms    p99 ms    max ms   calls
+postgres count(*) above       911.97   1937.66   1937.66      40
+postgres rank() window      18740.59  19828.92  19828.92       5
+redis ZREVRANK                  0.11      10.5      10.5      40
+
+EXPLAIN ANALYZE for the count(*) form:
+  Finalize Aggregate  (cost=469510.92..469510.94 rows=1 width=8) (actual time=881.188..892.193 rows=1 loops=1)
+    Buffers: shared hit=948396 read=57344
+    InitPlan 1
+      ->  Index Scan using player_score_pkey on player_score player_score_1  (cost=0.56..8.58 rows=1 width=4) (actual time=2.693..2.694 rows=1 loops=1)
+            Index Cond: (player_id = 16222852)
+            Buffers: shared read=5
+    ->  Gather  (cost=469502.13..469502.34 rows=2 width=8) (actual time=881.079..892.184 rows=3 loops=1)
+          Workers Planned: 2
+          Workers Launched: 2
+          Buffers: shared hit=948396 read=57344
+          ->  Partial Aggregate  (cost=468502.13..468502.14 rows=1 width=8) (actual time=865.605..865.606 rows=1 loops=3)
+                Buffers: shared hit=948396 read=57339
+                ->  Parallel Index Only Scan using player_score_desc on player_score  (cost=0.56..451141.01 rows=6944445 width=0) (actual time=2.619..642.430 rows=4988115 loops=3)
+                      Index Cond: (score > (InitPlan 1).col1)
+                      Heap Fetches: 0
+                      Buffers: shared hit=948396 read=57339
+  Planning Time: 0.081 ms
+  JIT:
+    Functions: 26
+    Options: Inlining false, Optimization false, Expressions true, Deforming true
+    Timing: Generation 1.061 ms (Deform 0.230 ms), Inlining 0.000 ms, Optimization 0.568 ms, Emission 9.853 ms, Total 11.482 ms
+  Execution Time: 892.561 ms
