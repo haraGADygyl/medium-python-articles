@@ -63,7 +63,7 @@ def handle_purchase(conn, KEY: str) -> str:
 
 **Tihomir:** Then every one of them runs the `SELECT` before any of them runs the `INSERT`.
 
-![Two requests both pass the check before either writes](assets/000/01-race.png)
+![Two requests both pass the check before either writes](assets/000/01-race.gif)
 
 All eight see no rows, so all eight call the provider.
 

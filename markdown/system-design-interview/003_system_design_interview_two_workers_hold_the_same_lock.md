@@ -111,7 +111,7 @@ naive SET NX PX, 6 workers, ttl=2000ms, stall=2.2-3.4s
 
 **Tihomir:** For up to 2.31 seconds each. And it is worse than duplicated work. Sixteen scenes ended up with the wrong row — the frozen worker woke up, wrote its result over the newer one, and the database accepted it, because as far as Postgres is concerned that is a perfectly ordinary `UPDATE`.
 
-![The lock expires while the holder is frozen](assets/003/01-expiry.png)
+![The lock expires while the holder is frozen](assets/003/01-expiry.gif)
 
 **Ingrid:** Redis did nothing wrong.
 
@@ -121,7 +121,7 @@ naive SET NX PX, 6 workers, ttl=2000ms, stall=2.2-3.4s
 
 **Tihomir:** The release. Seven times in that run a worker's `DEL` removed a lock belonging to someone else — it woke up, finished, and deleted whatever key happened to be sitting there. That is a second worker being silently evicted mid-job by a process that has nothing to do with it.
 
-![A's release deletes B's lock](assets/003/02-unlock.png)
+![A's release deletes B's lock](assets/003/02-unlock.gif)
 
 ---
 
@@ -272,7 +272,7 @@ fencing tokens, same conditions
 
 **Tihomir:** Fourteen stale writes bounced. Sixteen writes happened without the lock and were accepted anyway, and that is correct — those workers had the highest token issued, so nobody newer existed to be trampled. The lock had merely expired around them.
 
-![The resource refuses the older token](assets/003/04-fence.png)
+![The resource refuses the older token](assets/003/04-fence.gif)
 
 **Ingrid:** And the twenty-two scenes with two owners?
 

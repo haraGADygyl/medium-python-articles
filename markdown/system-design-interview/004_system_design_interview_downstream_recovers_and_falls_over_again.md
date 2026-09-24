@@ -139,7 +139,7 @@ exponential backoff, no jitter — 0.8 s of degradation
 
 **Tihomir:** The queue grew by roughly 570 requests every second for 53 seconds and never turned around. That is the whole answer: the 800 ms dip pushed queue wait past my 300 ms timeout, the timeout made every caller retry, and 3.72 attempts per job against 1600 rps of capacity is 2069 rps of arrivals. The dependency was never the problem after 6.8 seconds. I was.
 
-![The retry loop feeds itself](assets/004/01-loop.png)
+![The retry loop feeds itself](assets/004/01-loop.gif)
 
 **Mateo:** So it is a closed loop.
 
@@ -149,7 +149,7 @@ exponential backoff, no jitter — 0.8 s of degradation
 
 **Tihomir:** Nowhere. 82.6% of everything that service completed was for a request whose caller had already timed out and moved on — 91% of capacity spent on work nobody was waiting for.
 
-![One job, five attempts, five slots of work, nothing delivered](assets/004/02-deadwork.png)
+![One job, five attempts, five slots of work, nothing delivered](assets/004/02-deadwork.gif)
 
 **Mateo:** Nothing cancels?
 
@@ -375,7 +375,7 @@ half-open admits everyone, fixed 1 s cool-off
   recovered                            16 s
 ```
 
-![Two thousand breakers, one phase](assets/004/04-pulse.png)
+![Two thousand breakers, one phase](assets/004/04-pulse.gif)
 
 **Mateo:** Describe the shape.
 

@@ -115,7 +115,7 @@ bare ALTER, one 12 s analytics transaction, 8 readers
 
 **Tihomir:** Eight of those nine would have been served instantly if my `ALTER` had not been sitting in front of them. The statement I called instant converted one slow reader into a total read outage, and the duration of that outage is not a property of my migration at all — it is however long the analyst's transaction runs.
 
-![One granted lock, nine waiters](assets/005/01-queue.png)
+![One granted lock, nine waiters](assets/005/01-queue.gif)
 
 **Priya:** So the fix is to make sure no long transactions are running.
 

@@ -42,7 +42,7 @@ def buy_seat(conn, seat_id: int, order_ref: str) -> str:
 
 **Tihomir:** Ten. Every one of them reads `free` before any of them writes.
 
-![Three buyers all read 'free' before any of them writes](assets/001/01-oversell.png)
+![Three buyers all read 'free' before any of them writes](assets/001/01-oversell.gif)
 
 **Amara:** You are guessing.
 
@@ -105,7 +105,7 @@ COMMIT;
 
 One worker takes the lock. The other fifteen block on that exact row, wait for the commit, re-read, discover it is gone, and go around again. It is correct and it is a queue.
 
-![Sixteen workers blocked on one row versus each taking a different row](assets/001/02-contention.png)
+![Sixteen workers blocked on one row versus each taking a different row](assets/001/02-contention.gif)
 
 **Amara:** Cost me.
 

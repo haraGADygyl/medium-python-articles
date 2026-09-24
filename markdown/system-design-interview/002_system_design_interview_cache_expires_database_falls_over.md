@@ -102,7 +102,7 @@ plain cache-aside, TTL=5s, 50 readers, 20s
 
 **Tihomir:** The origin query took 5,046 milliseconds. On its own it takes 265. Twenty-five copies of the same aggregate ran at once, contending for the same buffers, and each one got nineteen times slower.
 
-![Every worker misses at the same instant](assets/002/01-stampede.png)
+![Every worker misses at the same instant](assets/002/01-stampede.gif)
 
 That is the whole failure. The key expires, every in-flight request misses simultaneously, and they all go to the database with the identical query. Nothing is wrong with any single request. The cache did not fail. It expired, which is its job.
 

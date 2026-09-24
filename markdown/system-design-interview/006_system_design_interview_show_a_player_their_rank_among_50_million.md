@@ -166,7 +166,7 @@ cursor on (score, id)     10000    10000      0      18     2100
 
 **Tihomir:** An offset is a count of rows from the top, and the top moves. A player who climbs above my last page pushes everyone below down one position, so the row that was at index 99 is now at index 100 and I fetch it twice. A player dropping out pulls everyone up one, and the row that would have been at index 100 is now at 99 — I already passed that, so that player is never shown at all. Three hundred and twelve players were in the top 10,000 before I started and after I finished, and appeared on no page.
 
-![Where the duplicates and the skips come from](assets/006/03-drift.png)
+![Where the duplicates and the skips come from](assets/006/03-drift.gif)
 
 **Kwame:** And the cursor?
 

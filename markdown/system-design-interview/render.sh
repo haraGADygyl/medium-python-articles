@@ -34,6 +34,7 @@ diagrams() {
   for src in "$dir"/*.mmd; do
     [[ -e "$src" ]] || continue
     [[ "$src" == *.anim.mmd ]] && continue   # animation-only sources
+    [[ -f "${src%.mmd}.gif" ]] && continue    # published as a GIF, no PNG
     found=1
     npx -y @mermaid-js/mermaid-cli -i "$src" -o "${src%.mmd}.png" \
       -b white -p "$PCONF" >/dev/null 2>&1
