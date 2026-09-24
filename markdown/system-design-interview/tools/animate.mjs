@@ -116,6 +116,13 @@ if (box.kind && box.kind.startsWith("flowchart")) {
     document.querySelectorAll(
       ".messageText, .noteText, .sequenceNumber, " +
       "line[marker-start*='sequencenumber']").forEach(attach);
+    // A `rect` highlight block belongs with the first step drawn inside it, so
+    // it appears together with its contents rather than as an empty band.
+    document.querySelectorAll("rect.rect").forEach((el) => {
+      const blockTop = top(el);
+      const first = events.find((ev) => ev.y >= blockTop - 1);
+      (first || events[events.length - 1]).els.push(el);
+    });
     window.__events = events.map((ev) => ev.els);
     return events.length;
   });
