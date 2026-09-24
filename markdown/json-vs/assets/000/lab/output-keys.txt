@@ -1,0 +1,3 @@
+top-level key strings, 50000 records x 11 keys
+  one json.loads over the array          11
+  one json.loads per line           550,000

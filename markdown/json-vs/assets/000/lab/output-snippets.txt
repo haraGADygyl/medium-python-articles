@@ -1,0 +1,11 @@
+1286 1285
+[{ }]
+3
+JSONDecodeError: Extra data: line 2 column 1 (char 428)
+--- stream
+1
+--- append
+4 4
+--- u2028
+1 2
+{"notes": "a\u2028b"}

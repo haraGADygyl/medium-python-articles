@@ -1,0 +1,14 @@
+50000 buoy records, best of 5, Python 3.12.3
+
+file               bytes     gzip -9     zstd -3
+buoy.json     20,790,509   1,872,392   2,344,331
+buoy.jsonl    20,790,508   1,872,391   2,344,851
+
+reader                       first record ms  all records ms  peak extra MB  failed QC
+json.load, whole array                317.95           323.3          121.7      3,947
+jsonl, list of all lines              472.50           479.8          145.1      3,947
+jsonl, one line at a time               0.04           306.1            0.2      3,947
+
+append one record to the 50000-record file
+  buoy.json      596.132 ms    20,790,874 bytes written
+  buoy.jsonl       0.102 ms           365 bytes written

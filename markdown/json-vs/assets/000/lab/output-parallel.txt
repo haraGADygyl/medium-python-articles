@@ -1,0 +1,5 @@
+50000 records, 12 CPUs, best of 5, including process start-up
+  1 worker      358.3 ms   1.0x  failed QC 3,947
+  2 workers     199.6 ms   1.8x  failed QC 3,947
+  4 workers     124.2 ms   2.9x  failed QC 3,947
+  6 workers     103.1 ms   3.5x  failed QC 3,947

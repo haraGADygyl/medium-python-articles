@@ -1,0 +1,12 @@
+writer killed halfway through record 30,000 of 50,000
+  buoy.json   JSONDecodeError: Unterminated string starting at; 0 records usable
+  buoy.jsonl  29,999 records usable; 1 bad line: line 30000: Unterminated string starting at at column 198
+
+writer killed right after a newline, 29,999 records in
+  buoy.json   JSONDecodeError: Expecting ',' delimiter
+  buoy.jsonl  29,999 records usable, 0 errors - nothing says 20,001 are missing
+
+a note containing U+2028 LINE SEPARATOR, ensure_ascii=False
+  split('\n')   -> 1 line
+  splitlines()  -> 2 lines
+  JSONDecodeError: Unterminated string starting at
