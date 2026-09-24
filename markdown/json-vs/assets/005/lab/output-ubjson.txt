@@ -1,0 +1,20 @@
+50000 buoy records, best of 5, py-ubjson 0.16.1 (C extension: True)
+
+format                  bytes     gzip -9     zstd -3  encode ms  decode ms  round-trips
+JSON               20,790,509   1,872,392   2,344,331      238.7      270.6  True
+UBJSON             19,473,955   2,454,353   2,418,558      249.9      248.8  True
+UBJSON, counts     20,073,842   2,516,449   2,477,044      241.0      242.6  True
+UBJSON, float32    18,274,267   2,085,731   2,269,700      243.4      254.2  False
+MessagePack        17,264,785   2,447,545   2,381,288       98.4      195.0  True
+CBOR               17,319,710   2,453,313   2,384,765      297.3      292.3  True
+
+change against JSON (negative = bigger)
+  UBJSON           raw    6.3%   gzip  -31.1%   zstd   -3.2%
+  UBJSON, counts   raw    3.4%   gzip  -34.4%   zstd   -5.7%
+  UBJSON, float32  raw   12.1%   gzip  -11.4%   zstd    3.2%
+  MessagePack      raw   17.0%   gzip  -30.7%   zstd   -1.6%
+  CBOR             raw   16.7%   gzip  -31.0%   zstd   -1.7%
+
+no_float32=False: 275,775 of 300,000 floats came back different
+  worst latitude error 1.91e-06 degrees = 21.2 cm
+  e.g. 13.12 -> 13.119999885559082

@@ -1,0 +1,11 @@
+427 401
+b'{U\x0eobservation_idL\x00 \x00\x00\x00\x00\x00\x01U\x07buoy_idSU\x05NE'
+True
+--- float32
+377 13.119999885559082
+--- typed array
+434 574 518
+True
+--- edges
+b'Z' None
+b'HU\x1418446744073709551616'
