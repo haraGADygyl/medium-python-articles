@@ -1,0 +1,28 @@
+PostgreSQL 18.0 (Debian 18.0-1.pgdg13+3), 50000 buoy records, best of 5, parallel query off
+
+load: INSERT ... SELECT line::<type> FROM raw
+  json      164.4 ms
+  jsonb     428.3 ms
+
+storage        table bytes  avg doc bytes
+raw             23,240,704            419
+obs_json        23,142,400            419
+obs_jsonb       31,023,104            566
+
+query                        json ms  jsonb ms   result
+count failed QC                137.0      14.4   3947
+avg wave height per buoy       278.9      69.5   3.852
+sensors, the last key          157.8      15.8   149941
+NE-08 and failed QC            160.0      13.4   662
+whole document as text          49.0     160.9   20740508  (jsonb: 22790154)
+
+containment, jsonb only: doc @> '{"buoy_id": "NE-08", "qc_passed": false}'
+  seq scan                      14.0 ms   662
+  gin jsonb_ops                  1.5 ms   662   index 18,513,920 bytes, built in 1409 ms, used: True
+  gin jsonb_path_ops             0.9 ms   662   index 12,533,760 bytes, built in 464 ms, used: True
+
+expression index on doc->>'buoy_id', works for both types
+  obs_json                     24.4 ms   662   used: True
+  obs_jsonb                     4.1 ms   662   used: True
+
+json @>: UndefinedFunction: operator does not exist: json @> unknown

@@ -1,0 +1,32 @@
+                          as_json                          
+-----------------------------------------------------------
+ {"buoy_id": "NE-08",  "notes": null, "buoy_id": "HB-214"}
+
+               as_jsonb               
+--------------------------------------
+ {"notes": null, "buoy_id": "HB-214"}
+
+                                   as_jsonb                                   
+------------------------------------------------------------------------------
+ {"samples": 2000, "wave_height_m": 3.50, "observation_id": 9007199254740993}
+
+       as_json       
+---------------------
+ {"notes": "\u0000"}
+
+ERROR:  unsupported Unicode escape sequence
+LINE 1: SELECT '{"notes": "\u0000"}'::jsonb AS as_jsonb;
+               ^
+DETAIL:  \u0000 cannot be converted to text.
+CONTEXT:  JSON data, line 1: {"notes": "\u0000...
+ERROR:  unsupported Unicode escape sequence
+DETAIL:  \u0000 cannot be converted to text.
+CONTEXT:  JSON data, line 1: {"notes": "\u0000...
+ jsonb_equal 
+-------------
+ t
+
+ERROR:  operator does not exist: json = json
+LINE 1: SELECT '{"buoy_id": "NE-08"}'::json = '{"buoy_id": "NE-08"}'...
+                                            ^
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.

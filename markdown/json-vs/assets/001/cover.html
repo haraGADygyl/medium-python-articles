@@ -1,0 +1,94 @@
+<!doctype html>
+<meta charset="utf-8">
+<!--
+  Cover template for the "JSON vs." series.
+
+  Everything outside the BODY SLOT is fixed: eyebrow, palette, rule, kicker and
+  footer positions are what make the covers read as a set in a Medium feed.
+
+  To make a cover: copy to assets/NNN/cover.html, fill the slots marked EDIT,
+  keep ONE body variant, delete the other two, then ./render.sh cover NNN
+-->
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:1500px; height:750px; }
+  body {
+    background:#10131a;
+    font-family:'Liberation Sans','DejaVu Sans',sans-serif;
+    color:#e6edf3;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:0 100px; position:relative; overflow:hidden;
+  }
+  /* ---- fixed series identity ------------------------------------------ */
+  .glow { position:absolute; right:-200px; top:-220px; width:820px; height:820px;
+          border-radius:50%;
+          background:radial-gradient(circle,rgba(242,184,75,.16) 0%,transparent 66%); }
+  .eyebrow {
+    position:absolute; top:56px; left:100px;
+    font-size:21px; font-weight:700; letter-spacing:4.5px;
+    color:#6e7681; text-transform:uppercase;
+  }
+  .eyebrow b { color:#f2b84b; font-weight:700; }
+  .rule { height:2px; background:#22262e; margin-bottom:34px; }
+  .kicker { font-size:46px; font-weight:700; letter-spacing:-.8px; line-height:1.14; }
+  .kicker em { color:#f2b84b; font-style:normal; }
+  .foot { margin-top:22px; font-size:24px; color:#6e7681;
+          display:flex; gap:16px; align-items:center; }
+  .dot { width:6px; height:6px; border-radius:50%; background:#30363d; }
+
+  /* ---- body variants --------------------------------------------------- */
+  .cols { display:flex; align-items:center; margin-bottom:64px; }
+  .col { flex:1; display:flex; align-items:center; gap:30px; }
+  .col.right { padding-left:60px; border-left:2px solid #22262e; }
+  .num { font-family:'DejaVu Sans Mono','Liberation Mono',monospace;
+         font-size:170px; line-height:.86; letter-spacing:-6px; font-weight:700; }
+  .num.ok  { color:#7d8590; }
+  .num.bad { color:#f2b84b; text-shadow:0 0 60px rgba(242,184,75,.40); }
+  .lbl { font-size:33px; font-weight:700; line-height:1.26; max-width:330px; }
+  .col.left  .lbl { color:#7d8590; }
+  .col.right .lbl { color:#e6edf3; }
+
+  .hero { display:flex; align-items:center; gap:56px; margin-bottom:64px; }
+  .hero .num { font-size:210px; }
+  .hero .lbl { max-width:720px; color:#e6edf3; font-size:38px; }
+
+  .duel { display:flex; align-items:baseline; gap:34px; margin-bottom:64px;
+          flex-wrap:wrap; }
+  .duel .a { font-size:118px; font-weight:700; color:#7d8590;
+             letter-spacing:-3px; }
+  .duel .v { font-size:54px; font-weight:700; color:#6e7681; }
+  .duel .b { font-size:118px; font-weight:700; color:#f2b84b;
+             letter-spacing:-3px; }
+</style>
+
+<div class="glow"></div>
+<!-- EDIT 1: the matchup and the series number (published order, not filename) -->
+<div class="eyebrow">JSON vs. JSONB &nbsp;·&nbsp; <b>No.&nbsp;02</b></div>
+
+<!-- ============ BODY SLOT — keep exactly one of the three ============== -->
+
+<!-- VARIANT A: two-number contrast. The default when the article has a measured
+     reversal or a before/after pair. -->
+<div class="cols">
+  <div class="col left">
+    <div class="num ok">34%</div>
+    <div class="lbl">more disk,<br>2.6× slower load</div>
+  </div>
+  <div class="col right">
+    <div class="num bad">12×</div>
+    <div class="lbl">faster to<br>query a field</div>
+  </div>
+</div>
+
+
+<!-- ==================================================================== -->
+
+<div class="rule"></div>
+<!-- EDIT 2: the kicker. One line, states the claim, <em> wraps accent words. -->
+<div class="kicker">Parse once on write, not on every read</div>
+<!-- EDIT 3: the footer. Library and version, test conditions, series claim. -->
+<div class="foot">
+  <span>PostgreSQL 18.0</span><span class="dot"></span>
+  <span>50,000 records</span><span class="dot"></span>
+  <span>measured, not assumed</span>
+</div>
