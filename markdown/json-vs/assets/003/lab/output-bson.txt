@@ -1,0 +1,15 @@
+50000 buoy records, best of 5, pymongo bson C extension: True
+
+format                             bytes     gzip -9     zstd -3  encode ms  decode ms
+JSON, one line per record     20,790,508   1,872,391   2,344,851      382.2      442.0
+BSON, one doc per record      21,395,685   2,577,281   2,771,405      143.4      268.2
+BSON, recorded_at datetime    20,295,685   2,642,678   2,839,581
+MessagePack, per record       17,264,782   2,447,543   2,381,232
+CBOR, per record              17,319,707   2,453,317   2,384,784
+  BSON vs JSON: raw +2.9%, gzip +37.6%, zstd +18.2%
+  BSON typed vs JSON: raw -2.4%, gzip +41.1%, zstd +21.1%
+
+count failed QC across all 50,000 documents
+  json.loads each line                 315.5 ms   3,947
+  bson.decode each document            171.9 ms   3,947
+  RawBSONDocument, one field           254.7 ms   3,947

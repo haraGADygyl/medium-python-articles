@@ -1,0 +1,10 @@
+427 439
+b'\xb7\x01\x00\x00\x12observation_id\x00\x01\x00\x00\x00'
+b'-\x00\x00\x00\x04tags\x00"\x00\x00\x00\x020\x00\x04\x00\x00\x00gps\x00\x021\x00\x0b\x00\x00\x00thermistor\x00\x00\x00'
+--- walk
+1 129 439
+228
+--- types
+2026-02-11 04:15:30.123000+00:00
+True
+OverflowError: MongoDB can only handle up to 8-byte ints
