@@ -1,0 +1,9 @@
+{
+  "name": "sdi-diagram-tools",
+  "private": true,
+  "type": "module",
+  "description": "Animated GIF export for System Design Interview diagrams",
+  "dependencies": {
+    "puppeteer-core": "24.10.0"
+  }
+}
