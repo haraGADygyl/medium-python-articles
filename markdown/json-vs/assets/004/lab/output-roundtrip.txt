@@ -1,0 +1,66 @@
+--- original: 17 lines, 5 comments
+// Ingest settings for the north-east harbour buoys.
+{
+  fleet: 'north-east',
+  buoys: ['NE-07', 'NE-08'],  // HB-214 and HB-215 moved to the south fleet
+  poll_interval_s: 600,       // matches the modem's ten-minute wake cycle
+  wave_alarm_m: 5.5,
+  battery_floor_v: 11.8,
+  sensor_mask: 0x0F,          // accelerometer | thermistor | anemometer | gps
+  max_gust_ms: Infinity,      // no cap until the new anemometers arrive
+  drift_tolerance_deg: .002,
+  maintenance_note: 'Recalibrate the thermistors \
+after the winter swap.',
+  retry: {
+    attempts: 3,
+    backoff_s: [5, 30, 120,],
+  },
+}
+--- Python json5.dumps(indent=2, quote_keys=False): 22 lines, 0 comments
+{
+  fleet: "north-east",
+  buoys: [
+    "NE-07",
+    "NE-08",
+  ],
+  poll_interval_s: 900,
+  wave_alarm_m: 5.5,
+  battery_floor_v: 11.8,
+  sensor_mask: 15,
+  max_gust_ms: Infinity,
+  drift_tolerance_deg: 0.002,
+  maintenance_note: "Recalibrate the thermistors after the winter swap.",
+  retry: {
+    attempts: 3,
+    backoff_s: [
+      5,
+      30,
+      120,
+    ],
+  },
+}
+--- Python pyjson5.dumps: 1 lines, 0 comments
+{"fleet":"north-east","buoys":["NE-07","NE-08"],"poll_interval_s":900,"wave_alarm_m":5.5,"battery_floor_v":11.8,"sensor_mask":15,"max_gust_ms":Infinity,"drift_tolerance_deg":0.002,"maintenance_note":"Recalibrate the thermistors after the winter swap.","retry":{"attempts":3,"backoff_s":[5,30,120]}}
+--- npm json5.stringify(c, null, 2): 22 lines, 0 comments
+{
+  fleet: 'north-east',
+  buoys: [
+    'NE-07',
+    'NE-08',
+  ],
+  poll_interval_s: 900,
+  wave_alarm_m: 5.5,
+  battery_floor_v: 11.8,
+  sensor_mask: 15,
+  max_gust_ms: Infinity,
+  drift_tolerance_deg: 0.002,
+  maintenance_note: 'Recalibrate the thermistors after the winter swap.',
+  retry: {
+    attempts: 3,
+    backoff_s: [
+      5,
+      30,
+      120,
+    ],
+  },
+}

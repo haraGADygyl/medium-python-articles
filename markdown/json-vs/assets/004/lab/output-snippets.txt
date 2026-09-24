@@ -1,0 +1,5 @@
+JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+15 inf
+Recalibrate the thermistors after the winter swap.
+0 22
+['  sensor_mask: 15,', '  max_gust_ms: Infinity,']

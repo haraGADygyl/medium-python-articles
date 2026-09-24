@@ -1,0 +1,10 @@
+config: fleet.json5, 597 bytes, 5 comments
+  Python json.loads         JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+  Python json5 0.15.0       mask=15 gust=inf drift=0.002 note='Recalibrate the thermistors after the winter swap.'
+  Python pyjson5 2.0.1      mask=15 gust=inf drift=0.002 note='Recalibrate the thermistors after the winter swap.'
+  Node JSON.parse           SyntaxError: Unexpected token '/', "// Ingest "... is not valid JSON
+  npm json5 2.2.3           mask=15 gust=inf drift=0.002 note='Recalibrate the thermistors after the winter swap.'
+  npm jsonc-parser 3.3.1    57 errors, first: InvalidSymbol at offset 57
+  jq-1.7                    jq: parse error: Invalid numeric literal at line 1, column 3
+
+3 of 7 parsers read it; they agree: True

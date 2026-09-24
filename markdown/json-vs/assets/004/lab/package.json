@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "description": "Node side of the JSON vs. JSON5 lab",
+  "dependencies": {
+    "json5": "2.2.3",
+    "jsonc-parser": "3.3.1"
+  }
+}

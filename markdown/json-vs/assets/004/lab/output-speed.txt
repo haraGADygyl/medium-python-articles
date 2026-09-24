@@ -1,0 +1,7 @@
+50000 records, 20,790,509 bytes of plain JSON
+parser                           ms  vs json.loads  runs
+Python json.loads             345.7           1.0x  best of 5
+Python pyjson5 2.0.1          386.8           1.1x  best of 5
+Python json5 0.15.0        291759.4         843.9x  best of 1
+Node JSON.parse               111.0           0.3x  best of 5
+npm json5 2.2.3              3095.0           9.0x  best of 1
