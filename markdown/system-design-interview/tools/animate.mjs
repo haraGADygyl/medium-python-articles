@@ -70,8 +70,16 @@ if (box.kind && box.kind.startsWith("flowchart")) {
     if (!edges.length) return 0;
     const dash = (getComputedStyle(edges[0]).strokeDasharray || "9, 5")
       .split(/[ ,]+/).map(parseFloat).filter((n) => !Number.isNaN(n));
-    for (const e of edges) e.style.animation = "none";
-    return dash.reduce((a, b) => a + b, 0);
+    // A 1px dashed edge carries about a third less ink than the solid edges
+    // around it and reads as washed out; thicken the dash and lengthen it
+    // within the same 14px period so the loop timing is unchanged.
+    for (const e of edges) {
+      e.style.animation = "none";
+      e.style.strokeWidth = "2px";
+      e.style.strokeDasharray = "10 4";
+      e.style.setProperty("stroke-dasharray", "10 4", "important");
+    }
+    return 14;
   });
   if (!period) throw new Error("no animated edges: add e1@{ animate: true }");
   for (let i = 0; i < ANT_FRAMES; i++) {
@@ -133,9 +141,14 @@ const evenlyTimed = frames.every((f) => f.seconds === frames[0].seconds);
 const source = evenlyTimed
   ? ["-framerate", String(1 / frames[0].seconds), "-i", join(work, "f%03d.png")]
   : ["-f", "concat", "-safe", "0", "-i", list];
+const PALETTE = process.env.GIF_PALETTE ||
+  "palettegen=max_colors=256:stats_mode=full";
+const DITHER = process.env.GIF_DITHER || "paletteuse=dither=none:diff_mode=rectangle";
+if (process.env.GIF_KEEP_FRAMES) {
+  execFileSync("cp", ["-r", work, process.env.GIF_KEEP_FRAMES]);
+}
 execFileSync("ffmpeg", ["-y", "-loglevel", "error", ...source, "-vf",
-  "split[a][b];[a]palettegen=max_colors=128:stats_mode=full[p];" +
-  "[b][p]paletteuse=dither=none:diff_mode=rectangle",
+  `split[a][b];[a]${PALETTE}[p];[b][p]${DITHER}`,
   "-loop", "0", output]);
 rmSync(work, { recursive: true, force: true });
 console.log(`${box.kind}: ${frames.length} frames -> ${output}`);
