@@ -1,0 +1,18 @@
+timestamp, tag 1             27 B json    6 B cbor   c1 1a 69 8c
+timestamp, tag 0             27 B json   22 B cbor   c0 74 32 30
+128-bit id, tag 2            41 B json   18 B cbor   c2 50 9c 3e
+decimal 13.10, tag 4          7 B json    6 B cbor   c4 82 21 19
+64 raw bytes, type 2         90 B json   66 B cbor   58 40 00 01
+NaN, half float               5 B json    3 B cbor   f9 7e 00
+
+what comes back
+  tag 1:  datetime.datetime(2026, 2, 11, 4, 15, tzinfo=datetime.timezone.utc)
+  tag 2:  True
+  tag 4:  Decimal('13.10')
+  json:   13.1
+
+the offset survives tag 0 and not tag 1
+  tag 0:  2026-02-11 05:15:00+01:00
+  tag 1:  2026-02-11 04:15:00+00:00
+
+strict json on NaN: ValueError: Out of range float values are not JSON compliant: nan

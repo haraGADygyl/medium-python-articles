@@ -1,0 +1,16 @@
+50000 records, key order shuffled in every map; equal: True
+
+json            2876498cb9698832  035dd097dae7b7da  DIFFERENT
+json sort_keys  b02246da1ff677d3  b02246da1ff677d3  same
+cbor            882c8c23791375d6  4b91300fe8c63d13  DIFFERENT
+cbor canonical  1029b58791525153  1029b58791525153  same
+
+300,000 floats; deterministic CBOR stores them as
+  half      24,225    8.1%
+  single         0    0.0%
+  double   275,775   91.9%
+bytes saved against always-double: 145,350
+
+map with an int key and a text key
+  cbor2 canonical=True   a2 61 61 02 19 03 e8 01   (RFC 7049: shorter key first)
+  RFC 8949 core det.     a2 19 03 e8 01 61 61 02   (bytewise: 0x19 < 0x61)

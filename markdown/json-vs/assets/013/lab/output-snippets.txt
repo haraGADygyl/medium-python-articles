@@ -1,0 +1,16 @@
+427 358
+ab 6e 6f 62 73 65 72 76 61 74 69 6f 6e 5f 69 64
+True
+--- tags
+138
+True
+TypeError: Object of type datetime is not JSON serializable
+--- unknown tag
+CBORTag(40001, 'HB-214')
+d9 9c 41 66 48 42 2d 32 31 34
+--- determinism
+True
+344d1563c423 9fd1ce75446d
+f26065666bc1 f26065666bc1
+fb 40 0c 00 00 00 00 00 00
+f9 43 00
