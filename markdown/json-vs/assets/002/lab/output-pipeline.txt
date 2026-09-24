@@ -1,0 +1,10 @@
+50,000 records, record 31,337 has wave_height_m = NaN, 20,790,508 bytes
+correct answer: 49,999 valid readings, mean 3.857750
+
+consumer                      records   mean wave height
+Python json.load               50,000   nan
+Node JSON.parse                     0   SyntaxError: Unexpected token 'N', ..."height_m":NaN,...
+jq 1.7                         50,000   null  (holds 1 NaN internally, prints it as null)
+PHP json_decode                     0   Syntax error
+Node, JSON Lines per line      49,999   skipped line 31338
+PostgreSQL COPY ... jsonb           0   ERROR:  invalid input syntax for type json

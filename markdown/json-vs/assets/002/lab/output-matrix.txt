@@ -1,0 +1,27 @@
+Python 3.12.3, Node v24.20.0, jq-1.7, PHP 8.5.10, PostgreSQL 18.0 (Debian 18.0-1.pgdg13+3)
+
+document written by Python json.dumps:
+  {"wave_height_m":NaN,"wind_gust_ms":Infinity,"battery_v":-Infinity}
+
+reading it
+  Python json.loads       {'wave_height_m': nan, 'wind_gust_ms': inf, 'battery_v': -inf}
+  Python, parse_constant  ValueError: non-finite number NaN in input
+  Node JSON.parse         SyntaxError: Unexpected token 'N', ..."height_m":NaN,"wind_"... is not valid JSON
+  jq 1.7                  {"wave_height_m":null,"wind_gust_ms":1.7976931348623157e+308,"battery_v":-1.7976931348623157e+308}
+  PHP json_decode         NULL / Syntax error
+  PostgreSQL ::jsonb      ERROR:  invalid input syntax for type json
+
+writing NaN, Infinity, -Infinity
+  Python json.dumps       [NaN, Infinity, -Infinity]
+  Python, allow_nan=False ValueError: Out of range float values are not JSON compliant: nan
+  Node JSON.stringify     [null,null,null]
+  jq 1.7                  [null,1.7976931348623157e+308,-1.7976931348623157e+308]
+  PHP json_encode         false / Inf and NaN cannot be JSON encoded
+  PHP, PARTIAL_OUTPUT     [0,0,0]
+  PostgreSQL to_jsonb     ["NaN", "Infinity", "-Infinity"]
+
+a valid document that overflows a double: 1e400
+  Python json.loads       inf -> re-encoded as Infinity
+  Node JSON.parse         Infinity -> re-encoded as null
+  jq 1.7                  1E+400 -> after arithmetic 1.7976931348623157e+308
+  PHP json_decode         INF -> re-encoded as false

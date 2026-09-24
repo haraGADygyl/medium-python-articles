@@ -1,0 +1,10 @@
+{"observation_id": 9007199254772330, "buoy_id": "NE-07", "wave_height_m": NaN, "wind_gust_ms": Infinity, "qc_passed": true}
+ValueError: Out of range float values are not JSON compliant: nan
+--- strict reader
+ValueError: NaN is not a JSON number
+inf
+Infinity
+--- null plus a reason
+{"observation_id": 9007199254772330, "buoy_id": "NE-07", "wave_height_m": null, "wind_gust_ms": null, "qc_passed": true, "faults": {"wave_height_m": "dropout", "wind_gust_ms": "overflow"}}
+--- string sentinels
+nan inf
