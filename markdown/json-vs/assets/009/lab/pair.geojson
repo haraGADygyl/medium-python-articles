@@ -1,0 +1,4 @@
+{"type": "FeatureCollection", "features": [
+ {"type": "Feature", "properties": {"cell_id": "C0000"}, "geometry": {"type": "Polygon", "coordinates": [[[-2.6, 56.9], [-2.55, 56.9], [-2.55, 56.95], [-2.6, 56.95], [-2.6, 56.9]]]}},
+ {"type": "Feature", "properties": {"cell_id": "C0001"}, "geometry": {"type": "Polygon", "coordinates": [[[-2.55, 56.9], [-2.5, 56.9], [-2.5, 56.95], [-2.55, 56.95], [-2.55, 56.9]]]}}
+]}

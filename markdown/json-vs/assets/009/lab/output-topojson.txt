@@ -1,0 +1,19 @@
+160 forecast cells, 14,912 ring vertices, all valid: True
+
+encoding                       bytes   gzip -9   zstd -3  worst error
+GeoJSON                      296,826    59,169    65,145            -
+TopoJSON, no quantization    160,539    42,537    44,740       0.00 m
+TopoJSON, q=1,000,000        122,798    27,136    28,572       0.04 m
+TopoJSON, q=100,000          107,429    22,952    24,693       0.37 m
+TopoJSON, q=10,000            92,123    18,373    20,307       3.69 m
+
+borders: 640 written in GeoJSON (4 per cell), 342 arcs in TopoJSON
+reference implementation, q=100,000: encode 3.5 ms, decode to GeoJSON 0.6 ms (JSON.parse of the GeoJSON: 2.0 ms)
+
+simplify the cells to about 24% of their vertices, then check they still tile the frame
+  shapely, each cell alone        3,623 vertices   gaps + overlaps 30.439 km2
+  topojson-simplify, shared       3,618 vertices   gaps + overlaps 0.000 km2
+
+the payload's 50,000 observations as points
+  GeoJSON                   23,340,549   1,905,078   2,370,374
+  TopoJSON, q=100,000       21,518,358   1,837,799   2,244,267
