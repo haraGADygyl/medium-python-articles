@@ -1,0 +1,10 @@
+# Export settings for the north-east harbour buoys.
+fleet: north-east
+share_with: [GB, NO, DK]      # met offices that receive the feed
+upload_window: 22:30          # UTC, after the evening poll
+firmware: 1.10
+archive_mode: 0640
+compress: on
+station_code: 07031
+commissioned: 2026-02-11
+contact: null

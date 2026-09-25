@@ -1,0 +1,12 @@
+1. aliases: 413 bytes of YAML, 6 levels
+   yaml.safe_load        1.8 ms
+   json.dumps          613.6 ms -> 72,222,220 bytes (174,872x)
+
+2. a duplicated key
+   PyYAML           {'buoy_id': 'HB-214', 'wave_height_m': 3.5}
+   ruamel.yaml      DuplicateKeyError: found duplicate key "buoy_id" with value "HB-214" (original value: "NE-08")
+   json.loads       {'buoy_id': 'HB-214'}
+
+3. a language-specific tag
+   yaml.safe_load   ConstructorError: could not determine a constructor for the tag 'tag:yaml.org,2002:python/object/apply:builtins.sum'
+   yaml.unsafe_load {'checksum': 6}  (builtins.sum was called)

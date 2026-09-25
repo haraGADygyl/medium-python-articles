@@ -1,0 +1,14 @@
+PyYAML 6.0.3 (YAML 1.1), ruamel.yaml 0.19.1 (YAML 1.2), npm yaml 2.9.1 (YAML 1.2)
+
+key             written       PyYAML                          ruamel.yaml                 npm yaml
+fleet           north-east    'north-east'                    'north-east'                'north-east'
+share_with      [GB, NO, DK]  ['GB', False, 'DK']             ['GB', 'NO', 'DK']          ['GB', 'NO', 'DK']
+upload_window   22:30         1350                            '22:30'                     '22:30'
+firmware        1.10          1.1                             1.1                         1.1
+archive_mode    0640          416                             640                         640
+compress        on            True                            'on'                        'on'
+station_code    07031         3609                            7031                        7031
+commissioned    2026-02-11    datetime.date(2026, 2, 11)      datetime.date(2026, 2, 11)  '2026-02-11'
+contact         null          None                            None                        None
+
+5 of 9 keys differ between PyYAML and ruamel.yaml: share_with, upload_window, archive_mode, compress, station_code

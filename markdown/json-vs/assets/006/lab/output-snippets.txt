@@ -1,0 +1,7 @@
+['GB', False, 'DK']
+1350
+1.1
+416
+3609
+<class 'datetime.date'>
+{'share_with': ['GB', 'NO', 'DK'], 'firmware': '1.10'}

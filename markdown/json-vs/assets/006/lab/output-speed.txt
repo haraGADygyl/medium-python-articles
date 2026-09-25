@@ -1,0 +1,10 @@
+50000 records, 20,790,509 bytes of JSON, parsed as YAML
+parser                                   ms  vs json  runs  same data
+Python json.loads                     312.2       1x     5  True
+PyYAML CSafeLoader (libyaml)        16395.5      53x     1  True
+PyYAML safe_load (pure Python)      69380.7     222x     1  True
+ruamel.yaml safe (C)                30378.3      97x     1  True
+Node JSON.parse                       163.9              1
+npm yaml 2.9.1                      10867.4      66x     1  (vs JSON.parse)
+
+the same records written as block-style YAML: 21,685,301 bytes, +4.3% against compact JSON
