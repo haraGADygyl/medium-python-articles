@@ -1,0 +1,11 @@
+50000 buoy records, best of 5, shapely 2.1.2 (GEOS 3.13.1)
+
+format                       bytes     gzip -9     zstd -3
+plain JSON              20,790,509   1,872,392   2,344,331
+GeoJSON collection      23,340,549   1,905,078   2,370,374
+  GeoJSON vs plain: raw +12.3%, gzip +1.7%, zstd +1.1%
+
+observations inside the approach zone
+  plain JSON + json.loads              328.6 ms   6,355
+  GeoJSON + shapely.from_geojson       977.1 ms   6,355
+  GeoJSON + json.loads                 370.0 ms   6,355

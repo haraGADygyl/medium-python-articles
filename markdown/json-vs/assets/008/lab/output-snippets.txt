@@ -1,0 +1,9 @@
+{"type": "Point", "coordinates": [-2.37579, 57.21621]}
+--- swap
+True
+8470
+--- properties
+POINT (-2.37579 57.21621)
+{"type":"Point","coordinates":[-2.37579,57.21621]}
+--- track
+True 3
