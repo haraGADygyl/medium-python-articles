@@ -1,0 +1,14 @@
+50000 buoy records, best of 5
+form                             bytes     gzip -9     zstd -3
+XML                         24,774,079   1,944,654   2,469,774
+JsonML                      25,571,020   1,937,589   2,574,568
+xmltodict JSON              25,566,480   1,926,685   2,455,226
+plain JSON payload          20,790,509   1,872,392   2,344,331
+
+round trip, compared as canonical XML (C14N 2.0): JsonML True, xmltodict True
+
+reading the XML-derived data                   ms
+  ElementTree parse + to_jsonml             992.4
+  json.loads of the JsonML                  208.5
+  xmltodict.parse                          2105.3
+  json.loads of the plain payload           206.8

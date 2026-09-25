@@ -1,0 +1,11 @@
+["observation", {"buoy": "NE-08", "recorded-at": "2026-02-11T00:00:00+00:00"}, ["wave-height", {"unit": "m"}, "3.5"], ["note", "Buoy ", ["ref", {"buoy": "NE-08"}], " drifted ", ["em", "0.4 km"], " off station."]]
+True
+{"ref": {"@buoy": "NE-08"}, "em": "0.4 km", "#text": "Buoy  drifted  off station."}
+False
+dict list
+list
+["sensors", ["sensor", {"tag": "gps"}]]
+3.5
+3.5
+89 103
+Buoy  drifted 0.4 km off station.
