@@ -1,0 +1,8 @@
+http://www.w3.org/ns/sosa/madeBySensor [{'@value': 'NE-08'}]
+http://www.w3.org/ns/sosa/resultTime [{'@type': 'http://www.w3.org/2001/XMLSchema#dateTime', '@value': '2026-02-11T00:00:00+00:00'}]
+https://harbour-buoys.example/terms#significantWaveHeightMetres [{'@value': 3.5}]
+False
+True
+{"buoy_id": "NE-08", "recorded_at": "2026-02-11T00:00:00+00:00", "wave_height_m": 3.5}
+2
+JsonLdError: jsonld.InvalidUrl

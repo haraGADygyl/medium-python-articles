@@ -1,0 +1,12 @@
+50000 buoy records as JSON Lines, PyLD 3.3.0
+form                                 bytes     gzip -9     zstd -3
+plain JSON                      20,790,508   1,872,391   2,344,851   raw   +0.0%  gzip   +0.0%
+JSON-LD, context inline         57,140,508   2,280,875   2,537,368   raw +174.8%  gzip  +21.8%
+JSON-LD, context by URL         24,340,508   1,915,982   2,396,991   raw  +17.1%  gzip   +2.3%
+
+processing the first 1,000 records (context by URL)
+  json.loads                             7.2 ms        7.2 us/record
+  jsonld.expand                        408.7 ms      408.7 us/record
+  context fetched 1,000 times for 1,000 documents
+  jsonld.normalize (URDNA2015)          76.1 ms      761.4 us/record  (100 records)
+  canonical N-Quads: 2,307 bytes per record
