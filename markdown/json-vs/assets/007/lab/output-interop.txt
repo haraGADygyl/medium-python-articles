@@ -1,0 +1,27 @@
+fleet.cson, 13 lines
+  npm cson-parser 4.0.9    {"fleet": "north-east", "share_with": ["GB", "NO", "DK"], "poll_interval_s": 600, "sensor_mask": 15,
+  Python cson 0.8          ParseError: ("expected None, found '* 60'", 161, 4, 
+  CoffeeScript 2.7.0 eval  {"fleet": "north-east", "share_with": ["GB", "NO", "DK"], "poll_interval_s": 600, "sensor_mask": 15,
+  Python json.loads        JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+  Node JSON.parse          SyntaxError: Unexpected token '#', "# Export s"... is not valid JSON
+
+compress: yes
+  npm cson-parser 4.0.9    {"compress": true}
+  Python cson 0.8          ParseError: ("expected ':', found ''", 13, 1, 14)
+  CoffeeScript 2.7.0 eval  {"compress": true}
+poll_interval_s: 10 * 60
+  npm cson-parser 4.0.9    {"poll_interval_s": 600}
+  Python cson 0.8          ParseError: ("expected None, found '* 60'", 20, 1, 2
+  CoffeeScript 2.7.0 eval  {"poll_interval_s": 600}
+label: "NE-#{7 + 1}"
+  npm cson-parser 4.0.9    SyntaxError: Syntax error on line 1, column 8: Unexpected StringWithIn
+  Python cson 0.8          {"label": "NE-#{7 + 1}"}
+  CoffeeScript 2.7.0 eval  {"label": "NE-8"}
+max_gust_ms: Infinity
+  npm cson-parser 4.0.9    SyntaxError: Syntax error on line 1, column 14: Unexpected InfinityLit
+  Python cson 0.8          ParseError: ("expected ':', found ''", 21, 1, 22)
+  CoffeeScript 2.7.0 eval  {"max_gust_ms": "<Infinity>"}
+limit: Math.max(25, 40)
+  npm cson-parser 4.0.9    SyntaxError: Syntax error on line 1, column 8: Unexpected Call
+  Python cson 0.8          ParseError: ("expected ':', found '.max'", 11, 1, 12
+  CoffeeScript 2.7.0 eval  {"limit": 40}

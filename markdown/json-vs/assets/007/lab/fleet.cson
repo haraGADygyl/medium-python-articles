@@ -1,0 +1,13 @@
+# Export settings for the north-east harbour buoys.
+fleet: 'north-east'
+share_with: ['GB', 'NO', 'DK']   # met offices that receive the feed
+poll_interval_s: 10 * 60         # the modem's ten-minute wake cycle
+sensor_mask: 0x0F                # accelerometer | thermistor | anemometer | gps
+compress: yes
+retry:
+  attempts: 3
+  backoff_s: [5, 30, 120]
+maintenance_note: '''
+  Recalibrate the thermistors
+  after the winter swap.
+'''

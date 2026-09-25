@@ -1,0 +1,20 @@
+{
+  "fleet": "north-east",
+  "share_with": [
+    "GB",
+    "NO",
+    "DK"
+  ],
+  "poll_interval_s": 600,
+  "sensor_mask": 15,
+  "compress": true,
+  "retry": {
+    "attempts": 3,
+    "backoff_s": [
+      5,
+      30,
+      120
+    ]
+  },
+  "maintenance_note": "Recalibrate the thermistors\nafter the winter swap."
+}

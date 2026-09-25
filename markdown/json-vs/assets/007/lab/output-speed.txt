@@ -1,0 +1,8 @@
+5000 records, 2,075,743 bytes of JSON read as CSON
+parser                             ms  vs native  runs
+Python json.loads                28.9         1x     5
+Python cson 0.8              143999.5      4975x     1
+Node JSON.parse                  13.9         1x     5
+npm cson-parser 4.0.9          2649.8       191x     3
+CoffeeScript 2.7.0 eval        5983.8       431x     3
+Python cson returned the same data: True

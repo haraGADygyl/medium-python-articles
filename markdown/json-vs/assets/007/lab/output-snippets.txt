@@ -1,0 +1,3 @@
+ParseError: expected None, found '* 60'
+600 True 15
+"Recalibrate the thermistors\nafter the winter swap."
