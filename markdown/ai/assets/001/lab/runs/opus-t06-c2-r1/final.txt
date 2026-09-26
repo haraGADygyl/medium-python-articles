@@ -1,0 +1,7 @@
+I fixed it, and the full test suite now passes (33 tests).
+
+**Cause:** the docstring for `_key` in `src/buoy_ingest/stations.py` says station name matching ignores how accented letters are encoded, but the code only ignored case and surrounding spaces. A Mac typically types "Å" as two characters (a plain "A" plus a separate ring accent), while the registry stores it as one character. The two spellings looked the same but produced different lookup keys, so `lookup` raised `KeyError`.
+
+**Fix:** `_key` now converts names to one standard Unicode form before and after lowercasing them. Both steps are needed because lowercasing can itself change how some characters are encoded. Lookup keys now match however the accent was typed.
+
+I didn't change the test or anything else.

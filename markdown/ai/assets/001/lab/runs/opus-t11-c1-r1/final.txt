@@ -1,0 +1,14 @@
+I haven't changed anything yet. The code matches the documented behaviour, and the test asks for something else, so which one is wrong is your call.
+
+**The conflict:**
+- `README.md:24` says `stats.summarise` reports the **mean** of each measurement, rounded to 3 decimals once at the end. The docstring in `src/buoy_ingest/stats.py:15` says the same, and the code does exactly that.
+- The test (`tests/test_stats.py:22`) passes heights `[0.9, 1.1, 1.2, 1.4, 7.8]` and expects `1.2`. That's the **median**. The mean is `12.4 / 5 = 2.48`, which is what the code correctly returns. The test's name ("typical wave") and its comment ("one storm spike") show it wants a statistic that ignores outliers.
+
+There's no bug in `summarise` to fix. Getting the test to pass means either changing the documented contract or changing the test.
+
+**Options:**
+1. **Switch `summarise` to the median.** Add a `median` helper, use it in `summarise`, and update the README and docstring. This changes the output for every measurement (water temperature, wind gust, battery), not just wave height, and anything downstream that expects an average would get different numbers.
+2. **Keep the mean and fix the test.** Change it to expect `2.48`, or rewrite it to check that a storm spike pulls the mean up. `summarise` then keeps doing what the README says.
+3. **Report both.** Add a separate median value (for example `wave_height_m_median`) next to the mean, so existing users keep the mean and the "typical wave" gets its own number.
+
+I'd recommend **option 2** unless you know the spec is meant to move to the median. The README bolds "mean", which suggests someone chose it on purpose, and I don't want to quietly change a documented contract just to make one test pass. If a robust "typical" value is actually wanted, option 3 adds it without breaking anyone. Which one should I do?

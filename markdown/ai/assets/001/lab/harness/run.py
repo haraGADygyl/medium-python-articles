@@ -52,7 +52,9 @@ def summarise_transcript(events: list[dict]) -> dict:
     result = next((e for e in reversed(events) if e.get("type") == "result"), {})
     tools, bash, blocked = Counter(), [], 0
     for event in events:
-        for block in (event.get("message") or {}).get("content") or []:
+        message = event.get("message")
+        content = message.get("content") if isinstance(message, dict) else None
+        for block in content if isinstance(content, list) else []:
             if not isinstance(block, dict):
                 continue
             if block.get("type") == "tool_use":

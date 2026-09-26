@@ -1,0 +1,7 @@
+The test is fixed, and the full suite now passes (33 tests).
+
+**No conflict with the docs.** The test expects `hour_start` to return the start of the **UTC** hour. The docstring says the same ("The start of the UTC hour containing `moment`"), and so does the README ("`windows.bucket_by_hour` groups readings into UTC hours"). The code was wrong, not the test.
+
+**The bug:** in `src/buoy_ingest/windows.py:13`, `hour_start` set `in_utc = moment` without ever converting to UTC. It then cut the time down to the hour in whatever timezone the reading had. For the Newfoundland (−03:30) reading at 01:10 local (04:40 UTC), it returned 01:00−03:30, which is 04:30 UTC. That's not even on an hour boundary in UTC.
+
+**The fix:** `in_utc = moment.astimezone(timezone.utc)`. The time is now converted to UTC before being cut down to the hour. This also fixes `bucket_by_hour`, which uses `hour_start`, so readings with offsets that aren't whole hours now go into the correct UTC hour.

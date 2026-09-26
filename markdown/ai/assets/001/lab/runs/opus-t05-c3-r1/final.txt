@@ -1,0 +1,5 @@
+I fixed the failing test, and the full suite now passes (33 tests).
+
+**The bug:** `merge_batches` in `src/buoy_ingest/ingest.py` promises to keep "the first copy of each observation," but it only joined the batches together. It created a `seen` set and never used it, so an observation that was sent again showed up twice (`[1, 2, 2, 3]`).
+
+**The fix:** it now checks each observation's `observation_id` against `seen`. The first copy is kept and any later copies are skipped, and the original order is preserved.

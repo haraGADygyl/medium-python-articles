@@ -1,0 +1,14 @@
+diff --git a/src/buoy_ingest/uploader.py b/src/buoy_ingest/uploader.py
+index 8ee3e62..fc55ae4 100644
+--- a/src/buoy_ingest/uploader.py
++++ b/src/buoy_ingest/uploader.py
+@@ -35,8 +35,8 @@ class Uploader:
+         self.new_key = new_key
+ 
+     def send(self, records: Sequence[dict]) -> UploadReceipt:
++        key = self.new_key()
+         for attempt in range(1, self.max_attempts + 1):
+-            key = self.new_key()
+             try:
+                 self.client(records, key)
+                 return UploadReceipt(key, attempt)

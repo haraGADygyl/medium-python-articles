@@ -1,0 +1,39 @@
+diff --git a/src/buoy_ingest/ingest.py b/src/buoy_ingest/ingest.py
+index be75aea..4e4ab14 100644
+--- a/src/buoy_ingest/ingest.py
++++ b/src/buoy_ingest/ingest.py
+@@ -5,6 +5,7 @@ import json
+ import re
+ from collections.abc import Iterable
+ from datetime import datetime, timezone
++from decimal import Decimal, InvalidOperation
+ 
+ from .models import Observation, ParseError, Sensor
+ 
+@@ -71,6 +72,17 @@ def read_jsonl(lines: Iterable[str]) -> list[Observation]:
+     return [parse_line(line) for line in lines if line.strip()]
+ 
+ 
++def _csv_id(text: str) -> int:
++    """Parse an observation id exactly; never via float, which loses ids above 2**53."""
++    try:
++        value = Decimal(text.strip())
++    except InvalidOperation as exc:
++        raise ParseError(f"invalid observation_id: {text!r}") from exc
++    if not value.is_finite() or value != value.to_integral_value():
++        raise ParseError(f"invalid observation_id: {text!r}")
++    return int(value)
++
++
+ def parse_csv(text: str) -> list[Observation]:
+     """Parse the legacy CSV export some older buoys still upload.
+ 
+@@ -80,7 +92,7 @@ def parse_csv(text: str) -> list[Observation]:
+     observations = []
+     for row in rows:
+         observations.append(Observation(
+-            observation_id=int(float(row["observation_id"])),
++            observation_id=_csv_id(row["observation_id"]),
+             buoy_id=row["buoy_id"],
+             recorded_at=parse_timestamp(row["recorded_at"]),
+             lat=float(row["lat"]),

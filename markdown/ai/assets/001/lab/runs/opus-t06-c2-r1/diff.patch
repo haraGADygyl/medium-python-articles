@@ -1,0 +1,16 @@
+diff --git a/src/buoy_ingest/stations.py b/src/buoy_ingest/stations.py
+index 676d1de..b2ed050 100644
+--- a/src/buoy_ingest/stations.py
++++ b/src/buoy_ingest/stations.py
+@@ -11,7 +11,10 @@ STATIONS = {
+ 
+ def _key(name: str) -> str:
+     """A comparison key that ignores case and Unicode normalisation form."""
+-    return name.casefold().strip()
++    # Canonical caseless matching: casefold() can itself denormalise, so
++    # normalise on both sides of it.
++    folded = unicodedata.normalize("NFD", name).casefold()
++    return unicodedata.normalize("NFC", folded).strip()
+ 
+ 
+ _INDEX = {_key(name): (name, buoys) for name, buoys in STATIONS.items()}

@@ -1,0 +1,7 @@
+The test passes now, and so does the rest of the suite (33 tests).
+
+**Cause:** `parse_csv` read the ID as `int(float(row["observation_id"]))` (`src/buoy_ingest/ingest.py:83`). A float can't hold every whole number above 2^53, so `9007199254740993` came back as `9007199254740992`. Two different observations could end up with the same ID, and `merge_batches` would then quietly drop one as a duplicate.
+
+**Fix:** it now uses `int(row["observation_id"])`, which keeps every digit. The JSON path in `from_record` already does it this way.
+
+**Side effect:** an ID written with a decimal point, like `"1042.0"`, now raises a `ValueError` where it used to be accepted. No test or sample data uses that format. If some older buoys really do export IDs like that, the parser would need to accept the `.0` form without going through a float.

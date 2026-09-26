@@ -1,0 +1,7 @@
+I fixed it, and the full suite now passes (33 tests).
+
+The test is correct: it matches both the README ("A retried batch carries the same idempotency key, so the feed server applies it once") and the `Uploader` docstring ("A retry must reuse the batch's idempotency key").
+
+**The bug:** `Uploader.send` in `src/buoy_ingest/uploader.py` made a new idempotency key on every attempt. So when the server applied a batch but its acknowledgement timed out, the retry arrived with a different key. The server treated it as a new batch and applied it again, which is why the test saw 4 records applied instead of 2.
+
+**The fix:** `send` now makes the key once per batch, before the retry loop, so every attempt reuses it. I didn't change any tests.
