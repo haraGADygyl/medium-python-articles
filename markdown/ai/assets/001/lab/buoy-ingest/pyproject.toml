@@ -1,0 +1,10 @@
+[project]
+name = "buoy-ingest"
+version = "0.4.0"
+description = "Ingest, check and publish harbour buoy observations"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

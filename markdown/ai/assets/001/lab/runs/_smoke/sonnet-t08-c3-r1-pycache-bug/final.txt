@@ -1,0 +1,3 @@
+`test_ten_knots` passes now, and the full suite is green (33 passed).
+
+The bug was in `src/buoy_ingest/units.py`. `MS_PER_KNOT` was `0.5`, which is wrong. One knot is one nautical mile (1852 m) per hour, so it's 1852/3600 ≈ 0.5144 m/s. I changed the constant to `1852 / 3600`. I didn't touch the test.

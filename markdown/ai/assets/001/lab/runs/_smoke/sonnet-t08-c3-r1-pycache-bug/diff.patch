@@ -1,0 +1,88 @@
+diff --git a/src/buoy_ingest/__pycache__/__init__.cpython-312.pyc b/src/buoy_ingest/__pycache__/__init__.cpython-312.pyc
+new file mode 100644
+index 0000000..3210b0d
+Binary files /dev/null and b/src/buoy_ingest/__pycache__/__init__.cpython-312.pyc differ
+diff --git a/src/buoy_ingest/__pycache__/export.cpython-312.pyc b/src/buoy_ingest/__pycache__/export.cpython-312.pyc
+new file mode 100644
+index 0000000..1066085
+Binary files /dev/null and b/src/buoy_ingest/__pycache__/export.cpython-312.pyc differ
+diff --git a/src/buoy_ingest/__pycache__/ingest.cpython-312.pyc b/src/buoy_ingest/__pycache__/ingest.cpython-312.pyc
+new file mode 100644
+index 0000000..89e0b85
+Binary files /dev/null and b/src/buoy_ingest/__pycache__/ingest.cpython-312.pyc differ
+diff --git a/src/buoy_ingest/__pycache__/models.cpython-312.pyc b/src/buoy_ingest/__pycache__/models.cpython-312.pyc
+new file mode 100644
+index 0000000..6159eb6
+Binary files /dev/null and b/src/buoy_ingest/__pycache__/models.cpython-312.pyc differ
+diff --git a/src/buoy_ingest/__pycache__/qc.cpython-312.pyc b/src/buoy_ingest/__pycache__/qc.cpython-312.pyc
+new file mode 100644
+index 0000000..3999230
+Binary files /dev/null and b/src/buoy_ingest/__pycache__/qc.cpython-312.pyc differ
+diff --git a/src/buoy_ingest/__pycache__/stations.cpython-312.pyc b/src/buoy_ingest/__pycache__/stations.cpython-312.pyc
+new file mode 100644
+index 0000000..86b5c48
+Binary files /dev/null and b/src/buoy_ingest/__pycache__/stations.cpython-312.pyc differ
+diff --git a/src/buoy_ingest/__pycache__/stats.cpython-312.pyc b/src/buoy_ingest/__pycache__/stats.cpython-312.pyc
+new file mode 100644
+index 0000000..bf0e940
+Binary files /dev/null and b/src/buoy_ingest/__pycache__/stats.cpython-312.pyc differ
+diff --git a/src/buoy_ingest/__pycache__/units.cpython-312.pyc b/src/buoy_ingest/__pycache__/units.cpython-312.pyc
+new file mode 100644
+index 0000000..7be8127
+Binary files /dev/null and b/src/buoy_ingest/__pycache__/units.cpython-312.pyc differ
+diff --git a/src/buoy_ingest/__pycache__/uploader.cpython-312.pyc b/src/buoy_ingest/__pycache__/uploader.cpython-312.pyc
+new file mode 100644
+index 0000000..2e4bb1c
+Binary files /dev/null and b/src/buoy_ingest/__pycache__/uploader.cpython-312.pyc differ
+diff --git a/src/buoy_ingest/__pycache__/windows.cpython-312.pyc b/src/buoy_ingest/__pycache__/windows.cpython-312.pyc
+new file mode 100644
+index 0000000..76d9336
+Binary files /dev/null and b/src/buoy_ingest/__pycache__/windows.cpython-312.pyc differ
+diff --git a/src/buoy_ingest/units.py b/src/buoy_ingest/units.py
+index 71ec7fa..d091132 100644
+--- a/src/buoy_ingest/units.py
++++ b/src/buoy_ingest/units.py
+@@ -1,6 +1,6 @@
+ """Unit conversions for readings from older buoy firmware."""
+ 
+-MS_PER_KNOT = 0.5
++MS_PER_KNOT = 1852 / 3600  # one nautical mile (1852 m) per hour
+ 
+ 
+ def knots_to_ms(knots: float) -> float:
+diff --git a/tests/__pycache__/conftest.cpython-312-pytest-9.1.1.pyc b/tests/__pycache__/conftest.cpython-312-pytest-9.1.1.pyc
+new file mode 100644
+index 0000000..20d9403
+Binary files /dev/null and b/tests/__pycache__/conftest.cpython-312-pytest-9.1.1.pyc differ
+diff --git a/tests/__pycache__/test_export.cpython-312-pytest-9.1.1.pyc b/tests/__pycache__/test_export.cpython-312-pytest-9.1.1.pyc
+new file mode 100644
+index 0000000..f37a019
+Binary files /dev/null and b/tests/__pycache__/test_export.cpython-312-pytest-9.1.1.pyc differ
+diff --git a/tests/__pycache__/test_ingest.cpython-312-pytest-9.1.1.pyc b/tests/__pycache__/test_ingest.cpython-312-pytest-9.1.1.pyc
+new file mode 100644
+index 0000000..95d07f4
+Binary files /dev/null and b/tests/__pycache__/test_ingest.cpython-312-pytest-9.1.1.pyc differ
+diff --git a/tests/__pycache__/test_qc.cpython-312-pytest-9.1.1.pyc b/tests/__pycache__/test_qc.cpython-312-pytest-9.1.1.pyc
+new file mode 100644
+index 0000000..ef8132c
+Binary files /dev/null and b/tests/__pycache__/test_qc.cpython-312-pytest-9.1.1.pyc differ
+diff --git a/tests/__pycache__/test_stations.cpython-312-pytest-9.1.1.pyc b/tests/__pycache__/test_stations.cpython-312-pytest-9.1.1.pyc
+new file mode 100644
+index 0000000..f301f73
+Binary files /dev/null and b/tests/__pycache__/test_stations.cpython-312-pytest-9.1.1.pyc differ
+diff --git a/tests/__pycache__/test_stats.cpython-312-pytest-9.1.1.pyc b/tests/__pycache__/test_stats.cpython-312-pytest-9.1.1.pyc
+new file mode 100644
+index 0000000..f19009f
+Binary files /dev/null and b/tests/__pycache__/test_stats.cpython-312-pytest-9.1.1.pyc differ
+diff --git a/tests/__pycache__/test_units.cpython-312-pytest-9.1.1.pyc b/tests/__pycache__/test_units.cpython-312-pytest-9.1.1.pyc
+new file mode 100644
+index 0000000..fc70d42
+Binary files /dev/null and b/tests/__pycache__/test_units.cpython-312-pytest-9.1.1.pyc differ
+diff --git a/tests/__pycache__/test_uploader.cpython-312-pytest-9.1.1.pyc b/tests/__pycache__/test_uploader.cpython-312-pytest-9.1.1.pyc
+new file mode 100644
+index 0000000..5d301e7
+Binary files /dev/null and b/tests/__pycache__/test_uploader.cpython-312-pytest-9.1.1.pyc differ
+diff --git a/tests/__pycache__/test_windows.cpython-312-pytest-9.1.1.pyc b/tests/__pycache__/test_windows.cpython-312-pytest-9.1.1.pyc
+new file mode 100644
+index 0000000..c756587
+Binary files /dev/null and b/tests/__pycache__/test_windows.cpython-312-pytest-9.1.1.pyc differ

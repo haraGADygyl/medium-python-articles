@@ -1,0 +1,12 @@
+diff --git a/src/buoy_ingest/units.py b/src/buoy_ingest/units.py
+index 71ec7fa..d091132 100644
+--- a/src/buoy_ingest/units.py
++++ b/src/buoy_ingest/units.py
+@@ -1,6 +1,6 @@
+ """Unit conversions for readings from older buoy firmware."""
+ 
+-MS_PER_KNOT = 0.5
++MS_PER_KNOT = 1852 / 3600  # one nautical mile (1852 m) per hour
+ 
+ 
+ def knots_to_ms(knots: float) -> float:
