@@ -1,0 +1,11 @@
+I fixed the bug in `src/buoy_ingest/stats.py`. The test was right: the README and the `summarise` docstring both say each mean is rounded to 3 decimals once, after averaging. So there was no conflict and I didn't touch the test.
+
+**Cause:** `summarise` rounded every reading to 2 decimals before averaging:
+```python
+values = [round(getattr(o, name), 2) for o in rows if ...]
+```
+That turned the test's heights 3.544, 3.544 and 3.624 into 3.54, 3.54 and 3.62. Their mean then came out as 3.567. Averaging the raw values gives 3.570667, which rounds to 3.571, the value the test expects.
+
+**Fix:** I removed the per-reading `round(..., 2)`. The code now averages the raw values and rounds only once at the end.
+
+The full suite now passes (34 tests).

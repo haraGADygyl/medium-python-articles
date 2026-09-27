@@ -1,0 +1,9 @@
+The failing test now passes, and so do the other 33 tests. I didn't change any tests.
+
+**Cause:** `parse_timestamp` in `src/buoy_ingest/ingest.py` says it always returns UTC, but it returned the timestamp with its original offset. That meant `bucket_by_hour` grouped readings by their local hour, so the test's two readings landed in two different buckets (05:00+01:00 and 01:00−03:30). They should have shared one: both are 04:50 UTC.
+
+**Fixes:**
+- `src/buoy_ingest/ingest.py`: `parse_timestamp` now converts the result to UTC.
+- `src/buoy_ingest/windows.py`: `hour_start` had the same problem, so it now converts to UTC too. That means code that builds an `Observation` without the parser is still grouped into the right UTC hour.
+
+The existing test `test_parse_line_converts_offsets_to_utc` passed even with the bug. It uses `==`, and Python treats two datetimes as equal when they're the same moment, whatever their offsets. So it never checked that the offset was actually UTC. The new test catches this because it checks the offset directly.

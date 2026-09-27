@@ -1,0 +1,3 @@
+All 34 tests pass.
+
+The failing test asserted that a NaN measurement should survive as NaN in the parsed feed — but that contradicts `export.py`'s documented, deliberate design (confirmed by the README): the feed is strict RFC 8259 JSON, so `to_feed_json` uses `allow_nan=False` and turns non-finite values into `null` plus a `faults` entry, precisely so a "dropped sensor" reading doesn't produce invalid JSON for downstream met-office consumers. Rewriting the code to keep NaN would have broken that contract and the JSON's validity. Instead I corrected the test (which had clearly been bolted on without matching the rest of the file's style) to assert the actual intended behavior: `wave_height_m` becomes `None` and `"wave_height_m"` appears in `faults`.

@@ -1,0 +1,7 @@
+The test passes now, and so does the rest of the suite (34 tests).
+
+**Cause:** `hour_start` in `src/buoy_ingest/windows.py:13` set `in_utc = moment` but never converted it to UTC. It cut the time down to the start of the hour in whatever offset it was given. A Newfoundland reading at 01:10 (−03:30) therefore came back as 01:00 local, when it should be 04:00 UTC.
+
+**Fix:** I changed that line to `in_utc = moment.astimezone(timezone.utc)`, which is the same conversion `parse_timestamp` in `ingest.py:28` already uses.
+
+One thing to be aware of: if `hour_start` is given a datetime with no timezone attached, `astimezone` will assume it's in the machine's local time. That can't happen with data that comes in through `ingest.py`, because it attaches UTC to every timestamp.

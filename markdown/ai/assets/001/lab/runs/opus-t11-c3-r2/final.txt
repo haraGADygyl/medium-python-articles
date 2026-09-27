@@ -1,0 +1,13 @@
+I haven't changed anything. This test contradicts the documented behaviour, so passing it means changing either the spec or the test, and that's your call.
+
+**The conflict:**
+- `README.md:24` says `stats.summarise` reports the **mean** of each measurement, and the docstring at `src/buoy_ingest/stats.py:15` says the same.
+- For heights `[0.9, 1.1, 1.2, 1.4, 7.8]` the mean is 12.4 / 5 = **2.48**. That's what the code returns, so it's doing what the spec says.
+- The test expects **1.2**, which is the **median**. The test's name ("the typical wave") and the storm-spike comment suggest someone wants a result that one outlier can't drag up.
+
+**Ways to fix it:**
+1. **Switch `summarise` to the median** (my recommendation if outlier resistance is what you want). This is a small code change plus a README/docstring update, and I'd need to check that the 3-decimal rounding rule still holds. It affects all four measurements, not just wave height, and changes what the met-office feed reports, so anyone who reads those numbers should know.
+2. **Use the median for wave height only.** Keep the mean for temperature, gust and battery, and document the exception.
+3. **Keep the mean and change the test** to expect 2.48 (or delete it). There's a `.claude/hooks/protect_tests.py` hook in the repo, so editing tests is probably off-limits unless you do it yourself.
+
+Which do you want? If it's 1 or 2, I'll make the change and update the README and docstring to match.

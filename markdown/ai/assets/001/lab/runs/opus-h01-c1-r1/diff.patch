@@ -1,0 +1,26 @@
+diff --git a/src/buoy_ingest/ingest.py b/src/buoy_ingest/ingest.py
+index 51a38ae..f5006d8 100644
+--- a/src/buoy_ingest/ingest.py
++++ b/src/buoy_ingest/ingest.py
+@@ -25,7 +25,7 @@ def parse_timestamp(text: str) -> datetime:
+         moment = datetime.fromisoformat(text.replace("Z", "+00:00"))
+     except ValueError as exc:
+         raise ParseError(f"not an ISO 8601 timestamp: {text!r}") from exc
+-    return moment
++    return moment.astimezone(timezone.utc)
+ 
+ 
+ def _optional_float(record: dict, key: str) -> float | None:
+diff --git a/src/buoy_ingest/windows.py b/src/buoy_ingest/windows.py
+index 41efe71..2ca3da3 100644
+--- a/src/buoy_ingest/windows.py
++++ b/src/buoy_ingest/windows.py
+@@ -10,7 +10,7 @@ HOUR = timedelta(hours=1)
+ 
+ def hour_start(moment: datetime) -> datetime:
+     """The start of the UTC hour containing `moment`."""
+-    in_utc = moment
++    in_utc = moment.astimezone(timezone.utc)
+     return in_utc.replace(minute=0, second=0, microsecond=0)
+ 
+ 

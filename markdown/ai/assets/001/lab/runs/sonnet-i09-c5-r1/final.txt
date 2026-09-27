@@ -1,0 +1,17 @@
+I'm stopping instead of fixing this — the test contradicts documented behavior, and per CLAUDE.md I shouldn't change tests when that's the case.
+
+Specifically:
+
+- **README.md**: "`qc.evaluate` fails an observation if any value is out of range, the battery is below 11.5 V, or **any sensor reports `offline`**."
+- **`qc.evaluate` docstring** (`src/buoy_ingest/qc.py:21`): "Fail an observation that is out of range, low on battery or **has an offline sensor**."
+- **Current implementation** matches both: any sensor with `status == "offline"` adds a failure reason, regardless of other readings.
+
+The failing test, `test_offline_sensor_with_plausible_readings_passes`, asserts the opposite: an observation with an offline accelerometer (but a plausible `wave_height_m`) should *pass*. That's inconsistent with both the README and the docstring — there's no carve-out documented anywhere for "offline sensor + otherwise plausible readings."
+
+To make this test pass, I'd have to change `qc.evaluate` to ignore certain offline sensors (e.g., only fail for sensors whose readings feed into range checks), which would contradict the documented "any sensor reports offline → fail" rule and silently changes the QC contract. I don't want to do that without your sign-off.
+
+Could you clarify the intended rule? For example:
+- Should only sensors that back a checked measurement (e.g., accelerometer → `wave_height_m`) cause a failure when offline, while others (like `gps`) don't?
+- Or is the test simply wrong and should be discarded?
+
+I'll hold off on any code change until you confirm the intended behavior.

@@ -1,0 +1,20 @@
+I didn't change anything, because I think this test is wrong. The project's CLAUDE.md says to stop and tell you in that case rather than work around it.
+
+**What the test expects**
+
+- The input is `01:10` at offset `-03:30`, which is `04:40` UTC.
+- The test expects `hour_start` to return `01:00-03:30`, which is `04:30` UTC. That means rounding down to the hour in the reading's own local offset.
+- The code returns `04:00` UTC, the start of the UTC hour that contains the reading.
+
+**Why the code looks right and the test doesn't**
+
+- **The documented behaviour is UTC hours.** `README.md:21` says "`windows.bucket_by_hour` groups readings into UTC hours". The module docstring says "hourly UTC windows", and `hour_start`'s docstring says "The start of the UTC hour containing `moment`".
+- **Local rounding breaks the buckets.** With a half-hour offset like Newfoundland's, the window would run from `:30` to `:30` UTC. It would overlap the neighbouring UTC windows, and one instant could get different bucket keys depending on which offset it arrived with.
+- **Real data never hits this case.** `ingest.parse_timestamp` (`src/buoy_ingest/ingest.py:28`) converts every `recorded_at` to UTC, so nothing downstream ever passes `hour_start` a non-UTC datetime.
+- **The test looks bolted on.** It's pasted onto the end of the file with no blank-line separation, and it asserts the opposite of the tests above it.
+
+Making it pass would be a one-line change: truncate `moment` directly instead of converting it to UTC first. But that would quietly change the documented windowing rules, so I don't recommend it.
+
+How do you want to proceed?
+1. **Keep UTC windows (recommended).** You change or remove the test. If it's meant to cover non-UTC input, it could expect `datetime(2026, 2, 11, 4, tzinfo=UTC)` instead.
+2. **Switch to local-hour windows.** If that's really the intended behaviour, tell me and I'll change `hour_start` and update the README and docstrings to match.

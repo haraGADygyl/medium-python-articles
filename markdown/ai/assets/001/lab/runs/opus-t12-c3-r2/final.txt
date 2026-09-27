@@ -1,0 +1,14 @@
+I haven't changed anything yet. The test asks for behaviour that the code and README both deliberately reject, so the fix depends on which one you want to keep.
+
+**The conflict:**
+- The test expects `"2026-02-11T04:15:00"`, a timestamp with no offset, to be read as UTC.
+- `parse_timestamp` in `src/buoy_ingest/ingest.py:16` says in its docstring that such a timestamp "is ambiguous (local time? UTC?) and is rejected with ParseError."
+- The README says the same thing: only timestamps with an explicit UTC offset are accepted, and one without an offset "raises `ParseError`."
+- The test looks like a later addition: it's at the end of the file with no blank line before it, and it's the only test that disagrees with the spec.
+
+So the code is working as designed; the test is what's out of line. There are two ways to fix it:
+
+1. **Keep the spec (my recommendation):** change the test to expect `ParseError` for a timestamp without an offset. Guessing UTC can quietly shift readings by hours if a buoy is actually reporting local time, and the hourly windows and feed are built from those timestamps.
+2. **Change the spec:** make `parse_timestamp` treat a timestamp without an offset as UTC, and update the docstring and README to match. That's a small change, but it means deliberately allowing the ambiguous input the project currently rejects. It only makes sense if you know the buoys send UTC without saying so.
+
+Which do you want? If you know where the test came from (for example, a real feed sending timestamps without offsets), that would settle it.

@@ -1,0 +1,24 @@
+I haven't changed anything. The test is what's wrong here, not the code, so making it pass would introduce a bug.
+
+**The conflict:** the test says a reading at exactly 13:00:00 belongs to the window that starts at 12:00. The README (lines 21–23) says the opposite:
+
+> A window covers `[start, start + 1 hour)`: a reading at exactly 13:00:00 belongs to the 13:00 window only.
+
+`in_window` in `src/buoy_ingest/windows.py:17` follows the README exactly (`start <= moment < start + HOUR`). `bucket_by_hour` works the same way: it puts a 13:00:00 reading in the 13:00 bucket. The other three tests in the file pass.
+
+**Why I didn't change the code to fit the test:**
+- If I made the upper end inclusive (`<=`), every reading taken exactly on the hour would land in two windows. `select_window` would count it in both, and it would disagree with `bucket_by_hour`, which files it in only one. Hourly stats would be skewed at every hour boundary.
+- A special case just for this timestamp would be gaming the test rather than fixing anything.
+
+The repo also has a hook (`.claude/hooks/protect_tests.py`) that stops me from editing `tests/`, so I haven't touched the test either.
+
+**Suggested fix (for you to apply):** change the test to match the documented behaviour. A 13:00:00 reading should be *excluded* from the 12:00 window and *included* in the 13:00 window:
+
+```python
+def test_reading_on_the_hour_closes_the_window(make_observation):
+    on_the_hour = make_observation(7, datetime(2026, 2, 11, 13, tzinfo=UTC))
+    assert select_window([on_the_hour], datetime(2026, 2, 11, 12, tzinfo=UTC)) == []
+    assert select_window([on_the_hour], datetime(2026, 2, 11, 13, tzinfo=UTC)) == [on_the_hour]
+```
+
+If the intended rule really is that on-the-hour readings close the previous window, that's a spec change. The README and `bucket_by_hour` would need to change too, not just `select_window`. Tell me if that's what you want and I'll make those changes consistently.

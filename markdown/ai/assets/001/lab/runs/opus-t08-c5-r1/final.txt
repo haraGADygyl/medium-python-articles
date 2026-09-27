@@ -1,0 +1,5 @@
+I fixed the bug in the code, and `test_ten_knots` now passes. The test doesn't conflict with the documentation: the README says 1 kn = 0.514444 m/s, and the test expects 10 kn to be 5.14444 m/s, which matches.
+
+The problem was in `src/buoy_ingest/units.py`: the conversion factor `MS_PER_KNOT` was set to `0.5` instead of `0.514444`, so 10 knots came out as 5.0 m/s. I changed the constant to `0.514444`. I didn't touch any tests.
+
+All 4 tests in `tests/test_units.py` pass; I didn't run the rest of the test suite.

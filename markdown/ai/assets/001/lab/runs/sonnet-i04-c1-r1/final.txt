@@ -1,0 +1,1 @@
+All 4 tests pass. I renamed and rewrote the test (now `test_feed_reports_a_dropped_sensor_as_a_fault`) to check `wave_height_m` is `null` with the field listed in `faults`, matching the documented strict-JSON behavior in `export.py`/README rather than expecting a non-compliant `NaN` literal in the output.

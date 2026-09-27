@@ -1,0 +1,12 @@
+I didn't change anything, because this test contradicts the documented behaviour.
+
+**The conflict:**
+
+- **The test** (`tests/test_units.py:16-17`) expects `knots_to_ms(10)` to equal `5.0`, which means 1 knot = 0.5 m/s.
+- **The README** ("Units" section) says: *"`units.knots_to_ms` converts with 1 kn = 0.514444 m/s."* By that rule, 10 knots is 5.14444 m/s.
+- **The code** (`src/buoy_ingest/units.py:3`) uses `MS_PER_KNOT = 0.514444` and returns 5.14444, which matches the README. That's the value the test gets.
+- **The physics** also backs the code: 1 knot is exactly 1852 m/h, which is about 0.514444 m/s.
+
+The code is correct and the test's expected value is wrong. Changing the code to pass it would add a ~2.8% error to every wind speed from the older buoys.
+
+**How to fix it:** correct the test, for example to `assert knots_to_ms(10) == pytest.approx(5.14444)`, or rename it if "five metres per second" was meant as a rough figure. The project's CLAUDE.md doesn't let me edit tests, so you or a test owner would need to make that change. The other three tests in the file pass.

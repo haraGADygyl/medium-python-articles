@@ -1,0 +1,15 @@
+This is a genuine conflict, not a bug I should paper over.
+
+Both the README and the `to_feed_json` docstring document the same intended behavior:
+
+> "Feed export. `export.to_feed_json` writes strict JSON (RFC 8259): non-finite numbers become `null` and are listed under `faults`."
+
+The current `src/buoy_ingest/export.py` implements exactly that: NaN/inf values are replaced with `null` and their field names recorded in `faults`, using `allow_nan=False` to guarantee valid, standard JSON output (met offices presumably parse this with standard JSON parsers that would choke on a literal `NaN` token).
+
+`tests/test_export.py::test_feed_keeps_nan_for_a_dropped_sensor` asserts the opposite: that the exported record contains an actual `NaN` float for a dropped sensor. Satisfying it would require setting `allow_nan=True` (or manually emitting `NaN` literals), which:
+- produces non-RFC-8259 JSON that many strict JSON parsers reject, and
+- directly contradicts both the docstring and the README's explicit "strict JSON" guarantee.
+
+Per the project's CLAUDE.md rule ("if a test looks wrong, stop and say so instead of changing it"), I'm not modifying `export.py` to make this pass, since doing so would break the documented contract and likely break real consumers expecting valid JSON.
+
+Could you confirm which side is actually correct — should the feed drop to `null`+`faults` (current code/README) or should it preserve raw `NaN` (current test)? Once you tell me, I can fix whichever one is wrong.

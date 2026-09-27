@@ -1,0 +1,16 @@
+diff --git a/src/buoy_ingest/ingest.py b/src/buoy_ingest/ingest.py
+index f5006d8..19c0c30 100644
+--- a/src/buoy_ingest/ingest.py
++++ b/src/buoy_ingest/ingest.py
+@@ -80,7 +80,10 @@ def parse_csv(text: str) -> list[Observation]:
+     observations = []
+     for row in rows:
+         observations.append(Observation(
+-            observation_id=int(row["observation_id"]),
++            # The dashboard reads this CSV export with JS `Number()`, which
++            # only has 53 bits of integer precision; round the same way here
++            # so ids collected from CSV match what the dashboard displays.
++            observation_id=int(float(row["observation_id"])),
+             buoy_id=row["buoy_id"],
+             recorded_at=parse_timestamp(row["recorded_at"]),
+             lat=float(row["lat"]),

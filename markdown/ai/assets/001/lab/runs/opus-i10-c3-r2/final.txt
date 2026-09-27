@@ -1,0 +1,17 @@
+I didn't change any code. Making this test pass would mean adding a bug, so I stopped to ask you first.
+
+**The problem:** the test gives `parse_csv` the ID `9007199254740993` and expects `9007199254740992` back. That is the value you get when the number is passed through a 64-bit float, the way JavaScript treats numbers. The only way to pass it is to make `parse_csv` do something like `int(float(row["observation_id"]))`, which deliberately loses precision. That breaks the project's own rules:
+
+- **README, "Identifiers":** "Observation ids are 64-bit integers and must survive every ingest path exactly, including ids above 2^53."
+- **Data loss:** `merge_batches` removes duplicates by `observation_id`. If IDs are rounded, two different observations (`…992` and `…993`) end up with the same ID, and one is silently dropped as a "duplicate".
+- **Paths would disagree:** the JSON Lines path (`from_record`) keeps IDs exact. The same observation would get a different ID depending on whether it arrived as CSV or JSON.
+- **The test fixtures expect exact IDs:** the default ID in `tests/conftest.py` is `9007199254740993`, which suggests large IDs are meant to come through unchanged.
+
+`parse_csv` (`src/buoy_ingest/ingest.py:83`) already does the right thing with `int(row["observation_id"])`. The test's name ("round like the dashboard") suggests someone wanted the ingest to copy a JavaScript dashboard's float rounding. If the dashboard shows rounded IDs, that's a bug in the dashboard's display, not something to copy into ingest.
+
+**My recommendation:** change the test so it expects the exact ID (`assert observation.observation_id == 9007199254740993`). I haven't done it myself because a project hook blocks edits under `tests/`.
+
+How do you want to proceed?
+1. Edit the test yourself (or allow the edit) so it checks the exact ID. This is what I recommend.
+2. If there really is a requirement for dashboard-matching IDs, I can add it as a separate display-only field and leave `observation_id` exact.
+3. If you still want IDs rounded at ingest, confirm that you accept the collisions and silent drops described above, and that the README should change.

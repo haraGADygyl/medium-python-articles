@@ -1,0 +1,13 @@
+diff --git a/src/buoy_ingest/stats.py b/src/buoy_ingest/stats.py
+index 053622f..8ddfe86 100644
+--- a/src/buoy_ingest/stats.py
++++ b/src/buoy_ingest/stats.py
+@@ -20,7 +20,7 @@ def summarise(observations: Iterable[Observation]) -> dict[str, float | int | No
+     rows = list(observations)
+     summary: dict[str, float | int | None] = {"count": len(rows)}
+     for name in MEASUREMENTS:
+-        values = [round(getattr(o, name), 2) for o in rows if getattr(o, name) is not None]
++        values = [getattr(o, name) for o in rows if getattr(o, name) is not None]
+         average = mean(values)
+         summary[name] = None if average is None else round(average, 3)
+     return summary

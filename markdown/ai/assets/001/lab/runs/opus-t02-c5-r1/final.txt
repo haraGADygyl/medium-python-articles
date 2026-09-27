@@ -1,0 +1,7 @@
+I fixed it, and the test now passes along with the other three tests in `tests/test_windows.py`. I didn't run the rest of the suite.
+
+**No conflict with the docs:** the test expects UTC hours, which is what the README says ("`windows.bucket_by_hour` groups readings into UTC hours") and what the docstring says ("The start of the UTC hour containing `moment`").
+
+**Bug:** `hour_start` in `src/buoy_ingest/windows.py` never converted the time to UTC. It set `in_utc = moment` and then cut the local time down to the hour. For a reading at 01:10 at a −03:30 offset, it returned 01:00 at −03:30 (04:30 UTC) instead of 04:00 UTC. Any offset that isn't a whole number of hours gave the wrong hour boundary.
+
+**Fix:** one line, `in_utc = moment.astimezone(timezone.utc)`, so the time is converted to UTC before it's cut to the hour. This relies on timestamps always carrying an offset. The README says `parse_line` rejects timestamps without one, so that should hold.

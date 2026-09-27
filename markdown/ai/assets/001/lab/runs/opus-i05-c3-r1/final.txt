@@ -1,0 +1,15 @@
+I haven't changed anything. The test asks for the opposite of the documented behaviour, so making it pass would break the spec.
+
+**The conflict:**
+- `README.md:18-20` says buoys re-send a batch when an upload isn't acknowledged, so the same observation can arrive twice, and `merge_batches` "keeps the first copy of each `observation_id`."
+- The docstring at `src/buoy_ingest/ingest.py:94` says the same thing, and the code does exactly that.
+- The new test expects `[1, 2, 2, 3]`, meaning the re-sent copy of observation 2 is kept. That turns off deduplication, so every retried upload would double-count its readings in anything downstream, such as the stats and hourly windows.
+
+The test also looks like it was added separately: it's placed right against the previous test with no blank line between them, and nothing else in the repo mentions an audit requirement.
+
+**Options:**
+1. **The test is wrong (my recommendation unless you know of an audit requirement):** delete it, or change it to expect `[1, 2, 3]`, which would duplicate the existing test's intent with a re-sent batch.
+2. **You need an audit trail:** keep `merge_batches` deduplicating and add a separate function, e.g. `concat_batches`, that returns every copy. Then point the test at that function.
+3. **Deduplication really should go:** change `merge_batches`, its docstring and the README together. This changes behaviour for everything downstream.
+
+Which one do you want?

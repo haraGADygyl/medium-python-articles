@@ -1,0 +1,12 @@
+I didn't change anything. The test itself looks wrong, and your CLAUDE.md says to stop and tell you in that case rather than force it to pass.
+
+**What the test expects:** it feeds `observation_id` `9007199254740993` (2^53 + 1) through `parse_csv` and expects to get back `9007199254740992`. That's the value you get when a JavaScript dashboard stores the id as a float and loses precision.
+
+**Why that's wrong:**
+- **It contradicts the README:** "Observation ids are 64-bit integers and must survive every ingest path exactly, including ids above 2^53."
+- **It contradicts the neighbouring JSON test:** `test_parse_line_reads_every_field` uses the same id and expects it back unchanged. To pass both tests, CSV and JSON ingest would have to disagree about the same record.
+- **It would corrupt data:** after rounding, 2^53 + 1 and 2^53 map to the same id, so `merge_batches` would treat two different observations as duplicates and silently drop one.
+
+**The current code is correct:** `parse_csv` does `int(row["observation_id"])`, which keeps the id exact. That's why this test fails and the other 8 pass.
+
+I'd suggest deleting the test or changing it to expect `9007199254740993`. If the dashboard really needs float-rounded ids, the rounding belongs in the dashboard's display layer, not in ingest. That's your decision, since I'm not allowed to edit tests here. If the intended behaviour really is to round ids, tell me and we can talk about what that would do to deduplication.

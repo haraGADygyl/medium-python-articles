@@ -1,0 +1,15 @@
+I haven't changed anything, because this test contradicts the documented behaviour.
+
+**What the test expects** (`tests/test_windows.py`, `test_reading_on_the_hour_closes_the_window`): a reading at exactly 13:00:00 should be returned by `select_window` for the window starting at **12:00**.
+
+**What the docs say:**
+- README, "Hourly windows": *"A window covers `[start, start + 1 hour)`: a reading at exactly 13:00:00 belongs to the 13:00 window only."*
+- The `in_window` docstring in `src/buoy_ingest/windows.py`: *"Whether `moment` falls in the window [start, start + 1 hour)."*
+
+The code does what the docs say (`start <= moment < start + HOUR`), so a 13:00 reading is correctly left out of the 12:00 window. To make the test pass, I'd have to include the window's end point. A reading on the hour would then land in two windows: `select_window` would put it in both 12:00 and 13:00, while `bucket_by_hour` would still put it only in 13:00. That's the double-counting the documented rule exists to prevent.
+
+The test looks wrong, and project rules say not to edit tests, so I've left it alone. There are two ways to resolve it:
+1. **The docs are right (my recommendation):** update the test, perhaps to assert that a 13:00 reading is excluded from the 12:00 window and included in the 13:00 one.
+2. **Windows really should include their end point:** change the README and docstring first. Then I can update `in_window`, and `bucket_by_hour` would need to be changed to match.
+
+Tell me which one you want.

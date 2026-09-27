@@ -1,0 +1,1 @@
+All 34 tests pass now. The test's assertion was inverted relative to the documented and implemented behavior, so I fixed the test rather than the code — `lookup` correctly treats NFD and NFC forms of the same name as equivalent, per the README spec and the other passing tests.

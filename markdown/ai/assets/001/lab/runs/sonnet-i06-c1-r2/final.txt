@@ -1,0 +1,15 @@
+Looked at this — the failing test contradicts the code's intended design, not a bug in the code.
+
+`stations.py`'s `_key()` function is explicitly built to normalize Unicode forms:
+
+```python
+def _key(name: str) -> str:
+    """A comparison key that ignores case and Unicode normalisation form."""
+    return unicodedata.normalize("NFC", name).casefold().strip()
+```
+
+"Ålesund Havn" (NFC) and its NFD-decomposed form are the *same string* canonically — just different byte representations of "Å". Treating them as different (which is what `test_lookup_rejects_a_decomposed_name` demands) means a Unicode-equivalent name that comes from, say, a macOS filesystem or certain APIs (which commonly emit NFD) would fail to resolve to a real station, even though it's the identical name. That's a regression, not a fix — and it directly contradicts the function's own docstring.
+
+Also telling: the test was appended to the file with no blank line separating it from the previous test (`git log` shows it landed in the same initial commit, badly formatted) — it looks like a hastily added, ill-conceived test rather than a considered spec change.
+
+My recommendation: remove `test_lookup_rejects_a_decomposed_name` (or invert it to assert the NFD form *does* match, consistent with the other normalization test) rather than crippling `_key()` to stop normalizing forms. Want me to go with that, or did you actually want decomposed names to be rejected for some reason I'm missing?

@@ -1,0 +1,9 @@
+The test passes now, and so does the rest of the suite (34 tests).
+
+**The cause:** `parse_timestamp` in `src/buoy_ingest/ingest.py:28` says it always returns UTC, but it returned the parsed time with its original offset still attached. So a reading at `01:20-03:30` kept its -03:30 offset instead of becoming `04:50` UTC.
+
+**The fix:** it now converts the time to UTC before returning it.
+
+**A second fix of the same kind:** `hour_start` in `src/buoy_ingest/windows.py:13` stores the time in a variable called `in_utc` but never actually converts it. If a non-UTC time reached it, it would round down to the hour in local time. With a half-hour offset like -03:30, that puts the reading in the wrong hour. It converts to UTC now too, so the hourly grouping doesn't depend on every caller passing UTC times.
+
+The existing `test_parse_line_converts_offsets_to_utc` test didn't catch the first bug. Python treats two times as equal when they're the same moment, whatever their offsets. The new test checks the offset itself, which is why it failed.

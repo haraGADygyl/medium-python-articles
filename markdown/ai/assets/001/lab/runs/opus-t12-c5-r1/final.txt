@@ -1,0 +1,30 @@
+I haven't changed anything. The test contradicts the documented behaviour, so I stopped instead of making it pass.
+
+**The conflict**
+
+The test (`tests/test_ingest.py:64`) says a timestamp with no UTC offset, such as `"2026-02-11T04:15:00"`, should be accepted and treated as UTC:
+
+```python
+record = json.loads(LINE) | {"recorded_at": "2026-02-11T04:15:00"}
+observation = parse_line(json.dumps(record))
+assert observation.recorded_at == datetime(2026, 2, 11, 4, 15, tzinfo=timezone.utc)
+```
+
+The README and the code both say that input must be rejected:
+
+- **README, Behaviour → Timestamps:** "`ingest.parse_line` accepts ISO 8601 timestamps **with an explicit UTC offset** only … A timestamp without an offset is ambiguous and raises `ParseError`."
+- **`parse_timestamp` docstring (`src/buoy_ingest/ingest.py:17`):** "A timestamp without an offset is ambiguous (local time? UTC?) and is rejected with ParseError."
+- The `_OFFSET` regex comment (`src/buoy_ingest/ingest.py:11`) also says the offset is mandatory.
+
+The code already does what the README describes. The test fails because `parse_timestamp` raises `ParseError`, exactly as documented. There's no bug in `src/` to fix.
+
+**What it would take to make the test pass**
+
+Changing `parse_timestamp` to assume UTC when the offset is missing would break the documented rule. It would also affect `parse_csv`, which uses the same function. The README explains why the rule exists: a timestamp with no offset could be buoy-local time, and guessing UTC would silently shift readings into the wrong hourly window.
+
+**Options**
+
+1. The test is wrong. Remove it, or change it to expect `pytest.raises(ParseError)`. Under the project rules, a maintainer has to make that edit, not me.
+2. The requirement has really changed. Then the README and the docstrings need updating first, and I can change `parse_timestamp` to match.
+
+Tell me which one you want and I'll go from there.

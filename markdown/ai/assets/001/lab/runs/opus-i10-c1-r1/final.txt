@@ -1,0 +1,12 @@
+I fixed the test rather than the code, because the test was expecting the wrong value. The full suite now passes (34 tests).
+
+**Why the code was already right:** the README says observation ids must come through every ingest path unchanged, including ids above 2^53. `parse_csv` keeps `9007199254740993` exactly, which is correct. The test expected `9007199254740992`, which is what you get after the id has been rounded through a 64-bit float, as a JavaScript dashboard would do.
+
+**Why I didn't change the code to match:** making `parse_csv` round ids would:
+- break the rule in the README,
+- give CSV ids different values than JSONL ids (`test_parse_line_reads_every_field` requires the exact value),
+- make `merge_batches` treat different observations with nearby large ids as duplicates and silently drop them.
+
+**What changed in `tests/test_ingest.py`:** the test now expects `9007199254740993`. I added a comment pointing to the README rule and the missing blank lines before the function.
+
+The test name `test_parse_csv_ids_round_like_the_dashboard` no longer describes what it checks. I left it alone so it still matches the test ID you gave me; renaming it to something like `test_parse_csv_preserves_large_ids` would be clearer. If the dashboard really shows rounded ids, that's a display problem on the dashboard side, and the usual fix is to send ids to it as strings.

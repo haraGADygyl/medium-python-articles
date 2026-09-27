@@ -1,0 +1,18 @@
+I stopped without changing any code. The failing test asks for behaviour that the README and the docstring both rule out, so making it pass would mean breaking the documented contract.
+
+**The conflict**
+
+- **The test** (`tests/test_ingest.py:64-67`) expects `merge_batches` to keep every copy of a re-sent observation. Given batches `[1, 2]` and `[2, 3]`, it expects `[1, 2, 2, 3]`.
+- **The README** ("Duplicates") says buoys re-send a batch when an upload isn't acknowledged, so the same observation can arrive twice, and "`ingest.merge_batches` keeps the first copy of each `observation_id`."
+- **The docstring** (`src/buoy_ingest/ingest.py:94`) says: "Concatenate upload batches, keeping the first copy of each observation."
+- **The code** does what the docs say: it drops any `observation_id` it has already seen and returns `[1, 2, 3]`. The other merge test, `test_merge_batches_keeps_distinct_observations`, passes.
+
+If `merge_batches` kept duplicates, every re-sent reading would be counted twice in the hourly windows and the stats means, which is what the deduplication is there to prevent.
+
+**Ways forward (your call)**
+
+1. **The docs are right (my recommendation):** the test is wrong. Delete it, or change it to expect `[1, 2, 3]`.
+2. **An audit trail of re-sent copies is genuinely needed:** add it as a separate function, e.g. `concat_batches`, or an opt-in flag such as `merge_batches(..., keep_duplicates=True)`. That keeps the default deduplication and lets the audit test cover the new path. The README should be updated to describe it.
+3. **The intended contract has changed:** update the README and docstring first, then the code, and check what that does to `windows` and `stats`.
+
+Tell me which one you want and I'll make the change.

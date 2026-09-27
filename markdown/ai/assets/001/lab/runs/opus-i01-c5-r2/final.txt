@@ -1,0 +1,16 @@
+I haven't changed anything, because this test contradicts both the README and the code's docstrings.
+
+**What the test expects:** `tests/test_windows.py:30-33` puts a reading at exactly 13:00:00 into the window starting at 12:00. In other words, it treats the window as closed at the end: `[12:00, 13:00]`.
+
+**What the README says** (Behaviour → Hourly windows):
+> A window covers `[start, start + 1 hour)`: a reading at exactly 13:00:00 belongs to the 13:00 window only.
+
+**What the docstrings say:** `src/buoy_ingest/windows.py:18` says `in_window` checks whether `moment` falls in `[start, start + 1 hour)`, and the code does exactly that: `start <= moment < start + HOUR`. `bucket_by_hour` agrees too: `hour_start` puts a 13:00:00 reading in the 13:00 bucket.
+
+So the code is doing what's documented, and the test is asking for the opposite. Making it pass would mean a reading on the hour could count in two windows: the 12:00 window through `select_window`, and the 13:00 bucket through `bucket_by_hour`. That would double-count it in the hourly statistics. The test name, "reading on the hour closes the window", suggests whoever wrote it believed the window includes its end.
+
+To settle it, you need to decide which one is right:
+1. **The README is right (which I'd expect):** change the test so the 13:00:00 reading is *not* in the 12:00 window. You could also add a check that it *is* in the 13:00 window. Under CLAUDE.md, only you can make that test change.
+2. **The window really should include its end:** the README, the `in_window` docstring and `bucket_by_hour` all need to change together. Then you'd have to decide which bucket a reading on the boundary goes into, so it isn't counted twice.
+
+Tell me which way you want to go and I'll make the matching changes under `src/`.

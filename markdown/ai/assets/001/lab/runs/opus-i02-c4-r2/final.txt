@@ -1,0 +1,18 @@
+I didn't change anything, because this test contradicts the documented behaviour.
+
+**What the test expects:** `hour_start(01:10 at UTC−03:30)` should return `01:00 at UTC−03:30`, which is the start of the *local* hour. That instant is **04:30 UTC**.
+
+**What the code does:** 01:10 at UTC−03:30 is 04:40 UTC, so `hour_start` returns **04:00 UTC**, the start of the UTC hour.
+
+**The documentation agrees with the code:**
+- The `hour_start` docstring (`src/buoy_ingest/windows.py:12`) says: *"The start of the UTC hour containing `moment`."*
+- The module docstring says: *"Group observations into hourly UTC windows."*
+- The README ("Hourly windows") says `bucket_by_hour` "groups readings into UTC hours", with each window covering `[start, start + 1 hour)`.
+
+The two answers are 30 minutes apart, not just the same instant written in a different timezone. That's because Newfoundland's offset isn't a whole number of hours. Making the test pass would put window boundaries at :30 UTC for those readings. Readings from different timezones would then land in misaligned buckets, which breaks the UTC-hour guarantee the README describes.
+
+**Options:**
+1. **The test is wrong** (most likely, given the README and docstrings). Delete it, or rewrite it to expect `datetime(2026, 2, 11, 4, tzinfo=timezone.utc)`.
+2. **Local-hour windows are the behaviour you actually want.** Then the README and docstrings need to change first, and that's a design decision for you. It would also need a rule for how local-hour buckets from different offsets should merge.
+
+Tell me which one you want and I'll make the change.

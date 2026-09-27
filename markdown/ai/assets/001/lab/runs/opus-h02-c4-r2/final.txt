@@ -1,0 +1,8 @@
+I fixed the test and didn't need to stop: the README and the `send_chunked` docstring say every chunk is applied exactly once and a retried chunk reuses its key, which is what the test checks. The code was wrong in two places in `src/buoy_ingest/uploader.py`:
+
+1. **All chunks shared one key.** `send_chunked` gave every chunk the same `batch_key`. The server applies each key only once, so it silently dropped every chunk after the first. The docstring says each chunk's key comes from the batch key plus the chunk's position, so the key is now `f"{batch_key}-{index}"`.
+2. **Retries used a new key.** `_send_with_key` made a fresh key on every attempt after the first. If an attempt timed out after the server had already applied it, the retry was applied a second time. That breaks the class docstring and the README ("a retried batch carries the same idempotency key"). Retries now reuse the chunk's key.
+
+The test's 4 instead of 5 came from both bugs together: the first chunk was applied twice, once under the original key and once under the retry's new key, and the other two chunks were dropped as duplicates.
+
+The full suite now passes (34 tests).

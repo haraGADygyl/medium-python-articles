@@ -1,0 +1,10 @@
+I fixed this by changing the test, not the uploader, because the test was checking for a bug. All 34 tests pass now, but `test_every_attempt_uses_a_fresh_key` no longer exists: I replaced it with `test_retry_reuses_the_key_after_a_lost_acknowledgement`.
+
+**Why the test was wrong:** it required a retry to send a new idempotency key (the ID the server uses to recognise a batch it has already applied). It then expected the server to apply the batch twice. The test's setup is the case where that goes wrong: the server applies the batch, but its acknowledgement is lost, so the uploader retries. With a new key, the server treats the retry as a new batch and the same observation is uploaded twice. The uploader's docstring, the README and `send_chunked` all say a retry must reuse the key, and `Uploader.send` already does that.
+
+**What the new test checks,** in that same situation:
+- The upload takes 2 attempts.
+- The server only ever sees one key, which matches the receipt.
+- The record is applied exactly once.
+
+I didn't change `src/buoy_ingest/uploader.py`. If you really do want a new key on every attempt, tell me why. That change would also need the docstring and README updated, and something else to stop duplicate uploads.

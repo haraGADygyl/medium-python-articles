@@ -1,0 +1,16 @@
+I haven't changed anything. This test contradicts the project's documented behaviour, and CLAUDE.md says to stop and flag a test that looks wrong instead of changing code to fit it.
+
+**Why the test fails:** it expects `parse_line` to treat `"2026-02-11T04:15:00"`, which has no UTC offset, as UTC. The code rejects it with `ParseError: timestamp needs an explicit UTC offset`, on purpose.
+
+**Why I think the test is wrong:**
+- **README.md, "Timestamps":** `parse_line` accepts ISO 8601 timestamps with an explicit offset only, and "a timestamp without an offset is ambiguous and raises `ParseError`."
+- **`src/buoy_ingest/ingest.py:16-23`:** the docstring and the regex that enforces the offset both say the same thing.
+- **The test's shape:** it's appended after the others with no blank line between them, so it looks like a late addition rather than part of the original suite.
+
+To make it pass, I'd have to silently assume offset-less timestamps are UTC. A buoy sending local time (e.g. `+01:00` in summer) would then be filed an hour off, and nothing would show an error. That kind of silent error is what the current rule is there to prevent.
+
+**How to proceed, depending on which is correct:**
+1. **Offsets must stay mandatory (the current spec):** the test should be removed or changed to expect `ParseError`. That's a test change, which you'd need to make or approve.
+2. **Treating missing offsets as UTC is a deliberate new rule:** tell me and I'll update `parse_timestamp` in `src/`. The README should then be updated to match. That change also affects `parse_csv`, which uses the same function.
+
+Which do you want?

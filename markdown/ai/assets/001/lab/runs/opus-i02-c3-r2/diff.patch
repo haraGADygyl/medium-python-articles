@@ -1,0 +1,30 @@
+diff --git a/src/buoy_ingest/windows.py b/src/buoy_ingest/windows.py
+index 2ca3da3..f586358 100644
+--- a/src/buoy_ingest/windows.py
++++ b/src/buoy_ingest/windows.py
+@@ -9,9 +9,12 @@ HOUR = timedelta(hours=1)
+ 
+ 
+ def hour_start(moment: datetime) -> datetime:
+-    """The start of the UTC hour containing `moment`."""
+-    in_utc = moment.astimezone(timezone.utc)
+-    return in_utc.replace(minute=0, second=0, microsecond=0)
++    """The start of the hour containing `moment`, in `moment`'s own timezone.
++
++    Offsets that are not whole hours (e.g. Newfoundland, UTC-03:30) mean a local
++    hour start is not a UTC hour start; convert to UTC first for UTC windows.
++    """
++    return moment.replace(minute=0, second=0, microsecond=0)
+ 
+ 
+ def in_window(moment: datetime, start: datetime) -> bool:
+@@ -23,7 +26,8 @@ def bucket_by_hour(observations: Iterable[Observation]) -> dict[datetime, list[O
+     """Map each UTC hour start to the observations recorded in that hour."""
+     buckets: dict[datetime, list[Observation]] = defaultdict(list)
+     for observation in observations:
+-        buckets[hour_start(observation.recorded_at)].append(observation)
++        in_utc = observation.recorded_at.astimezone(timezone.utc)
++        buckets[hour_start(in_utc)].append(observation)
+     return dict(sorted(buckets.items()))
+ 
+ 

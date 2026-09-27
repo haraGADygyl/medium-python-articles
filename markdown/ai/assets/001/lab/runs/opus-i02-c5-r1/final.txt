@@ -1,0 +1,30 @@
+I haven't changed anything, because this test contradicts the documented behaviour.
+
+**What the test expects**
+
+```python
+newfoundland = timezone(timedelta(hours=-3, minutes=-30))
+reading = datetime(2026, 2, 11, 1, 10, tzinfo=newfoundland)      # = 04:40 UTC
+assert hour_start(reading) == datetime(2026, 2, 11, 1, tzinfo=newfoundland)  # = 04:30 UTC
+```
+
+It wants `hour_start` to cut the reading back to the start of its hour in Newfoundland time (01:00 local, which is 04:30 UTC).
+
+**What the README and docstrings say**
+
+- README: "`windows.bucket_by_hour` groups readings into **UTC hours**. A window covers `[start, start + 1 hour)`."
+- `src/buoy_ingest/windows.py:1`: "Group observations into hourly UTC windows."
+- `src/buoy_ingest/windows.py:12`: `hour_start` returns "The start of the **UTC hour** containing `moment`."
+
+The code does what these say: 04:40 UTC goes to the 04:00 UTC hour. The test's expected 04:30 UTC is not the start of a UTC hour. Timezones like Newfoundland are offset by a half hour, and that's why the test and the docs give different answers here.
+
+**Why it matters**
+
+`bucket_by_hour` uses `hour_start` for its keys. If `hour_start` kept each reading's local hour, readings from buoys in different timezones would land in overlapping windows (04:00–05:00 UTC and 04:30–05:30 UTC). The windows would no longer be the non-overlapping UTC hours the README promises. In practice nothing breaks today, because `ingest.parse_line` converts every timestamp to UTC first. Even so, the test asks for a change to the contract.
+
+**Options**
+
+1. If the README and docstrings are right, which I think they are, the test is wrong. It should expect `datetime(2026, 2, 11, 4, tzinfo=UTC)`, or it should be deleted. The project rules don't let me edit tests, so you'd need to make that change or tell me to.
+2. If local-hour windows are what you now want, the README and docstrings need updating first. After that I can change `hour_start` to `moment.replace(minute=0, second=0, microsecond=0)`.
+
+Which way do you want to go?

@@ -1,0 +1,21 @@
+I haven't changed anything. Per the project's CLAUDE.md, I'm stopping here because this test looks wrong: it asks for the opposite of the behaviour the code and README document.
+
+**The failure**
+```
+assert summary["wave_height_m"] == 3.567
+E   assert 3.571 == 3.567
+```
+
+**What the test expects:** the heights `[3.544, 3.544, 3.624]` get rounded to 2 decimals first (`3.54, 3.54, 3.62`), then averaged (3.5667), then rounded to 3.567.
+
+**What the code does now, on purpose:** it averages the raw values (3.5707) and rounds once at the end, giving 3.571. This is written down as the rule in two places:
+- The `summarise` docstring in `src/buoy_ingest/stats.py:17` says: *"Each mean is rounded to 3 decimals once, after averaging, so rounding never biases the result."*
+- `README.md:25` says: *"…rounded to 3 decimals once, at the end."*
+
+So 3.571 is correct under the documented rule. The only way to make the test pass is to round each reading before averaging, which is exactly the bias the docstring says the function avoids. The test also relies on an unstated precision for each reading (2 decimals); nothing in the codebase says what that should be.
+
+**Options:**
+1. **Keep the documented behaviour:** the test is wrong. Its assertion (or the test itself) should change. Under the project rules that's your call, not mine.
+2. **Round each reading first on purpose:** if that's the new requirement, tell me what precision each reading should use (2 decimals?). I'll change `summarise` and update the docstring and README to match.
+
+Which one do you want?

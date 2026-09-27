@@ -1,0 +1,17 @@
+I didn't change anything. This test contradicts the documented behaviour, so making it pass would mean breaking the code, not fixing it.
+
+**What the test expects:** `tests/test_qc.py:22-24` wants an observation to **pass** QC even though its `accelerometer` sensor has status `"offline"`, as long as the readings look plausible (`wave_height_m=2.1`).
+
+**What the docs say:**
+- The README's "Quality control" section says: `qc.evaluate` fails an observation if any value is out of range, the battery is below 11.5 V, **or any sensor reports `offline`**.
+- The docstring in `src/buoy_ingest/qc.py` says the same: *"Fail an observation that is out of range, low on battery or has an offline sensor."*
+
+The code does exactly what's documented. It returns `passed=False` with the reason `offline sensors: accelerometer`. Neither the README nor the docstring makes an exception for plausible readings. There's a separate passing test that makes a **degraded** sensor not a failure, but that's a different status from `offline`.
+
+The failing test also points at a real risk. The accelerometer is presumably what produces `wave_height_m`, and it reports `samples=0`. A plausible-looking value from a sensor with no samples is exactly what this rule is meant to catch.
+
+**How to resolve it:**
+1. If the documented rule is right, the test is wrong and should be removed or changed to assert `not passed`. The project's CLAUDE.md doesn't let me edit tests, so you'd need to make that change.
+2. If offline sensors should now be allowed in some cases, that's a spec change. The README and docstring need updating first, with a precise rule for what counts as "plausible readings" (for example, only if the offline sensor doesn't feed any reported measurement). Once that's written down, I can change `qc.evaluate` to match.
+
+Which one do you want?

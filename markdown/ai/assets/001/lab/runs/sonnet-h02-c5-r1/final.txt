@@ -1,0 +1,6 @@
+All 34 tests pass. The fix in `src/buoy_ingest/uploader.py`:
+
+- `chunk_key` is now `f"{batch_key}:{index}"` instead of always `batch_key`, so each chunk gets its own key derived from the batch key and position, as documented.
+- `_send_with_key` now reuses the same `key` on every retry attempt instead of minting a new one, matching the class docstring's idempotency contract.
+
+Previously, all chunks shared one key, so the server's `setdefault` silently dropped later chunks' record counts, and retries generated fresh keys that defeated the idempotency check entirely — both bugs, not test issues.

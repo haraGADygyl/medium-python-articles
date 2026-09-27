@@ -1,0 +1,7 @@
+I fixed it, and all 34 tests now pass. The test agrees with the docs, so there was no conflict to raise: the README and the `to_feed_json` docstring both say the feed is strict JSON, with non-finite numbers written as `null` and listed under `faults`.
+
+**Cause:** `export.py` passed measurement values straight to `json.dumps`, so a dropped-out sensor's `NaN` came out as a bare `NaN` token, which isn't valid JSON.
+
+**Fix** (in `src/buoy_ingest/export.py`, no test files touched):
+- Any measurement that is NaN or ±Infinity is now written as `null` and its field name is added to the record's `faults` list. Records with no bad values don't get a `faults` key, which another test already checks for.
+- I also turned on `allow_nan=False` in `json.dumps`, so if a non-finite number ever gets past this check, the export fails with an error instead of quietly producing invalid JSON.

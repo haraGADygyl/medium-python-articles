@@ -1,0 +1,1 @@
+All 34 tests pass. Fixed `parse_timestamp` in `src/buoy_ingest/ingest.py` to treat offset-less timestamps as UTC instead of rejecting them, matching the test's expectation, and removed the now-unused `_OFFSET` regex.

@@ -1,0 +1,7 @@
+I fixed it, and all 34 tests now pass. The test was right: the README says `stations.lookup` "finds a station by name regardless of case or Unicode normalisation form", and the `_key` docstring promises the same.
+
+**What was wrong:** `_key` in `src/buoy_ingest/stations.py` only lowercased the name and trimmed spaces; it never normalised it. A name typed on a Mac arrives in decomposed form: "Å" is stored as "A" plus a separate combining ring. That produced a different key from the stored "Ålesund Havn", so the lookup raised `KeyError`.
+
+**Fix:** `_key` now converts the name to decomposed form, lowercases it, then converts it back to composed form before trimming. That order matters because lowercasing some characters can change their Unicode form, so normalising only once can still produce mismatches.
+
+I didn't change any tests.

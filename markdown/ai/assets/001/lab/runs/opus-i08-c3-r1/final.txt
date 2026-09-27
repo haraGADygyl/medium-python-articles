@@ -1,0 +1,22 @@
+I didn't change anything, because the code is right and the test is wrong.
+
+**Why:** A knot is defined as 1852 m/h, which is 0.514444 m/s. So 10 knots is 5.14444 m/s, and that's exactly what `knots_to_ms` returns (`src/buoy_ingest/units.py:3`). The test expects exactly 5.0, and `pytest.approx` only allows a difference of ±0.000005. The test's claim that 10 knots is 5 m/s is a rough rule of thumb that's about 3% off.
+
+The only way to make it pass from `src/` would be to change `MS_PER_KNOT` to 0.5. That would make every wind and current speed converted from older buoy firmware about 3% too low. That's a silent data error, so I didn't do it.
+
+**Fix the test instead.** The repo has a hook that stops me from editing `tests/`, so you'd need to make this change. Either of these works:
+
+```python
+def test_ten_knots_is_five_metres_per_second():
+    assert knots_to_ms(10) == pytest.approx(5.14444)
+```
+
+or, if the test was only meant to be a sanity check:
+
+```python
+    assert knots_to_ms(10) == pytest.approx(5.0, rel=0.05)
+```
+
+I'd go with the first, and rename the test to something like `test_ten_knots_in_metres_per_second`. The other three tests in `tests/test_units.py` pass.
+
+If 5.0 was actually intended, for example because some downstream system expects that approximation, tell me and I'll change the constant.

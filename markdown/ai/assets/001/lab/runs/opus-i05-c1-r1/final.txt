@@ -1,0 +1,17 @@
+I haven't changed anything yet. The test contradicts the documented behaviour, so making it pass means breaking something the project relies on.
+
+**The conflict:**
+- `README.md` says buoys re-send a batch when an upload isn't acknowledged, and that "`ingest.merge_batches` keeps the first copy of each `observation_id`."
+- `merge_batches` in `src/buoy_ingest/ingest.py:93` does exactly that, and its docstring says the same.
+- The failing test (`tests/test_ingest.py:64`) expects `[1, 2, 2, 3]`, meaning duplicates are kept. The code returns `[1, 2, 3]`, which is what the README describes.
+
+If I change `merge_batches` to keep every copy, the test passes but re-sent observations get counted twice. They would be double-counted in the hourly means from `stats.summarise` and published twice in the feed. That's the problem the de-duplication is there to prevent.
+
+The test also looks like a late addition: it's pressed against the previous test with no blank line between them, and nothing else in the repo mentions an audit use case.
+
+**How I'd fix it, depending on what you want:**
+1. **The test is wrong (my recommendation):** delete it, or change it to assert `[1, 2, 3]`. The existing distinct-observations test only uses unique ids, so this would also cover the de-duplication.
+2. **You need an audit trail:** add a separate function, e.g. `concat_batches`, that keeps every copy. Point this test at it and leave `merge_batches` and the README as they are.
+3. **The contract really has changed:** change `merge_batches` and update the README. Anything downstream that assumes unique ids would then need its own de-duplication.
+
+Which one do you want?

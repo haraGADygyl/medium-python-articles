@@ -1,0 +1,17 @@
+I haven't changed anything yet. This test contradicts the documented behaviour, so making it pass means changing the spec, and that's your call.
+
+**What's happening:** `qc.evaluate` fails any observation that has a sensor with status `offline`. The test builds an observation with an offline accelerometer and expects it to pass.
+
+**Why I stopped:** the code is doing what the project says it should.
+- `README.md` says: "`qc.evaluate` fails an observation if any value is out of range, the battery is below 11.5 V, or **any sensor reports `offline`**."
+- The docstring in `src/buoy_ingest/qc.py:21` says the same.
+- The test file already separates the two cases: `test_degraded_sensor_is_not_a_failure` passes a *degraded* sensor, which implies *offline* is meant to fail.
+- The new test has no blank line before it, so it looks like it was added quickly.
+
+There's also a practical concern. An offline accelerometer with 0 samples means the wave height probably came from somewhere else or is stale. The fact that `wave_height_m=2.1` is a believable number doesn't tell you it's real. Passing it could put unverified data into the feed that goes to the met offices.
+
+**Options:**
+1. **Keep the current rule** (my recommendation): delete the test, or flip it to `assert not ...passed` so it checks that offline sensors fail.
+2. **Change the rule:** make offline sensors a warning rather than a failure, and update `qc.py`, its docstring and the README to match. If you choose this, you'll need to decide whether readings that depend on the offline sensor should be set to `None`, so bad values don't pass just because they look normal.
+
+Which do you want?

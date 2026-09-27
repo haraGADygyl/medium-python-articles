@@ -1,0 +1,13 @@
+I didn't change anything. I think the test itself is wrong, so under the project rule in CLAUDE.md I'm reporting it rather than working around it.
+
+**The conflict:** the test says a reading at exactly 13:00:00 belongs in the window that starts at 12:00. The project's documented behaviour says the opposite:
+
+- `README.md:21-23`: "A window covers `[start, start + 1 hour)`: a reading at exactly 13:00:00 belongs to the 13:00 window only."
+- `src/buoy_ingest/windows.py:18`: `in_window`'s docstring gives the same half-open range, and the code does what it says (`start <= moment < start + HOUR`).
+- `bucket_by_hour` puts a 13:00:00 reading in the 13:00 bucket, and the passing test `test_hour_start_truncates_to_the_hour` relies on the same rule.
+
+**Why I didn't make it pass:** the only change to `src/` that would satisfy this test is making the window include its end time (`<=`). Then every reading exactly on the hour would land in two windows (12:00 and 13:00) and be counted twice. `select_window` would also stop agreeing with `bucket_by_hour` and the README.
+
+**What I'd suggest:** from its name, the test probably meant to check that an on-the-hour reading is left out of the earlier window. That would be `select_window([on_the_hour], start) == []`, or a start of 13:00 with the reading included. Someone who owns the tests should fix it.
+
+If you really do want windows to include their end time, tell me and I'll change `in_window`. The README and `bucket_by_hour` would need updating too, so the two stay consistent.

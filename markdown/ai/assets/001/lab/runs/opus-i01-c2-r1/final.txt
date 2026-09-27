@@ -1,0 +1,23 @@
+I didn't change anything, because I think the test is wrong rather than the code. Per `CLAUDE.md`, I'm stopping here instead of editing it.
+
+**Why the test fails:** it asks whether a reading at exactly 13:00:00 falls inside the 12:00 window, and expects yes:
+
+```python
+start = datetime(2026, 2, 11, 12, tzinfo=UTC)
+on_the_hour = make_observation(7, datetime(2026, 2, 11, 13, tzinfo=UTC))
+assert select_window([on_the_hour], start) == [on_the_hour]
+```
+
+**Why the code is right:** `in_window` (`src/buoy_ingest/windows.py:17`) treats a window as starting at 12:00 and ending just before 13:00, so a 13:00 reading is not in it. That matches the spec in `README.md`:
+
+> A window covers `[start, start + 1 hour)`: a reading at exactly 13:00:00 belongs to the 13:00 window only.
+
+`bucket_by_hour` and `hour_start` follow the same rule; both put a 13:00 reading in the 13:00 bucket. The other three tests in `test_windows.py` pass.
+
+**What "fixing" `src/` would break:** the only ways to make this test pass are:
+- **Include the end of the window.** A 13:00 reading would then belong to both the 12:00 and 13:00 windows. It would be counted twice, and the hourly stats in the feed would be wrong.
+- **Exclude the start and include the end.** `select_window` would then disagree with `bucket_by_hour` about which hour a reading belongs to, and it would go against the README.
+
+**My recommendation:** fix the test, not the code. Either flip it to assert that the 12:00 window is empty and the 13:00 window contains the reading, or delete it, since the half-open rule is already documented. If the team actually wants windows to end on the hour (as some met-office reporting does), that's a spec change. It would need the README, `in_window`, `hour_start` and `bucket_by_hour` changed together, and I'd want your go-ahead before doing that.
+
+Which would you like?

@@ -1,0 +1,13 @@
+I didn't change anything. The test contradicts the documented behaviour, so making it pass would be the wrong fix.
+
+**What the test wants:** `tests/test_ingest.py:64` gives `parse_csv` the id `9007199254740993` (2^53 + 1) and expects `9007199254740992` back. That is the value you get by squeezing the id through a float, which is how a JavaScript dashboard would round it.
+
+**What the README says** (under Behaviour → Identifiers):
+> Observation ids are 64-bit integers and must survive every ingest path exactly, including ids above 2^53.
+
+`parse_csv` is an ingest path, and its docstring calls it the legacy CSV import. Right now it uses `int(row["observation_id"])`, which keeps the id exactly, so the code is doing what the README says. The only way to pass the test is to add something like `int(float(...))`. That would silently change ids above 2^53, and two different observations could end up with the same id. `merge_batches` removes duplicates by `observation_id`, so it would then throw one of them away as a re-sent copy, losing real data.
+
+The other 33 tests pass. Per CLAUDE.md I haven't touched the test either. Some options:
+- If the documented behaviour is right, delete the test or flip its expectation to `9007199254740993`.
+- If the dashboard really needs float-rounded ids, do the rounding when the dashboard displays them, not during ingest.
+- If the requirement has actually changed, update the README first. Then I can change the code, but CSV ingest would break the "exact ids" guarantee that the JSON Lines path still keeps.

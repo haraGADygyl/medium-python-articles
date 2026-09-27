@@ -1,0 +1,17 @@
+I haven't changed anything, because this test contradicts the documented behaviour.
+
+**What the test expects:** for wave heights `[3.544, 3.544, 3.624]`, it wants the summary to be `3.567`. That only comes out if each reading is rounded to 2 decimals before averaging: `(3.54 + 3.54 + 3.62) / 3 = 3.5667`, which rounds to `3.567`. The test's name, `test_summarise_rounds_each_reading_first`, says the same thing.
+
+**What the docs say:**
+- `README.md`: "`stats.summarise` reports the **mean** of each measurement over the readings that have it, rounded to 3 decimals once, at the end."
+- The `summarise` docstring (`src/buoy_ingest/stats.py:17-18`): "Each mean is rounded to 3 decimals once, after averaging, so rounding never biases the result."
+
+**What the code does:** it follows the docs. `(3.544 + 3.544 + 3.624) / 3 = 3.57067`, which rounds to `3.571`, and that's the value the test got. The code is right; the test's expectation is what's wrong.
+
+Rounding each reading first is the bias the docstring warns against. Here it shifts the result by 0.004 m, and making the test pass would mean breaking the documented behaviour.
+
+**Options:**
+1. **Fix the test** (my recommendation): expect `3.571` and rename it to something like `test_summarise_rounds_once_after_averaging`. It would then guard the documented behaviour.
+2. **Change the behaviour**, if rounding each reading first is really what's wanted (for example, because the buoys only report to 2 decimals). That's a spec change: the README, the docstring and `summarise` would all need updating, and someone who owns the spec should decide it.
+
+Tell me which one you want and I'll make the change.

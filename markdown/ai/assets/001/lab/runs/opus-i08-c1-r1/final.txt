@@ -1,0 +1,8 @@
+I fixed the test, not the code, because the test's expected value was wrong. One knot is 0.514444 m/s, so `knots_to_ms(10)` correctly returns about 5.144 m/s, not 5.0. Changing `MS_PER_KNOT` to make the old test pass would have made every converted wind speed about 3% too low.
+
+In `tests/test_units.py`, I changed:
+- **Expected value:** now `pytest.approx(5.14444, rel=1e-5)`, with a comment explaining where the number comes from.
+- **Test name:** now `test_ten_knots_is_about_five_metres_per_second`, since "five metres per second" was misleading. So `tests/test_units.py::test_ten_knots_is_five_metres_per_second` no longer exists; update anything that refers to it by that ID.
+- **Formatting:** added the two missing blank lines before the test.
+
+The full suite passes (34 tests).

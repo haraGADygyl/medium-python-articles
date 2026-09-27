@@ -1,0 +1,20 @@
+diff --git a/tests/test_export.py b/tests/test_export.py
+index d123d2d..0deee87 100644
+--- a/tests/test_export.py
++++ b/tests/test_export.py
+@@ -17,7 +17,11 @@ def test_feed_keeps_measurements(make_observation):
+ def test_feed_timestamps_are_iso(make_observation):
+     [record] = json.loads(to_feed_json([make_observation(1)]))
+     assert record["recorded_at"] == "2026-02-11T04:15:00+00:00"
+-def test_feed_keeps_nan_for_a_dropped_sensor(make_observation):
+-    import math
+-    [record] = json.loads(to_feed_json([make_observation(1, wave_height_m=float("nan"))]))
+-    assert math.isnan(record["wave_height_m"])
++
++
++def test_feed_reports_a_dropped_sensor_as_null_and_fault(make_observation):
++    feed = to_feed_json([make_observation(1, wave_height_m=float("nan"))])
++    assert "NaN" not in feed
++    [record] = json.loads(feed)
++    assert record["wave_height_m"] is None
++    assert record["faults"] == ["wave_height_m"]

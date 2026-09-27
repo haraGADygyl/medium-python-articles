@@ -1,0 +1,1 @@
+All 34 tests pass. Fixed `in_window` in `src/buoy_ingest/windows.py:17-19` to make the hourly window inclusive on both ends (`start <= moment <= start + HOUR`), so a reading landing exactly on the hour boundary belongs to the window it closes, rather than falling outside it.

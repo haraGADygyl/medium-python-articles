@@ -1,0 +1,7 @@
+The test was catching a real bug: a timed-out upload could get applied twice.
+
+**Cause:** `Uploader.send` in `src/buoy_ingest/uploader.py` made a new idempotency key on every retry. If the server applied a batch but the acknowledgement timed out, the retry came in with a different key. The server treated it as a new batch and applied it again, so the test saw 4 records instead of 2. The class's own docstring says retries must reuse the key.
+
+**Fix:** `send` now makes one key per batch and passes it to the existing `_send_with_key` helper. `send_chunked` already used that helper, so both paths now retry the same way and the duplicate loop is gone.
+
+The full suite passes: 34 tests.

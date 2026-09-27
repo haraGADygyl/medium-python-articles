@@ -1,0 +1,19 @@
+I didn't change anything, because this test contradicts the documented behaviour. The code is correct and the test is what's wrong.
+
+**What the test expects:** a reading at exactly 13:00:00 should be included in the 12:00 window (`select_window([reading_at_13:00], start=12:00) == [reading]`).
+
+**What the README says** (Behaviour → Hourly windows):
+> A window covers `[start, start + 1 hour)`: a reading at exactly 13:00:00 belongs to the 13:00 window only.
+
+**What the docstring says** (`src/buoy_ingest/windows.py:18`):
+> Whether `moment` falls in the window [start, start + 1 hour).
+
+`in_window` does exactly this with `start <= moment < start + HOUR`, so a 13:00:00 reading is correctly left out of the 12:00 window. The test uses this exact example (13:00:00) and asserts the opposite of what the README says.
+
+Making the test pass would mean changing `<` to `<=`. That would put a reading on the hour into two windows. `bucket_by_hour` uses `hour_start` and would still put it only in the 13:00 bucket, so `select_window` and `bucket_by_hour` would disagree with each other. Hourly stats would also double-count those readings.
+
+**Options:**
+1. **Fix the test (recommended):** keep the reading at 13:00:00 but assert that it lands in the 13:00 window and not in the 12:00 one. For example, `select_window([on_the_hour], start) == []` and `select_window([on_the_hour], start + HOUR) == [on_the_hour]`. That checks the documented boundary instead of fighting it.
+2. **Change the spec:** if windows really should include their closing instant, the README, the docstring, `in_window` and `bucket_by_hour` all need to change together. Someone who owns the feed contract with the met offices should decide that.
+
+Tell me which one you want and I'll make the change.

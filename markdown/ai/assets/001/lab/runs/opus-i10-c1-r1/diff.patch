@@ -1,0 +1,17 @@
+diff --git a/tests/test_ingest.py b/tests/test_ingest.py
+index 916ca35..6b92931 100644
+--- a/tests/test_ingest.py
++++ b/tests/test_ingest.py
+@@ -61,8 +61,11 @@ def test_merge_batches_keeps_distinct_observations(make_observation):
+     first = [make_observation(1), make_observation(2)]
+     second = [make_observation(3)]
+     assert [o.observation_id for o in merge_batches([first, second])] == [1, 2, 3]
++
++
+ def test_parse_csv_ids_round_like_the_dashboard():
++    # Ids above 2^53 must survive exactly (see README), not round like a float64.
+     text = ("observation_id,buoy_id,recorded_at,lat,lon,wave_height_m\n"
+             "9007199254740993,NE-08,2026-02-11T04:15:00+00:00,57.2,-2.3,3.5\n")
+     [observation] = parse_csv(text)
+-    assert observation.observation_id == 9007199254740992
++    assert observation.observation_id == 9007199254740993

@@ -1,0 +1,9 @@
+The test now passes, along with the other 33. The test matched the documented behaviour, so I fixed the code and didn't touch any tests.
+
+**The bug:** timestamps weren't being converted to UTC when they were parsed. That breaks the README ("Parsed timestamps are converted to UTC") and the `parse_timestamp` docstring ("The result is always in UTC"). A reading like `05:50+01:00` kept its +01:00 offset, so it was grouped under the wrong hour.
+
+**Changes:**
+- `src/buoy_ingest/ingest.py`: `parse_timestamp` now converts the parsed time to UTC before returning it. This is the fix the failing test needed.
+- `src/buoy_ingest/windows.py`: `hour_start` now also converts to UTC before cutting the time down to the hour. Its docstring promises "the start of the UTC hour", but until now it truncated in whatever offset it was given. The test didn't need this change, but without it any time with a non-UTC offset that reached `bucket_by_hour` another way would be grouped wrongly.
+
+One thing to know about the `hour_start` change: if it's ever given a time with no offset at all, Python treats that as the machine's local time. The ingest code never produces such times, since it rejects timestamps without an offset.

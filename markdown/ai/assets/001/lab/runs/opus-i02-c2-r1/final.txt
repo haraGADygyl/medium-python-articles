@@ -1,0 +1,14 @@
+I stopped without changing anything. I think this test is wrong, and making it pass would mean breaking the behaviour the project documents.
+
+**What the test expects:** for a reading at 01:10 at UTC−03:30 (Newfoundland), `hour_start` should return 01:00 in that same offset, which is **04:30 UTC**.
+
+**What the code does:** `src/buoy_ingest/windows.py:11` converts to UTC and cuts back to the hour, giving **04:00 UTC** (00:30 local). That is what it's meant to do:
+- The docstrings say "Group observations into hourly UTC windows" and "The start of the UTC hour containing `moment`".
+- The README says `windows.bucket_by_hour` "groups readings into UTC hours", with windows `[start, start + 1 hour)`.
+- `ingest.parse_timestamp` already converts every parsed timestamp to UTC, so real ingested data never reaches `hour_start` in a non-UTC offset.
+
+**Why "fixing" the code to match would cause harm:** if `hour_start` cut back to the hour in the reading's own offset, zones with a half-hour offset would produce windows starting at :30 UTC. Those would overlap the normal on-the-hour UTC windows in `bucket_by_hour`, so hourly stats would count the same period twice or split it. The other three tests in the file pass, and none of them can tell the two behaviours apart, because they all use UTC.
+
+The project rules say not to change tests and to flag a test that looks wrong, so I've left both the test and the code as they are. You have two options:
+1. **Keep UTC windows (my recommendation):** correct or remove the test. For this input the correct expectation is `datetime(2026, 2, 11, 4, tzinfo=UTC)`.
+2. **Local-hour windows really are wanted:** that changes the spec. The README, the docstrings, and how `bucket_by_hour` handles mixed offsets would all need updating. If you choose this, tell me and I'll make the change.

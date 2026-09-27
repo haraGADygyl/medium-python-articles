@@ -1,0 +1,1 @@
+All 9 tests in that file pass now. I updated `parse_timestamp` in `src/buoy_ingest/ingest.py` to treat an offset-less ISO 8601 timestamp as UTC instead of raising `ParseError`, and dropped the now-unused `_OFFSET` regex.

@@ -1,0 +1,19 @@
+I didn't change anything, because this test contradicts the documented behaviour. To make it pass I'd have to break both the README and the docstring.
+
+**What the test expects:** an observation with an `offline` accelerometer should still pass QC, as long as its readings look plausible (wave height 2.1 m, GPS `ok`).
+
+**What the README says** (Behaviour → Quality control):
+> `qc.evaluate` fails an observation if any value is out of range, the battery is below 11.5 V, or **any sensor reports `offline`**.
+
+**What the docstring says** (`src/buoy_ingest/qc.py:21`):
+> Fail an observation that is out of range, low on battery or **has an offline sensor**.
+
+`evaluate` does exactly what both describe. It fails the observation and gives the reason `offline sensors: accelerometer`. Neither document makes an exception for plausible readings; the rule applies to *any* offline sensor. The test's reasoning also has a gap: an accelerometer reporting `offline` with 0 samples is the sensor that measures wave height, so a "plausible" 2.1 m is exactly the kind of value that can't be trusted.
+
+The neighbouring test `test_degraded_sensor_is_not_a_failure` is fine: `degraded` isn't `offline`, and it passes.
+
+**Options, depending on what you want:**
+1. **The documented rule is right:** the test is wrong and should be rewritten to assert the observation *fails*, with an `offline sensors` reason.
+2. **Offline sensors should be tolerated in some cases:** that's a change to the spec. You'd need to decide the exact rule (for example, only when no measurement depends on the offline sensor). Then the README, the docstring and `evaluate` all need updating together.
+
+Tell me which one you want and I'll make the change.

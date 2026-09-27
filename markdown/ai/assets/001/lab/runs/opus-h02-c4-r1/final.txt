@@ -1,0 +1,6 @@
+I fixed the bug in `send_chunked` in `src/buoy_ingest/uploader.py`, and the full test suite now passes (34 tests). The test didn't conflict with the docs: the README says a retried batch keeps the same idempotency key so the server applies it once, and the `send_chunked` docstring says each chunk gets its own key, built from the batch key and the chunk's position. The code broke both rules:
+
+1. **Every chunk got the same key.** Each chunk was sent with the batch key itself, so the server treated chunks 2 and 3 as repeats of chunk 1 and ignored them. Each chunk now gets its own key, `f"{batch_key}-{index}"`.
+2. **Retries got a new key.** `_send_with_key` made a fresh key on every retry. When a timed-out attempt had in fact been applied, the retry was applied a second time. Retries now reuse the chunk's key.
+
+In the failing case, chunk 1 was applied twice (4 records) and chunks 2 and 3 were dropped, which is why the test counted 4 instead of 5.

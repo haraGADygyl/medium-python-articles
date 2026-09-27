@@ -1,0 +1,1 @@
+All 34 tests pass. The fix was one line in `parse_timestamp` (`src/buoy_ingest/ingest.py`): it parsed the offset but returned the timestamp unconverted, so `+01:00`/`-03:30` timestamps kept their original offsets instead of becoming UTC. Added `.astimezone(timezone.utc)`, which matches what the README and the function's own docstring already promised.

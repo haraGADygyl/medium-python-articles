@@ -1,0 +1,15 @@
+I didn't change anything, because this test contradicts the documented behaviour of the feed export. Making it pass would mean breaking that contract.
+
+**What the test expects:** after a `NaN` goes through `to_feed_json`, `record["wave_height_m"]` still reads back as `NaN`.
+
+**What the docs require:**
+- The README says `export.to_feed_json` writes strict JSON (RFC 8259): non-finite numbers become `null` and are listed under `faults`.
+- The docstring in `src/buoy_ingest/export.py` says the same: "Strict JSON (RFC 8259): non-finite numbers are published as null + faults."
+
+RFC 8259 has no way to write `NaN`. To get a `NaN` back out of `json.loads`, the output would have to contain the non-standard `NaN` token, which is invalid strict JSON. Consumers that follow the standard, such as the met offices' parsers, would reject the feed.
+
+**What the code does now:** `_feed_record` turns the `NaN` into `null` and adds `"faults": ["wave_height_m"]`. `json.dumps(..., allow_nan=False)` also makes sure no `NaN` can slip into the output. That is exactly what the docs describe, so the code is correct. The test fails with `TypeError: must be real number, not NoneType` because `math.isnan(None)` can't be evaluated.
+
+**How to resolve it (a decision for you):**
+- **If the documented contract stands:** the test is wrong and should be rewritten to check `record["wave_height_m"] is None` and `record["faults"] == ["wave_height_m"]`. The project's `CLAUDE.md` says not to modify tests, so you'd need to make that change or approve it.
+- **If the feed really should carry `NaN`:** that's a product change. The README and docstring would have to drop the RFC 8259 promise, and the downstream consumers would need to be checked to make sure they accept non-standard JSON.

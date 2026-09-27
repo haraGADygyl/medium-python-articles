@@ -1,0 +1,15 @@
+I didn't fix this test, because it contradicts the documented behaviour. I changed nothing.
+
+**The conflict**
+
+- The **README** says: "`stats.summarise` reports the **mean** of each measurement over the readings that have it, rounded to 3 decimals once, at the end."
+- The **docstring** in `src/buoy_ingest/stats.py` says the same: "The mean of each measurement over the readings that have it."
+- **The test** (`tests/test_stats.py:22-25`) passes wave heights `[0.9, 1.1, 1.2, 1.4, 7.8]` and expects `1.2`. That's the **median**. The mean is `12.4 / 5 = 2.48`, which is exactly what `summarise` returns.
+
+So the code is doing what the README and docstring say. The test is asking for a different statistic: a "typical wave" that isn't pulled up by the storm spike. To make it pass I'd have to switch `summarise` to the median (or something like it), which would break the documented contract and could change the numbers the met offices get in the feed.
+
+**Ways forward (your call):**
+
+1. **The test is wrong:** fix or remove it so it expects `2.48`. The project rules don't let me edit tests, so you'd need to do this or tell me to.
+2. **You want a spike-resistant figure:** add it as a new field (e.g. `wave_height_m_median`) or a separate function, and update the README and docstring. The existing `wave_height_m` mean stays as it is. I can do this if you confirm.
+3. **The documented behaviour should change to median:** update the README, the docstring and the code together. This changes what the feed reports, so the people who consume it should agree first.

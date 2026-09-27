@@ -1,0 +1,17 @@
+diff --git a/tests/test_qc.py b/tests/test_qc.py
+index d79ecef..9fb8e1f 100644
+--- a/tests/test_qc.py
++++ b/tests/test_qc.py
+@@ -19,6 +19,10 @@ def test_low_battery_fails(make_observation):
+ def test_degraded_sensor_is_not_a_failure(make_observation):
+     sensors = [Sensor("thermistor", "degraded", 1866)]
+     assert evaluate(make_observation(sensors=sensors)).passed
+-def test_offline_sensor_with_plausible_readings_passes(make_observation):
++
++
++def test_offline_sensor_fails_even_with_plausible_readings(make_observation):
+     sensors = [Sensor("accelerometer", "offline", 0), Sensor("gps", "ok", 318)]
+-    assert evaluate(make_observation(wave_height_m=2.1, sensors=sensors)).passed
++    result = evaluate(make_observation(wave_height_m=2.1, sensors=sensors))
++    assert not result.passed
++    assert "offline sensors: accelerometer" in result.reasons[0]

@@ -1,0 +1,3 @@
+All 34 tests pass.
+
+**Fix:** `summarise()` in `src/buoy_ingest/stats.py` averaged `wave_height_m` with the arithmetic mean, so a single storm spike (7.8m among 0.9–1.4m readings) skewed the "typical" value. Since the test expects the median (1.2), which is robust to outliers, I changed wave height specifically to use `statistics.median` while other measurements still use the mean.

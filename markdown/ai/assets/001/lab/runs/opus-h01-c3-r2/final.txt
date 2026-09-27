@@ -1,0 +1,8 @@
+The failing test now passes, and so does the rest of the suite (34 tests).
+
+Two functions said in their docstrings that they return UTC, but neither actually converted:
+
+- **`src/buoy_ingest/ingest.py`**: `parse_timestamp` kept whatever offset the input had. It now converts the parsed time to UTC before returning it. This is what the test's first assertion checks.
+- **`src/buoy_ingest/windows.py`**: `hour_start` rounded down to the hour in the input's own time zone, so it put readings in the wrong bucket for zones that aren't a whole number of hours off UTC (like the test's `-03:30`: 01:20 local is 04:50 UTC, but rounding before converting gives 01:00 local, which is 04:30 UTC). It now converts to UTC first, so windowing is correct even for `datetime`s that didn't come through the parser.
+
+One side effect: `export.py` writes `recorded_at` with `.isoformat()`, so exported timestamps now always end in `+00:00` rather than keeping the original offset. They're the same moments in time, but any downstream consumer that relied on seeing the buoy's local offset would notice.

@@ -1,0 +1,8 @@
+All 5 tests pass now.
+
+Two bugs in `_send_with_key`/`send_chunked` (`src/buoy_ingest/uploader.py`) contradicted the class's own idempotency-key docstring:
+
+1. Every chunk reused the same `batch_key` instead of a per-chunk key (`f"{batch_key}:{index}"`), so the server's key-based dedup silently dropped later chunks.
+2. Retries generated a *new* random key instead of reusing the original one, causing a chunk that actually applied-but-timed-out to be re-applied under a fresh key (double application).
+
+Fixed both; the full test file now passes.

@@ -1,0 +1,18 @@
+I haven't changed anything yet. This test contradicts the documented behaviour, so I need you to decide which one is right before I fix either.
+
+**The conflict**
+
+- `merge_batches` in `src/buoy_ingest/ingest.py:93` removes duplicates on purpose: it keeps the first copy of each `observation_id`. Its docstring says so.
+- The README's **Duplicates** section says the same thing. Buoys re-send a batch when an upload isn't acknowledged, and `merge_batches` keeps only the first copy.
+- The test right above it, `test_merge_batches_keeps_distinct_observations`, expects that deduplicating behaviour and passes.
+- The failing test, `test_merge_batches_keeps_every_copy_for_audit`, expects `[1, 2, 2, 3]`. That means keeping every re-sent copy, which is the opposite of the spec. It's also stuck to the previous test with no blank line between them, which suggests it was added later without reconciling it with the rest.
+
+If I make `merge_batches` keep duplicates, the test passes but the documented contract breaks. Every re-sent observation would then be counted twice in the hourly windows and the `stats.summarise` means.
+
+**Options**
+
+1. **The spec is right** (my recommendation): delete this test or fix it to expect `[1, 2, 3]`. No code change.
+2. **An audit trail really is needed:** keep `merge_batches` as it is and add a separate function, e.g. `concat_batches`, that keeps every copy. I'd point this test at it and note it in the README.
+3. **The dedup requirement has changed:** change `merge_batches` to keep all copies and update the README and the other test. Anything downstream would then need its own deduplication.
+
+Which one do you want?

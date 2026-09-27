@@ -1,0 +1,11 @@
+I haven't changed anything, because I think the test is wrong rather than the code. The project rules say to stop and tell you in that case instead of editing the test.
+
+**What's happening:** `tests/test_stations.py:21` checks that `lookup()` rejects the decomposed (NFD) form of "Ålesund Havn", where "Å" is stored as "A" plus a combining ring instead of one character. But `src/buoy_ingest/stations.py` is built to accept it. `_key()` converts every name to one standard form (NFC) before comparing, and its docstring says so directly: *"A comparison key that ignores case and Unicode normalisation form."* So `lookup()` finds the station, and the test fails because no `KeyError` is raised.
+
+**Why I don't want to "fix" the code:** the only way to make this test pass is to remove that conversion. The two forms look identical and mean the same thing, and they come up in practice: macOS filenames and some keyboards and input methods produce the decomposed form. Without the conversion, a correctly spelled "Ålesund Havn" would randomly fail depending on where the text came from, as would "Tórshavn Outer". That would be a real regression made just to satisfy the test.
+
+**Also worth noting:** the test looks like it was added later. It's squeezed onto the line after the previous test with no blank line between them, and it imports `unicodedata` inside the function rather than at the top. It reads like an assertion written backwards; it was probably meant to be `test_lookup_accepts_a_decomposed_name`, checking that the lookup returns `"Ålesund Havn"`.
+
+How do you want to proceed?
+1. **Fix the test** (my recommendation): change it to check that the decomposed name is accepted. You'd need to make that edit, or tell me explicitly to do it.
+2. **Change the behaviour**: if rejecting decomposed names really is intended, tell me and I'll remove the conversion from `_key()`. That would also mean updating its docstring, and decomposed input would stop matching.

@@ -1,0 +1,15 @@
+I haven't changed anything yet. The test asks for behaviour that the project explicitly rules out, so I need you to decide which one is right.
+
+**The conflict:**
+- The test expects `"2026-02-11T04:15:00"`, which has no UTC offset, to be read as UTC.
+- `README.md` says the opposite: timestamps are accepted **with an explicit UTC offset** only, and "a timestamp without an offset is ambiguous and raises `ParseError`."
+- The comment on `parse_timestamp` (`src/buoy_ingest/ingest.py:16-21`) says the same and gives the reason: a missing offset could mean local time or UTC.
+- So the code does what the docs say. It's the test that disagrees with the rest of the project. It also looks added on afterwards: it sits at the end of the file with no blank line before it, and it's the only test like it.
+
+**Why I'd be careful about "fixing" the code:** the buoys are in a UTC+1 area; the test's own sample record uses `+01:00`. If a buoy sends local time without an offset and we treat it as UTC, the reading is silently an hour off. It would then land in the wrong hourly window in `windows.bucket_by_hour` and skew the hourly averages sent to the met offices. Right now that input is rejected loudly.
+
+**Options:**
+1. **Keep the current rule (my recommendation).** Change the test to `test_parse_line_rejects_a_missing_offset`, checking that `ParseError` is raised with `match="offset"`. This locks in the documented behaviour.
+2. **Change the rule.** If there's a real need, like a buoy model that sends no offset but is known to use UTC, I'll make `parse_timestamp` treat a missing offset as UTC. I'll also update the comment and README, and ideally limit it to that source, not every ingest path. The CSV path uses the same function.
+
+Which do you want? If a buoy is sending timestamps without an offset, that points to option 2, but I'd want to confirm those buoys really use UTC first.

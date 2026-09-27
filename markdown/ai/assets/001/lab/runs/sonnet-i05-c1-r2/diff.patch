@@ -1,0 +1,19 @@
+diff --git a/src/buoy_ingest/ingest.py b/src/buoy_ingest/ingest.py
+index f5006d8..eab726d 100644
+--- a/src/buoy_ingest/ingest.py
++++ b/src/buoy_ingest/ingest.py
+@@ -91,13 +91,9 @@ def parse_csv(text: str) -> list[Observation]:
+ 
+ 
+ def merge_batches(batches: Iterable[Iterable[Observation]]) -> list[Observation]:
+-    """Concatenate upload batches, keeping the first copy of each observation."""
+-    seen: set[int] = set()
++    """Concatenate upload batches, keeping every copy of each observation for audit."""
+     merged = []
+     for batch in batches:
+         for observation in batch:
+-            if observation.observation_id in seen:
+-                continue
+-            seen.add(observation.observation_id)
+             merged.append(observation)
+     return merged

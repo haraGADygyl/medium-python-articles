@@ -1,0 +1,16 @@
+I didn't make this test pass, because it contradicts the documented behaviour. I made no changes.
+
+**What the test expects:** it feeds `parse_csv` the id `9007199254740993` (2^53 + 1) and asserts the result is `9007199254740992`. That's the value you get when the id goes through a float, the way a JavaScript dashboard would store it.
+
+**What the README says** (Behaviour → Identifiers):
+> Observation ids are 64-bit integers and must survive every ingest path exactly, including ids above 2^53.
+
+**What the code does:** `parse_csv` in `src/buoy_ingest/ingest.py:83` uses `int(row["observation_id"])`, so it returns `9007199254740993` exactly. That matches the README, and it's why the test fails.
+
+To make the test pass, the CSV path would have to deliberately change ids above 2^53. That breaks the documented rule. It would also cause real bugs: `merge_batches` removes duplicates by `observation_id`, so two different observations whose ids round to the same value would be merged into one and data would be lost.
+
+**Options:**
+- If the README is right (I think it is), the test is wrong. Change the assertion to `== 9007199254740993`, or delete the test. Any float rounding for display belongs in the dashboard, not in ingest.
+- If the README is out of date and ids really should be rounded, update the README first. Then the fix is to make `parse_csv` round like the dashboard, and `merge_batches` would need rethinking.
+
+Tell me which one you want and I'll make the change.

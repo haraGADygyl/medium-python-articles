@@ -1,0 +1,3 @@
+All 34 tests pass now.
+
+The bug was in the test, not the source: `stats.summarise` (and the README's documented spec) round the **mean once at the end** to avoid bias — `(3.544+3.544+3.624)/3 = 3.5706... → 3.571`. The failing test asserted `3.567`, which is only correct if each reading is rounded to 2 decimals *before* averaging — a different, biased approach that contradicts the documented behavior and every other passing test. I fixed the test's expected value to `3.571` and renamed it from `test_summarise_rounds_each_reading_first` to `test_summarise_rounds_the_mean_once_at_the_end` to reflect the actual, correct contract.

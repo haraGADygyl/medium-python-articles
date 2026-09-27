@@ -1,0 +1,5 @@
+I fixed the failing test with a one-character change in `src/buoy_ingest/windows.py:19`. `in_window` checked the end of the window with `<=` where it should have used `<`.
+
+The function's docstring and the README both say a window covers `[start, start + 1 hour)`, so it includes its start but not its end. Because of the `<=`, a reading at exactly 13:00:00 was counted in both the 12:00 window and the 13:00 window. With `<`, it now lands only in the 13:00 window, which is what the test expects.
+
+The full test suite passes (34 tests).

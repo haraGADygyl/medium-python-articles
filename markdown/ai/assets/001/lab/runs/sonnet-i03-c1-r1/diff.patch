@@ -1,0 +1,16 @@
+diff --git a/tests/test_stats.py b/tests/test_stats.py
+index ff1b70b..df222eb 100644
+--- a/tests/test_stats.py
++++ b/tests/test_stats.py
+@@ -19,7 +19,9 @@ def test_summarise_of_identical_readings(make_observation):
+     summary = summarise([make_observation(1), make_observation(2)])
+     assert summary["wave_height_m"] == 3.5
+     assert summary["battery_v"] == 13.12
+-def test_summarise_rounds_each_reading_first(make_observation):
++
++
++def test_summarise_rounds_the_mean_once_at_the_end(make_observation):
+     heights = [3.544, 3.544, 3.624]
+     summary = summarise([make_observation(i, wave_height_m=h) for i, h in enumerate(heights)])
+-    assert summary["wave_height_m"] == 3.567
++    assert summary["wave_height_m"] == 3.571

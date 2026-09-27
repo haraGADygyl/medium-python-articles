@@ -1,0 +1,14 @@
+I haven't changed any code. The test contradicts the documented behaviour, and the code does what the documentation says.
+
+**What's happening:**
+- `stats.summarise` returns the **mean** of each measurement (`src/buoy_ingest/stats.py:14`). The README says the same thing: "`stats.summarise` reports the **mean** of each measurement… rounded to 3 decimals once, at the end."
+- The failing test expects the **median**. For waves of `[0.9, 1.1, 1.2, 1.4, 7.8]`, the mean is 2.48, which is what the code returns. The test wants 1.2, the middle value, so the one storm spike doesn't pull it up.
+
+So the function isn't broken. The test asks for different behaviour. Making it pass would change what the published feed reports to the met offices, for every measurement. That's a product decision, so I'd rather you make it than have me change it quietly.
+
+**Options:**
+1. **Switch to median.** Change `summarise` to use `statistics.median` and update the README and docstring. The other stats tests still pass: they use identical readings, or a single reading after skipping `None`. Downstream consumers would see different numbers.
+2. **Keep the mean and fix the test.** The test is wrong: change it to expect `2.48`, or delete it.
+3. **Report both.** Keep the mean in each measurement's field and add a separate median field (for example `wave_height_m_median`). The test would then check the new field. This avoids breaking existing consumers.
+
+I'd go with option 3 if the goal is a spike-resistant figure without breaking anyone, or option 1 if the feed is meant to show typical conditions. Which do you want?

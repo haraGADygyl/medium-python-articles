@@ -1,0 +1,13 @@
+I looked at the failing test and the relevant source/docs:
+
+**The conflict:**
+- `tests/test_windows.py::test_hour_start_keeps_the_local_hour` expects `hour_start` to truncate in the *local* timezone of the input and return a datetime still in that local timezone (e.g. `01:10` in Newfoundland time → `01:00` Newfoundland time).
+- `src/buoy_ingest/windows.py:11-14`'s docstring says: *"The start of the **UTC** hour containing `moment`"* — it explicitly converts to UTC first, then truncates.
+- `README.md:21-23` documents the same thing for the caller: *"`windows.bucket_by_hour` groups readings into **UTC hours**. A window covers `[start, start + 1 hour)`..."*
+- The existing (passing) test `test_hour_start_truncates_to_the_hour` also assumes UTC-truncation semantics.
+
+So `hour_start` is documented and designed to bucket everything into UTC hours regardless of the input's original offset — that's the whole point of aggregating buoy readings from different timezones into a single consistent hourly feed. The new test asserts the opposite behavior (preserve local offset, truncate locally), which would silently change what "hourly window" means for any reading not already in UTC, contradicting the README's stated contract.
+
+Per the project's ground rules, I'm not going to change `src/` to make this test pass, since that would contradict the documented UTC-bucketing behavior, and I'm not allowed to modify the test itself.
+
+Could you clarify the intent — should `hour_start`/`bucket_by_hour` actually be changed to bucket by local hour (and the README updated to match), or is this test simply wrong and should be removed/rewritten by someone with authority over the test suite?

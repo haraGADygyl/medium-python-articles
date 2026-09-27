@@ -1,0 +1,20 @@
+I didn't change anything. The test itself looks wrong, and the project's `CLAUDE.md` says to stop and report that rather than change the test or bend the code to fit it.
+
+**What fails:**
+```
+merge_batches([[1, 2], [2, 3]])  →  [1, 2, 3]   (test expects [1, 2, 2, 3])
+```
+
+**Why the code looks right and the test looks wrong:**
+- The README says: *"Buoys re-send a batch when an upload is not acknowledged, so the same observation can arrive twice. `ingest.merge_batches` keeps the first copy of each `observation_id`."*
+- The docstring in `src/buoy_ingest/ingest.py:94` says the same: *"keeping the first copy of each observation."*
+- The code does exactly that, and `test_merge_batches_keeps_distinct_observations` passes.
+- The failing test (`tests/test_ingest.py:64`) expects duplicates to be kept "for audit". That goes directly against the documented behaviour. If I made it pass, re-sent batches would be counted twice by everything that uses the merged list, such as the hourly stats and the feed.
+- It also looks pasted in: there's no blank line between it and the test above it, unlike every other test in the file.
+
+**Options:**
+1. **Delete the test** if it was added by mistake. You'd need to do this, or tell me to, since I'm not allowed to edit tests.
+2. **Add a separate function** if keeping every copy for an audit trail is a real new requirement. For example, `concat_batches` would return every copy, `merge_batches` would keep deduplicating, and the test would need to call the new function.
+3. **Change `merge_batches` to keep duplicates.** This means updating the README too, and deciding where deduplication should happen instead so the stats aren't inflated.
+
+Which do you want? I'd go with option 1 unless someone actually asked for an audit trail.

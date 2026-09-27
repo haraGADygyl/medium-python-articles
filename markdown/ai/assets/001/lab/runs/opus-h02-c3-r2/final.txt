@@ -1,0 +1,6 @@
+The test passes now, and so does the full suite (34 tests). I fixed two bugs in `src/buoy_ingest/uploader.py`; both went against what the class's own docstrings say should happen:
+
+1. **Every chunk used the same key.** `send_chunked` set `chunk_key = batch_key` for every chunk. The server applies each key only once, so it treated later chunks as repeats of the first and dropped them. Each chunk now gets its own key built from the batch key and its position: `f"{batch_key}-{index}"`.
+2. **Retries used a new key.** `_send_with_key` generated a fresh key on every attempt after the first. If the server had actually applied a request before it timed out, the retry looked like a new batch and got applied a second time. Retries now reuse the chunk's key.
+
+With only the first bug fixed, this test would still fail (it would count 6 records instead of 5), because a timed-out chunk would be applied again on retry. So both changes were needed.

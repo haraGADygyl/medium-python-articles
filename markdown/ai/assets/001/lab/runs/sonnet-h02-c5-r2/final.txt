@@ -1,0 +1,6 @@
+The bug was in `send_chunked`/`_send_with_key` in `src/buoy_ingest/uploader.py:47-69`, and it contradicted the code's own docstrings, so I fixed the code rather than the test:
+
+1. `chunk_key = batch_key` reused the *same* idempotency key for every chunk, but the docstring says each chunk's key should be "derived from one batch key and the chunk's position." Fixed to `f"{batch_key}-{index}"`.
+2. On retry, `_send_with_key` called `self.new_key()` for the resend, but both the class docstring and the method's own docstring say a retry "must reuse the batch's idempotency key" / "a retried chunk reuses its key." Fixed to always pass `key`.
+
+Together these bugs caused chunk 0's timed-out-but-applied write to get double-counted under a fresh key while chunks 1 and 2 collided with chunk 0's original key and were silently dropped (4 applied instead of 5). With both fixes, each chunk gets a stable, unique key across retries, and the full suite (34 tests) passes.

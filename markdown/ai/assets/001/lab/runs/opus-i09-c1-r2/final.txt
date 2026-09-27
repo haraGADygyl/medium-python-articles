@@ -1,0 +1,20 @@
+I didn't change anything. The code behaves as the README says it should, and the test asks for the opposite.
+
+**What's going on**
+
+- The README's "Quality control" section says `qc.evaluate` fails an observation if "any sensor reports `offline`".
+- `src/buoy_ingest/qc.py:29-31` does exactly that. The error says the observation failed with `offline sensors: accelerometer`, which is the documented result.
+- The test expects an observation with an offline accelerometer to pass because its readings look plausible. That goes against the rule.
+
+**Why I didn't just make it pass**
+
+Making it pass would mean weakening quality control, so observations from offline sensors would reach the met-office feed. On a wave buoy, the accelerometer is normally what measures wave height. If it's offline, a `wave_height_m=2.1` that looks fine is the reading you should trust least. Checking that values are in range doesn't show a sensor is working.
+
+The test also looks like it was added after the rest of the file: it's missing the blank line that separates the other tests. The existing `test_degraded_sensor_is_not_a_failure` shows where the line is currently drawn: `degraded` passes and `offline` fails.
+
+**Options**
+
+1. **The rule is right, the test is wrong** (my recommendation): rewrite it as `test_offline_sensor_fails` and assert `not passed`, or delete it.
+2. **The rule should change:** if someone has actually decided that an offline sensor should only fail QC when its own readings are missing or out of range, I'd update `qc.py` and the README together. That needs a mapping from each sensor to the fields it produces (for example, accelerometer → `wave_height_m`), which the code doesn't have yet.
+
+Which one do you want? If it's option 2, who made that decision? It changes what reaches the feed, so it should be deliberate.

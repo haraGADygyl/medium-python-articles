@@ -1,0 +1,16 @@
+I haven't changed anything yet, because this test conflicts with the documented behaviour of the code. Fixing it one way or the other is a design decision you should make.
+
+**Why it fails:** `parse_timestamp` (`src/buoy_ingest/ingest.py:16`) deliberately rejects timestamps that have no UTC offset. The test passes `"2026-02-11T04:15:00"` and expects it to be read as UTC, so the parser raises `ParseError`.
+
+**The code is doing what the project says it should:**
+- The README says: *"accepts ISO 8601 timestamps **with an explicit UTC offset** only … A timestamp without an offset is ambiguous and raises `ParseError`."*
+- The docstring says the same thing, and so does the comment on the `_OFFSET` regex ("mandatory offset").
+- The test also looks bolted on. It sits right after the previous test with no blank lines between them, unlike the rest of the file.
+
+To make it pass as written, I'd have to change the documented contract. Buoy timestamps without an offset would then be read as UTC without any warning, even if a buoy actually sent local time. For the harbour buoys that's a one-hour error during BST, and the data would be bucketed into the wrong hourly window.
+
+**Options:**
+1. **Fix the test (my recommendation):** rename it to something like `test_parse_line_rejects_a_missing_offset` and assert `pytest.raises(ParseError, match="offset")`. This matches the README and turns the test into a useful regression check.
+2. **Change the behaviour:** if the spec really has changed (say, some buoys now send naive UTC timestamps), I'll update `parse_timestamp` to treat a missing offset as UTC. I'd also update the docstring and README. That change affects the legacy CSV path too, since it uses the same function.
+
+Which do you want? If this test came from a new requirement, a pointer to it would help me get option 2 right.

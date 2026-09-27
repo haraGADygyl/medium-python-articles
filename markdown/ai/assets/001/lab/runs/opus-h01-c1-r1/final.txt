@@ -1,0 +1,9 @@
+The test passes now, and so does the rest of the suite (34 tests).
+
+**Cause:** timestamps kept whatever offset they came in with. `parse_timestamp` checked that a timestamp had an offset, but it never converted the time to UTC, even though its docstring says the result is always in UTC. `hour_start` had the same gap: it put the time in a variable called `in_utc` without converting it. So `05:50+01:00` and `01:20-03:30` ended up in different hourly buckets, even though both are 04:xx UTC.
+
+**Fix (one line in each file):**
+- `src/buoy_ingest/ingest.py`: `parse_timestamp` now returns `moment.astimezone(timezone.utc)`. `timezone` was already imported there but unused.
+- `src/buoy_ingest/windows.py`: `hour_start` now converts with `moment.astimezone(timezone.utc)` before rounding down to the hour. The ingest fix alone was enough for this test. This second change makes sure times with a non-UTC offset from other callers are also grouped by their UTC hour.
+
+One side effect: `export.py` writes `recorded_at` with `isoformat()`, so exported timestamps will now always end in `+00:00` instead of keeping the original offset. The moment in time is the same; only the format changes.

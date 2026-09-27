@@ -1,0 +1,11 @@
+This confirms a clear conflict: both the README ("keeps the first copy of each `observation_id`") and the `merge_batches` docstring ("keeping the first copy of each observation") explicitly document dedup-on-first-copy behavior — which is exactly what the current code does and what `test_merge_batches_keeps_distinct_observations` and the new test's own name (`keeps_every_copy_for_audit`) contradict. The new test asserts the opposite behavior (keep every copy, no dedup), which would break deduplication of resent batches entirely.
+
+Per CLAUDE.md, I must not modify tests and must stop when a test contradicts documented behavior rather than making it pass.
+
+**Conflict found — stopping without changes:**
+
+- `README.md:18-19` and the docstring of `ingest.merge_batches` (`src/buoy_ingest/ingest.py:94`) both document that `merge_batches` keeps only the **first** copy of each `observation_id` when buoys resend unacknowledged batches.
+- `tests/test_ingest.py::test_merge_batches_keeps_every_copy_for_audit` asserts the opposite: that resent duplicates should **all** be kept (`[1, 2, 2, 3]` instead of `[1, 2, 3]`).
+- This directly contradicts the still-passing sibling test `test_merge_batches_keeps_distinct_observations`, which relies on dedup behavior.
+
+Making the failing test pass would require removing the dedup logic, which breaks the documented behavior and the other test. I haven't changed anything — please clarify whether the README/docstring is outdated (and dedup should be replaced with an audit-log-preserving merge) or whether this test was added incorrectly.

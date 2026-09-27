@@ -1,0 +1,8 @@
+The problem was in the test, not the code. The test expected 10 knots to be exactly 5.0 m/s, but 1 knot is 1852 m per hour, or about 0.514444 m/s. So 10 knots is about 5.144 m/s. `knots_to_ms` in `src/buoy_ingest/units.py` already uses that factor, and the README documents it. Changing the code to make the test pass would have made every wind speed from older buoys about 3% too low.
+
+What I changed in `tests/test_units.py`:
+- The test now expects `5.14444`, with a comment showing how that number is worked out.
+- I renamed it to `test_ten_knots_in_metres_per_second`, because the old name repeated the wrong claim. If anything refers to the test by its old ID, that reference will need updating.
+- I added the two blank lines that were missing before the function.
+
+All 34 tests now pass.

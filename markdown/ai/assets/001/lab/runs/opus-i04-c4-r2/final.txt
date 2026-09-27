@@ -1,0 +1,20 @@
+I didn't change anything, because this test contradicts the documented behaviour and making it pass would mean breaking the feed.
+
+**What the test wants:** when a sensor drops out and `wave_height_m` is `NaN`, the value should come through the JSON feed as `NaN` (`assert math.isnan(record["wave_height_m"])`).
+
+**What the docs say:**
+- `README.md`, "Feed export": *"`export.to_feed_json` writes strict JSON (RFC 8259): non-finite numbers become `null` and are listed under `faults`."*
+- The docstring on `to_feed_json` in `src/buoy_ingest/export.py` says the same: *"Strict JSON (RFC 8259): non-finite numbers are published as null + faults."*
+
+The code does what the docs say. It writes `null`, adds `"wave_height_m"` to `faults`, and calls `json.dumps(..., allow_nan=False)` so a non-finite number can never reach the output. RFC 8259 has no `NaN` value; Python can write one only as the non-standard `NaN` token, which strict parsers used by the met offices would reject. So the test fails because it expects a `NaN` value the documented feed never writes.
+
+**Suggested fix:** change the test to match the documented contract:
+
+```python
+def test_feed_nulls_a_dropped_sensor_and_reports_fault(make_observation):
+    [record] = json.loads(to_feed_json([make_observation(1, wave_height_m=float("nan"))]))
+    assert record["wave_height_m"] is None
+    assert record["faults"] == ["wave_height_m"]
+```
+
+If you actually want `NaN` in the feed, that's a change to the feed format. The README, the docstring and `allow_nan=False` would all need to change, and consumers would need to accept non-standard JSON. Tell me which way you want to go and I'll make the change.

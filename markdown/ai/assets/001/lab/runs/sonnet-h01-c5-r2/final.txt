@@ -1,0 +1,3 @@
+All 34 tests pass now.
+
+The bug: `parse_timestamp` in `src/buoy_ingest/ingest.py` parsed the offset-aware timestamp but never normalized it to UTC — it kept the original offset's tzinfo instead. Both the function's own docstring ("The result is always in UTC") and the README ("Parsed timestamps are converted to UTC") already documented the intended behavior, so this was a genuine implementation bug, not a bad test. Added `.astimezone(timezone.utc)` to actually perform that conversion, which fixes `test_offset_readings_land_in_utc_hours` and keeps the rest of the suite green.

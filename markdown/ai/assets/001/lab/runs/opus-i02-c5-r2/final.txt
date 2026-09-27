@@ -1,0 +1,21 @@
+I didn't change anything. The test contradicts the documented behaviour, so I stopped instead of making it pass.
+
+**What the test expects**
+
+- The input is `2026-02-11 01:10` at UTC−03:30 (Newfoundland), which is `04:40 UTC`.
+- The test expects `hour_start` to return `01:00` at −03:30, which is **`04:30 UTC`**. That means cutting the time back to the *local* hour.
+
+**What the docs say**
+
+- The `hour_start` docstring (`src/buoy_ingest/windows.py`) says: *"The start of the **UTC** hour containing `moment`."*
+- The README says: *"`windows.bucket_by_hour` groups readings into **UTC hours**. A window covers `[start, start + 1 hour)`."*
+- The code does what the docs say. It returns `04:00 UTC`, which is the start of the UTC hour that contains `04:40 UTC`.
+
+**Why it can't be both ways**
+
+In time zones that are offset by a half hour (like Newfoundland) or 45 minutes, the start of the local hour and the start of the UTC hour are different moments. If `hour_start` returned `04:30 UTC`, `bucket_by_hour` would key readings under half-past-the-hour starts. Readings in the same UTC hour could then land in different windows, which breaks the documented UTC-hour grouping. It rarely matters in practice, because `ingest.parse_line` converts every timestamp to UTC. But the function's documented job is to return UTC hour starts.
+
+**Options**
+
+1. **The test is wrong** (most likely, in my view): remove it or rewrite it to expect `datetime(2026, 2, 11, 4, tzinfo=UTC)`. Project rules don't let me edit tests, so you'd need to make that change or tell me to.
+2. **You want local-hour windows:** then the README and docstrings need to change first, and so does the definition of the hourly windows. That's a design decision for you to make, not something I should do just to get a test passing.

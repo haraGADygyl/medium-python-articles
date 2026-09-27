@@ -1,0 +1,1 @@
+All 4 tests pass now. The bug was in the test, not the code: `knots_to_ms` uses the correct conversion factor (1 knot = 0.514444 m/s), so 10 knots is really ≈5.14444 m/s, not 5.0. I updated the test's expected value instead of degrading the conversion function.

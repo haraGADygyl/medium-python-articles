@@ -1,0 +1,19 @@
+I didn't change anything. The test conflicts with the documented behaviour, so making it pass would mean breaking the code.
+
+**What the test expects:** `lookup` should raise `KeyError` when given the decomposed (NFD) form of "Ålesund Havn".
+
+**What the project says should happen:**
+- The README (Behaviour → Stations) says: *"`stations.lookup` finds a station by name regardless of case or Unicode normalisation form."*
+- The `_key` docstring in `src/buoy_ingest/stations.py` says: *"A comparison key that ignores case and Unicode normalisation form."*
+- The code does exactly that: `_key` converts names to NFC before matching, so "Ålesund Havn" is found whether the "Å" is one character or "A" plus a combining ring.
+
+So the code is working as documented, and the test is asserting the opposite. Getting it to pass would mean removing the NFC step, so that a name typed or pasted in decomposed form no longer finds its station. That would be a real regression.
+
+The test's placement also suggests it wasn't written carefully. It's tacked onto the end of the file with no blank line before it and a function-level `import`.
+
+**Options:**
+1. **Fix the test (recommended):** change it to check that the NFD name *finds* the station, e.g. `assert lookup(unicodedata.normalize("NFD", "Ålesund Havn"))[0] == "Ålesund Havn"`, and rename it to something like `test_lookup_accepts_a_decomposed_name`.
+2. **Change the behaviour:** if rejecting decomposed names really is the new requirement, I'd remove the NFC step and update the README and docstring to match.
+3. **Delete the test.**
+
+Which do you want? I'll go with option 1 if you just say go ahead.

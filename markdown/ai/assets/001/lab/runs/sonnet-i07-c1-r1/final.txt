@@ -1,0 +1,3 @@
+All 5 tests pass now.
+
+The test's assertion was backwards: it expected a retry to use a *fresh* idempotency key, but `Uploader` (per its docstring and the README's documented "Uploads" behavior) intentionally reuses the same key on retry so the feed server applies a batch exactly once even if a timed-out request actually succeeded server-side. Changing the code to match the test's original assertion would have introduced a duplicate-application bug. I corrected the test to assert `len(server.applied) == 1` and renamed it to `test_every_attempt_reuses_the_same_key` to match the actual, correct behavior.

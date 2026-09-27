@@ -1,0 +1,27 @@
+I haven't made this test pass because it contradicts the documented behaviour. I changed no files.
+
+**The conflict**
+
+The test `tests/test_ingest.py:64` expects a timestamp with no offset (`"2026-02-11T04:15:00"`) to be read as UTC:
+
+```python
+record = json.loads(LINE) | {"recorded_at": "2026-02-11T04:15:00"}
+observation = parse_line(json.dumps(record))
+assert observation.recorded_at == datetime(2026, 2, 11, 4, 15, tzinfo=timezone.utc)
+```
+
+Both the README and the docstring say the opposite:
+
+- **README, "Timestamps":** "`ingest.parse_line` accepts ISO 8601 timestamps **with an explicit UTC offset** only … A timestamp without an offset is ambiguous and raises `ParseError`."
+- **`parse_timestamp` docstring** (`src/buoy_ingest/ingest.py:17-21`): "A timestamp without an offset is ambiguous (local time? UTC?) and is rejected with ParseError."
+
+The code does what those say: `parse_timestamp` raises `ParseError`, and that's why the test fails. The code isn't broken; the test asks for different behaviour.
+
+Making it pass would also have side effects. The CSV path (`parse_csv`) uses the same `parse_timestamp`, so it would start accepting offset-less timestamps too. If a buoy sends local time without an offset, it would be silently stored as UTC and filed in the wrong hourly window, with no error. The README's rule exists to prevent exactly that.
+
+**What you need to decide**
+
+1. **The test is wrong:** it should be rewritten to assert that `ParseError` is raised. Per CLAUDE.md, I won't change tests myself.
+2. **The requirement has changed:** offset-less timestamps should now count as UTC. In that case, update the README and docstring first, and decide whether the CSV path should change too. Then I can make the code change, which is small.
+
+Tell me which one you want.

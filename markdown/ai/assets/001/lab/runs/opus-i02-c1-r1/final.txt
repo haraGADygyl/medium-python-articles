@@ -1,0 +1,17 @@
+I haven't changed anything, because the test asks for behaviour that contradicts the project's documented design.
+
+**Why it fails:** `hour_start` (`src/buoy_ingest/windows.py:11`) converts the reading to UTC and then cuts off the minutes. The test uses 01:10 at UTC−03:30, which is 04:40 UTC, so the function returns **04:00 UTC**. The test expects 01:00 at −03:30, which is **04:30 UTC**. Python compares these as moments in time, so they're half an hour apart.
+
+**Why the code is right and the test is wrong:**
+- The README says: "`windows.bucket_by_hour` groups readings into UTC hours. A window covers `[start, start + 1 hour)`." The module docstring and the `hour_start` docstring say UTC too.
+- If `hour_start` kept the local hour, a zone with a half-hour offset would produce windows running from :30 to :30 in UTC. Readings from the same UTC hour could then land in different buckets, depending on which offset each buoy sent. That breaks the hourly aggregation and the feed built on it.
+- Parsed timestamps are converted to UTC on ingest anyway (per the README), so a real reading with a −03:30 offset never reaches this function.
+
+The test also looks bolted on: it's pasted straight after the previous test with no blank lines, and it imports `timedelta` inside the function.
+
+**Options:**
+1. **Fix the test (my recommendation):** rename it (e.g. `test_hour_start_uses_the_utc_hour_for_offset_timestamps`) and assert `datetime(2026, 2, 11, 4, tzinfo=UTC)`. This keeps a useful check on half-hour offsets.
+2. **Delete the test** if it was added by mistake.
+3. **Change the behaviour to local-hour windows.** This is a real design change: it would need the README, the docstrings and `bucket_by_hour`'s semantics updated, and someone would have to decide what "the hour" means when readings arrive with different offsets.
+
+Which would you like? I can do option 1 right away.

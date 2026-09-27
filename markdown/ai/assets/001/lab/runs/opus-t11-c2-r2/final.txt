@@ -1,0 +1,14 @@
+I didn't change anything. I think this test contradicts the project's documented behaviour, so per `CLAUDE.md` I'm stopping to check with you rather than editing the code.
+
+**What's happening:**
+- `tests/test_stats.py:25` feeds in the heights `[0.9, 1.1, 1.2, 1.4, 7.8]` and expects `1.2`. That's the **median**.
+- `summarise` returns `2.48`, which is the **mean** of those values.
+- The mean is what's specified. `README.md:24` says: "`stats.summarise` reports the **mean** of each measurement over the readings that have it, rounded to 3 decimals once, at the end." The docstring in `src/buoy_ingest/stats.py` says the same.
+
+So the code matches the spec, and the test asks for something else. Making it pass would mean changing what `summarise` reports, which is a spec decision rather than a bug fix.
+
+**Choices:**
+1. **Keep the mean.** The test is wrong and needs updating to expect `2.48` (or removing). I'm not allowed to touch tests, so you'd need to do that.
+2. **Switch to the median on purpose.** This would ignore spikes like the storm reading. You'd need to decide whether it applies only to `wave_height_m` or to every measurement. I'd then change `stats.py` and its docstring, and the README should change too. The other four tests in the file would still pass either way.
+
+Which do you want? If it's the median, tell me whether it's just wave height or all measurements.

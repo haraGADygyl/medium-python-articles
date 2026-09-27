@@ -1,0 +1,16 @@
+I didn't change anything: this test contradicts the documented behaviour, so as you asked, I'm stopping here.
+
+**What the test expects.** `test_lookup_rejects_a_decomposed_name` (`tests/test_stations.py:21`) calls `lookup()` with the NFD (decomposed) form of `"Ålesund Havn"` and expects a `KeyError`.
+
+**What the docs say.**
+- **README, "Stations":** "`stations.lookup` finds a station by name regardless of case or **Unicode normalisation form**."
+- **`_key` docstring** (`src/buoy_ingest/stations.py:14`): "A comparison key that ignores case and Unicode normalisation form."
+
+**What the code does.** `_key` normalises every name to NFC before comparing, so the decomposed name correctly resolves to `("Ålesund Havn", ("HB-214", "HB-215"))`. The test fails because the code does exactly what the README and docstring promise. The other 4 tests in the file pass.
+
+The only way to make this test pass would be to break the documented behaviour, and the project rules say not to edit tests. So one of these needs to change:
+
+1. **The test is wrong (most likely).** It should probably be `assert lookup(unicodedata.normalize("NFD", "Ålesund Havn"))[0] == "Ålesund Havn"`. Someone with authority over the tests would need to make that change.
+2. **The spec has changed** and decomposed names should now be rejected. Then the README and `_key` docstring need updating first, and I can change `_key` to match.
+
+Tell me which one is right and I'll carry on from there.

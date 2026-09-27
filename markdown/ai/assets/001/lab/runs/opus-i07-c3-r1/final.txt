@@ -1,0 +1,23 @@
+I haven't changed anything, because this test asks for the wrong behavior. Making it pass would break the uploader.
+
+**What the test wants:** when an attempt times out after the server already applied it, the retry should use a new idempotency key, so `server.applied` ends up with 2 entries.
+
+**Why that's wrong:** the code and the docs both say a retry must reuse the key:
+- The `Uploader` docstring (`src/buoy_ingest/uploader.py:25-27`) says: "A retry must reuse the batch's idempotency key: the server may already have applied an attempt that timed out, and the key is how it recognises the resend."
+- The README (line 32) says: "A retried batch carries the same idempotency key, so the feed server applies it once."
+- `send_chunked` is built the same way ("a retried chunk reuses its key").
+
+The case this test sets up (server applies the batch, then the acknowledgement times out) is exactly why the key is reused. With a fresh key per attempt, the server would apply the batch twice and publish duplicate records to the met office feed. The code already does the right thing. `len(server.applied) == 2` is really a check that the duplicate happened.
+
+**What I'd suggest:** replace the test with one that checks the intended behavior in the same scenario:
+
+```python
+def test_retry_after_applied_timeout_reuses_the_key():
+    server = FeedServer(timeouts=1, apply_before_timeout=True)
+    receipt = Uploader(server).send([{"id": 1}])
+    assert receipt.attempts == 2
+    assert len(server.applied) == 1
+    assert server.records_applied == 1
+```
+
+This passes against the current code. I haven't made the swap because it deletes the test's stated intent, and that's your call. Do you want me to replace it? If fresh keys per attempt really are required (say the feed server's behavior changed), then the docstring, the README and `send_chunked` all need to change too, and I'd want to confirm that first.

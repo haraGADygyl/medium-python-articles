@@ -1,0 +1,12 @@
+diff --git a/src/buoy_ingest/qc.py b/src/buoy_ingest/qc.py
+index 1e39c39..139c10a 100644
+--- a/src/buoy_ingest/qc.py
++++ b/src/buoy_ingest/qc.py
+@@ -27,6 +27,6 @@ def evaluate(observation: Observation) -> QCResult:
+     if observation.battery_v is not None and observation.battery_v < BATTERY_FLOOR_V:
+         reasons.append(f"battery below {BATTERY_FLOOR_V} V: {observation.battery_v}")
+     offline = [s.tag for s in observation.sensors if s.status == "offline"]
+-    if offline and observation.wave_height_m is None:
++    if offline:
+         reasons.append(f"offline sensors: {', '.join(offline)}")
+     return QCResult(passed=not reasons, reasons=reasons)

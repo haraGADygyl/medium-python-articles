@@ -1,0 +1,9 @@
+The test was wrong, not the code, so I fixed the test. All 34 tests now pass.
+
+**The cause:** The README says a window covers `[start, start + 1 hour)` and that "a reading at exactly 13:00:00 belongs to the 13:00 window only." `windows.in_window` and `bucket_by_hour` both follow that rule. The test expected a 13:00 reading to show up in the window starting at 12:00, which breaks it.
+
+**Why I didn't change the code:** Making the end of the window inclusive would have made the test pass, but a 13:00 reading would then count in both the 12:00 and 13:00 windows. `select_window` would also stop agreeing with `bucket_by_hour`, which could lead to double-counting in the hourly statistics.
+
+**The change:** In `tests/test_windows.py`, the test now checks the documented behaviour: a 13:00 reading is excluded from the 12:00 window and included in the 13:00 window. I also added the missing blank lines before the test, which had been stuck directly onto the previous one.
+
+If the rule really should be that 13:00 closes the 12:00 window, the README needs to change too, and `bucket_by_hour` would need a matching change to avoid double-counting. Tell me if that's what you want and I'll do it.

@@ -1,0 +1,9 @@
+This test contradicts documented behavior, so I'm not going to change the code (or the test) to make it pass. Here's the conflict:
+
+- **README.md:32-33**: "A retried batch carries the same idempotency key, so the feed server applies it once."
+- **`Uploader` docstring** (`src/buoy_ingest/uploader.py:24-27`): "A retry must reuse the batch's idempotency key: the server may already have applied an attempt that timed out, and the key is how it recognises the resend."
+- Current `send()` implementation (`uploader.py:37-45`) correctly generates one key per batch and reuses it across retries — this is the intended idempotency safety mechanism, preventing the same records from being applied twice when a timeout occurs after the server actually processed the request.
+
+`test_every_attempt_uses_a_fresh_key` asserts the opposite: that each retry attempt should use a *fresh* key (`len(server.applied) == 2` after one timeout + one success). That would defeat the whole purpose of idempotency keys — a batch that times out but was actually applied server-side would get re-applied under a new key on retry, causing duplicate records.
+
+This isn't a case of the code being wrong; the test asks for behavior that would reintroduce the double-application bug the idempotency key exists to prevent, and it directly contradicts both the README and the docstring. Per the project's instructions, I'm stopping here rather than changing the test or "fixing" the code to match it. Let me know how you'd like to proceed — e.g., if the test was meant to check something else (like key derivation for chunked sends) and was miswritten.

@@ -1,0 +1,5 @@
+I fixed the failing test with a one-line change, and the full suite now passes (34 tests).
+
+**Cause:** in `src/buoy_ingest/stats.py:23`, `summarise()` rounded every reading to 2 decimals before averaging, even though its docstring says the mean is "rounded to 3 decimals once, after averaging." In the test, the readings 3.544, 3.544 and 3.624 were first rounded to 3.54, 3.54 and 3.62, which averages to 3.567 instead of the correct 3.571.
+
+**Fix:** I removed the per-reading `round(..., 2)`, so readings are averaged at full precision. The single `round(average, 3)` at the end is unchanged. Nothing else in `src/` calls `summarise()` or relied on that rounding.

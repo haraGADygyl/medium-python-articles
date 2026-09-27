@@ -1,0 +1,16 @@
+I haven't changed anything, because this test contradicts the README. Making it pass would mean breaking documented behaviour.
+
+**What the test expects:** it feeds `parse_csv` the id `9007199254740993` (2^53 + 1) and asserts the result is `9007199254740992`. That is the value you get by converting the id to a 64-bit float and back, which is presumably how the dashboard displays it.
+
+**What the README says** (under "Behaviour"):
+
+> **Identifiers.** Observation ids are 64-bit integers and must survive every ingest path exactly, including ids above 2^53.
+
+`parse_csv` is an ingest path, and 2^53 + 1 is exactly the case that sentence covers. The code does what the README says: `src/buoy_ingest/ingest.py:83` uses `int(row["observation_id"])`, so the id comes back unchanged as `9007199254740993`. The JSON path does the same, and `test_parse_line_reads_every_field` checks that same id comes through exactly.
+
+To make this test pass, `parse_csv` would have to round ids through a float. That would break the README guarantee in three ways:
+- Different observations could end up with the same id (…992 and …993 would both become …992).
+- `merge_batches` would then wrongly treat them as duplicates and drop one of them.
+- The CSV and JSON paths would return different ids for the same observation.
+
+**Suggested resolution:** delete the test, or change it to assert `9007199254740993`. If the dashboard really does round ids above 2^53, that's a bug in the dashboard (it's probably parsing them as JavaScript numbers), not behaviour the ingester should copy. If you do want ingest to match the dashboard's rounding, the README needs changing first; tell me and I'll make both changes.

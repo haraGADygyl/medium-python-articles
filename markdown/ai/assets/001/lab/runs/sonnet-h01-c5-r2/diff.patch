@@ -1,0 +1,13 @@
+diff --git a/src/buoy_ingest/ingest.py b/src/buoy_ingest/ingest.py
+index 51a38ae..f5006d8 100644
+--- a/src/buoy_ingest/ingest.py
++++ b/src/buoy_ingest/ingest.py
+@@ -25,7 +25,7 @@ def parse_timestamp(text: str) -> datetime:
+         moment = datetime.fromisoformat(text.replace("Z", "+00:00"))
+     except ValueError as exc:
+         raise ParseError(f"not an ISO 8601 timestamp: {text!r}") from exc
+-    return moment
++    return moment.astimezone(timezone.utc)
+ 
+ 
+ def _optional_float(record: dict, key: str) -> float | None:

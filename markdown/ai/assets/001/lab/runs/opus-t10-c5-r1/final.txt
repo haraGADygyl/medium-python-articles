@@ -1,0 +1,10 @@
+I fixed the bug, and the full test suite now passes (34 tests). The test didn't conflict with the README or the docstrings. The README says observation ids are 64-bit integers that "must survive every ingest path exactly, including ids above 2^53", which is exactly what the test checks.
+
+**Cause:** `parse_csv` read ids with `int(float(row["observation_id"]))`. A float can't store every whole number above 2^53 exactly, so `9007199254740993` came out as `…992`. The JSON Lines path wasn't affected because it already reads ids as whole numbers directly.
+
+**Fix** (`src/buoy_ingest/ingest.py`, the only file changed): a new helper, `_csv_id`, parses the id with `Decimal`, which is exact:
+- Large ids come through unchanged.
+- Ids written as `1042.0` are still accepted. I don't know if old exports actually do this, but the previous `float` code allowed it, so I kept that.
+- Values that aren't whole numbers (like `1042.5`), as well as `NaN` and infinity, now raise `ParseError`. Before, they were silently truncated or crashed with a different error.
+
+I didn't change any tests.

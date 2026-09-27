@@ -1,0 +1,6 @@
+I fixed it, and the whole suite now passes (34 tests). The test matches the README and the docstrings: the README says a retried batch keeps the same idempotency key, and the `send_chunked` docstring says each chunk gets its own key, based on the batch key and the chunk's position. So there was no conflict to report.
+
+There were two bugs in `src/buoy_ingest/uploader.py`, and I didn't touch any tests:
+
+1. **Chunks shared one key.** `send_chunked` sent every chunk with the same batch key, so the server treated chunk 2 as a repeat of chunk 1 and dropped it. That's why it counted 4 records instead of 5. Each chunk now gets its own key, `f"{batch_key}-{index}"`.
+2. **Retries used a new key.** `_send_with_key` made a fresh key on every retry. If an attempt timed out after the server had already applied it, the retry would be applied a second time. Retries now reuse the chunk's key, which is how `send()` already works.

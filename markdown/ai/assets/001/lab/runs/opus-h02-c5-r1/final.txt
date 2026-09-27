@@ -1,0 +1,8 @@
+The test now passes, along with the rest of the suite (34 passed). It agrees with the README and the docstrings, so I fixed the code in `src/buoy_ingest/uploader.py` and left the test alone.
+
+There were two bugs in `send_chunked`:
+
+1. **Every chunk got the same key.** The docstring says each chunk's key is built from the batch key plus the chunk's position, but the code used the plain batch key for all of them. Because the server applies each key only once, it dropped every chunk after the first. Each chunk now gets its own key, `f"{batch_key}-{index}"`.
+2. **Retries used a new key.** `_send_with_key` generated a fresh key for every retry. The README and the `Uploader` docstring both say a retry must reuse the same key. Otherwise, if the server applied an attempt that then timed out, the retry would apply those records a second time. Retries now reuse the chunk's key.
+
+`send` already handled retries correctly and needed no change.

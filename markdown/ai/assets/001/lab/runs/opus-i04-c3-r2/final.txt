@@ -1,0 +1,19 @@
+I didn't change any code, because this test contradicts the documented behaviour of the feed.
+
+**Why it fails:** `to_feed_json` in `src/buoy_ingest/export.py` turns a NaN into `null` and adds the field name to a `faults` list. The test then calls `math.isnan(None)`, which raises the `TypeError`.
+
+**Why the code is right and the test is wrong:**
+- The README says the feed is strict JSON (RFC 8259) and that "non-finite numbers become `null` and are listed under `faults`". The docstring and `allow_nan=False` in the code say the same.
+- The only way to make the test pass is to write a bare `NaN` token into the output. That isn't valid JSON: Python's `json.loads` accepts it, but standard parsers reject it (JavaScript's `JSON.parse`, for example). The met offices' consumers could then fail on any feed that contains a dropped sensor.
+- The other three tests in the file pass, and the test is formatted differently from them (no blank line before it, and `import math` inside the function). It looks like it was added separately and doesn't match the spec.
+
+The project's hook also blocks edits under `tests/`, so I couldn't correct the test myself. A version that matches the documented behaviour would be:
+
+```python
+def test_feed_marks_a_dropped_sensor_as_null_fault(make_observation):
+    [record] = json.loads(to_feed_json([make_observation(1, wave_height_m=float("nan"))]))
+    assert record["wave_height_m"] is None
+    assert record["faults"] == ["wave_height_m"]
+```
+
+If the feed really should carry NaN now, the feed format itself has to change: drop `allow_nan=False`, remove the null/`faults` handling, update the README, and tell the consumers. I can make that change if you confirm that's what you want, but I wouldn't do it just to get the test passing.

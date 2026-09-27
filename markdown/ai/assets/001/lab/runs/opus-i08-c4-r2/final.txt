@@ -1,0 +1,17 @@
+I didn't change anything, because the test contradicts the documented behaviour.
+
+**The conflict:**
+- `README.md` (Units section) says: *"`units.knots_to_ms` converts with 1 kn = 0.514444 m/s."*
+- `src/buoy_ingest/units.py` does exactly that: `MS_PER_KNOT = 0.514444`, so `knots_to_ms(10)` returns `5.14444`.
+- `tests/test_units.py:16` expects `knots_to_ms(10) == pytest.approx(5.0)`. That only holds if 1 kn = 0.5 m/s, which contradicts the README and is also physically wrong (1 kn = 1852 m/h ≈ 0.514444 m/s).
+
+The test fails by about 0.144 m/s, far outside `approx`'s default tolerance of about 5e-6. Making it pass would mean changing the conversion factor, which would break the documented behaviour and lower every wind speed from older buoys by about 3%.
+
+**What I'd suggest:** fix the test, not the code. For example:
+
+```python
+def test_ten_knots_in_metres_per_second():
+    assert knots_to_ms(10) == pytest.approx(5.14444)
+```
+
+The test also has no blank lines before it, unlike the rest of the file, so it looks like a recent, hand-added change. It's worth checking with whoever wrote it whether "10 kn ≈ 5 m/s" was meant as a rough rule of thumb. If so, a loose tolerance like `pytest.approx(5.0, rel=0.05)` would express that without contradicting the README. Let me know which you'd like and I'll update the test.

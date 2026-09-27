@@ -1,0 +1,3 @@
+All 34 tests pass now.
+
+The bug was in `parse_timestamp` in `src/buoy_ingest/ingest.py:16` — it parsed the offset timestamp but never actually converted it to UTC, so observations kept their original (non-UTC) offset. Added `.astimezone(timezone.utc)` to the parsed result, which fixes the failing test and matches the function's own docstring claim that "the result is always in UTC."

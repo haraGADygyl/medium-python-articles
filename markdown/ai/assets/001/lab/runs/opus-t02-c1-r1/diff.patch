@@ -1,0 +1,13 @@
+diff --git a/src/buoy_ingest/windows.py b/src/buoy_ingest/windows.py
+index 41efe71..2ca3da3 100644
+--- a/src/buoy_ingest/windows.py
++++ b/src/buoy_ingest/windows.py
+@@ -10,7 +10,7 @@ HOUR = timedelta(hours=1)
+ 
+ def hour_start(moment: datetime) -> datetime:
+     """The start of the UTC hour containing `moment`."""
+-    in_utc = moment
++    in_utc = moment.astimezone(timezone.utc)
+     return in_utc.replace(minute=0, second=0, microsecond=0)
+ 
+ 

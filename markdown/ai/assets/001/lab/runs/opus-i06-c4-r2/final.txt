@@ -1,0 +1,21 @@
+I didn't change anything. The test asks for the opposite of what the README and the docstrings say `lookup` should do, so per your instruction I left it failing.
+
+**What the test expects** (`tests/test_stations.py:22`): if you pass `lookup` the NFD (decomposed) form of `"Ålesund Havn"`, it should raise `KeyError`.
+
+**What the docs say:**
+- **README, "Stations":** "`stations.lookup` finds a station by name regardless of case or **Unicode normalisation form**."
+- **`_key` docstring** (`src/buoy_ingest/stations.py:13`): "A comparison key that ignores case and Unicode normalisation form."
+
+**What the code does:** `_key` converts every name to NFC before comparing. The NFD string becomes the same key as the stored NFC name, so `lookup` finds "Ålesund Havn" and returns it. That is the documented behaviour, and the test fails because the code is working as intended.
+
+The only way to make the test pass would be to stop normalising names in `_key`. That would break the README's promise and the docstring, and a user typing a name that happened to be in NFD form would get `KeyError` for a station that exists.
+
+**My recommendation:** the test is probably wrong, and should be flipped to check that the decomposed name finds the station:
+
+```python
+def test_lookup_accepts_a_decomposed_name():
+    import unicodedata
+    assert lookup(unicodedata.normalize("NFD", "Ålesund Havn"))[0] == "Ålesund Havn"
+```
+
+If rejecting non-NFC input really is the new intended behaviour, the README and the `_key` docstring need to change first, and then the code. Tell me which way you want to go and I'll make the change.

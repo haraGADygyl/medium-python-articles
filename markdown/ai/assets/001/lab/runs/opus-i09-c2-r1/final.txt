@@ -1,0 +1,14 @@
+I haven't changed anything, because I think this test is wrong rather than the code. The project's CLAUDE.md says to stop and tell you when a test looks wrong instead of editing it.
+
+**Why it fails:** `evaluate()` in `src/buoy_ingest/qc.py` fails any observation that has an offline sensor. The test sends an offline `accelerometer` (0 samples) and expects the observation to pass because the wave height of 2.1 m looks plausible.
+
+**Why I think the test is wrong:**
+1. **The spec says the opposite.** `README.md:31` says an observation fails QC if "any sensor reports `offline`". The docstring of `evaluate()` says the same, so the code is doing what it's documented to do.
+2. **The scenario doesn't hold up.** Buoys normally calculate wave height from the accelerometer. With the accelerometer offline and 0 samples, a 2.1 m reading has no measurement behind it. A plausible-looking value from a dead sensor is exactly what this rule is there to catch.
+3. **The test looks hastily added.** It's glued onto the previous test with no blank line between them, unlike the rest of the file.
+
+**Options:**
+- **Keep the current rule:** delete or correct the test (for example, assert that it fails). I haven't done that because it means touching tests.
+- **Change the rule on purpose:** if offline sensors shouldn't fail an observation outright (for example, only fail when the offline sensor feeds a reading that's present, or flag it as a warning), tell me the rule you want. I'll change `qc.py` to match and update the README line with it.
+
+Which one do you want?

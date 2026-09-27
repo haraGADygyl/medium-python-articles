@@ -1,0 +1,15 @@
+I didn't change anything, because this test contradicts the README.
+
+**What the test wants:** it feeds the CSV id `9007199254740993` (2^53 + 1) into `parse_csv` and expects to get back `9007199254740992`. That's the id rounded to the nearest 64-bit float, which is what a JavaScript dashboard would show.
+
+**What the README says** (the Identifiers section):
+> Observation ids are 64-bit integers and must survive every ingest path exactly, including ids above 2^53.
+
+`parse_csv` is one of those ingest paths. Right now it uses `int(row["observation_id"])`, which keeps `9007199254740993` exactly, so the code does what the README says. To make the test pass, `parse_csv` would have to round ids through a float. That would break the documented rule, and it would also cause real bugs:
+- Two different observations, `…992` and `…993`, would get the same id.
+- `merge_batches` would then treat one of them as a duplicate and silently drop it.
+- The JSONL path keeps ids exact, so the same observation would get a different id depending on whether it arrived as JSONL or CSV.
+
+The rest of the suite passes (33 of 34). Only this test fails.
+
+**Suggested resolution:** the test probably captures how the dashboard *displays* ids, not how ingest should store them. Any rounding belongs in the dashboard or display layer, not in `parse_csv`. Either the test should be changed to expect the exact id, or, if rounding really is the intended behaviour, the README needs to change first. Both are your call: project rules say I don't edit tests, and I won't change code against the documented behaviour.

@@ -1,0 +1,25 @@
+diff --git a/tests/test_windows.py b/tests/test_windows.py
+index 2f4ab5c..593db7d 100644
+--- a/tests/test_windows.py
++++ b/tests/test_windows.py
+@@ -1,6 +1,6 @@
+ from datetime import datetime, timezone
+ 
+-from buoy_ingest.windows import bucket_by_hour, hour_start, select_window
++from buoy_ingest.windows import HOUR, bucket_by_hour, hour_start, select_window
+ 
+ UTC = timezone.utc
+ 
+@@ -27,7 +27,11 @@ def test_select_window_takes_the_middle_of_the_hour(make_observation):
+     observations = [make_observation(1, datetime(2026, 2, 11, 4, 30, tzinfo=UTC)),
+                     make_observation(2, datetime(2026, 2, 11, 6, 30, tzinfo=UTC))]
+     assert [o.observation_id for o in select_window(observations, start)] == [1]
++
++
+ def test_reading_on_the_hour_closes_the_window(make_observation):
++    # Windows are [start, start + 1 hour): 13:00:00 opens the 13:00 window only.
+     start = datetime(2026, 2, 11, 12, tzinfo=UTC)
+     on_the_hour = make_observation(7, datetime(2026, 2, 11, 13, tzinfo=UTC))
+-    assert select_window([on_the_hour], start) == [on_the_hour]
++    assert select_window([on_the_hour], start) == []
++    assert select_window([on_the_hour], start + HOUR) == [on_the_hour]

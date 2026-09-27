@@ -1,0 +1,16 @@
+I didn't change anything. I think the test is wrong, not the code, and the project rules say to stop and report that rather than edit the test.
+
+**Why it fails:**
+- The readings are `[3.544, 3.544, 3.624]`. Their mean is 10.712 / 3 = 3.5707, which rounds to **3.571**. That's what `summarise` returns.
+- The test expects **3.567**. The only way to get that is to round each reading to 2 decimals first (3.54, 3.54, 3.62 → mean 3.5667 → 3.567).
+
+**Why I think the test is the problem:**
+- `README.md` says `stats.summarise` reports the mean "rounded to 3 decimals once, at the end."
+- The docstring in `src/buoy_ingest/stats.py:17` says the mean is "rounded to 3 decimals once, after averaging, so rounding never biases the result."
+- Rounding each reading first is exactly the bias the docstring warns about. It shifts this result by 0.004 m, and readings are recorded to 3 decimals anyway.
+
+Making the test pass would mean changing documented behaviour, which would also bias every summary the feed publishes.
+
+**What you can do:**
+1. **Keep the documented behaviour (my recommendation):** fix or remove the test yourself. The correct expected value is `3.571`.
+2. **If per-reading rounding really is the new requirement:** tell me, and I'll change `summarise` along with the README and docstring. I'd also need to know what precision to round each reading to. The test suggests 2 decimals.

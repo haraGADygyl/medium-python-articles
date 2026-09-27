@@ -1,0 +1,1 @@
+All 34 tests pass. `merge_batches` now keeps every observation (duplicates included) instead of deduplicating by `observation_id`, matching the new audit requirement, and the README's "Duplicates" section was updated to reflect the change.

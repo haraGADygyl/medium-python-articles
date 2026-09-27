@@ -1,0 +1,14 @@
+I haven't changed anything, because the test and the documented behaviour disagree and choosing between them is your call.
+
+**The conflict:**
+- The test expects `summarise` to return `1.2` for wave heights `[0.9, 1.1, 1.2, 1.4, 7.8]`. That's the **median**.
+- The code returns `2.48`, which is the **mean**. That's what both `README.md:24` and the docstring in `src/buoy_ingest/stats.py` say it should do: "`stats.summarise` reports the **mean** of each measurement… rounded to 3 decimals once, at the end."
+
+So the code isn't broken by its own spec. The test asks for a different statistic. Making the test pass would change what goes into the JSON feed the met offices receive, for every measurement and not just wave height, unless we only change that one. I also can't edit the test, because a hook blocks changes under `tests/`.
+
+**Options:**
+1. **Switch to the median** (the change is simple: sort the values and take the middle one, averaging the two middle values when the count is even), and update the README and docstring to match. This makes sense if storm spikes shouldn't pull the summary up.
+2. **Use the median for `wave_height_m` only** and keep the mean for the other measurements. This fixes the test with less impact, but the summary would then mix two kinds of statistic, so it would need to be documented clearly.
+3. **Keep the mean.** In that case the test is wrong and needs to be changed or removed by someone who can edit `tests/`.
+
+I'd pick option 1 if the median is what's actually wanted, since a typical value that ignores spikes fits buoy data well. But it changes a published contract, so I'd like your go-ahead first. Which do you want?

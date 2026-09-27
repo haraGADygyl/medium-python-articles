@@ -1,0 +1,5 @@
+The test was right and the code was wrong. `MS_PER_KNOT` in `src/buoy_ingest/units.py:3` was set to `0.5`, so `knots_to_ms(10)` returned 5.0. A knot is exactly 1852 m per hour, which is about 0.514444 m/s, and that's also the value the README gives.
+
+I changed the constant to `1852 / 3600`. The failing test now passes, and so does the rest of the suite (34 tests).
+
+Any wind speeds already converted with the old value are about 2.8% too low. If any of that data was stored or exported, it will need recomputing.

@@ -1,0 +1,18 @@
+I didn't change anything, because this test contradicts the documented behaviour. Making it pass would reintroduce the bug the idempotency key exists to prevent.
+
+**What the test asserts** (`tests/test_uploader.py:55-58`): the server applies the batch and then times out, the uploader retries, and the test expects `len(server.applied) == 2`. So each attempt must use a new idempotency key, and the same batch ends up applied twice.
+
+**What the documentation says:**
+
+- **README, "Uploads":** "A retried batch carries the same idempotency key, so the feed server applies it once."
+- **`Uploader` docstring** (`src/buoy_ingest/uploader.py:22-28`): "A retry must reuse the batch's idempotency key: the server may already have applied an attempt that timed out, and the key is how it recognises the resend."
+- **`UploadTimeout` docstring:** a timed-out upload "may or may not have applied the batch", which is exactly the case this test sets up.
+- **`send_chunked` docstring:** "a retried chunk reuses its key."
+
+**Why the current code is right:** `Uploader.send` makes one key per batch and reuses it on every retry. The server therefore applies the observation once (`applied` has one entry), which is the correct result. With a fresh key per attempt, the observation would be duplicated in the feed whenever an acknowledgement is lost. The test's own `FeedServer` docstring, "Applies each idempotency key once", shows the key is the deduplication mechanism.
+
+**Options:**
+1. **Delete the test or invert it** to `assert len(server.applied) == 1` and `server.records_applied == 1`, so it checks the documented guarantee. I'd recommend this.
+2. **If fresh keys per attempt really are wanted**, that's a change to the design. The README and docstrings would need updating, and duplicate records would have to be handled some other way, for example downstream by `merge_batches`.
+
+Tell me which you want and I'll make the change.

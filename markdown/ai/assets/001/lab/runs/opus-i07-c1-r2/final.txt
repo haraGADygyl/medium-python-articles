@@ -1,0 +1,12 @@
+The test was wrong, not the code, so I rewrote the test instead of changing the uploader. The full suite now passes (34 tests).
+
+**Why the test was wrong:** `test_every_attempt_uses_a_fresh_key` asserted that a retry sends a new idempotency key. The uploader's docstring and the README (under "Uploads") both say the opposite: a retry must reuse the key. The first attempt can time out after the server has already applied the batch, and the reused key is how the server spots the resend. The test sets up exactly that case (`apply_before_timeout=True`), so passing it would mean the same records get applied twice. To make it pass as written, I'd have had to break the uploader.
+
+**What I changed:** I replaced that test in `tests/test_uploader.py` with `test_retry_after_applied_timeout_reuses_the_key`. It uses the same setup and checks that:
+- the upload took 2 attempts,
+- the server only saw the receipt's one key,
+- the records were applied once.
+
+I also added the missing blank lines before it. `src/buoy_ingest/uploader.py` is unchanged.
+
+If the feed server really has moved to wanting a fresh key per attempt, tell me and I'll change the uploader and the docs to match. That would lose the protection against applying a batch twice.

@@ -1,0 +1,23 @@
+I haven't changed anything. The test contradicts the documented behaviour, so I stopped instead of making it pass.
+
+**What the test expects**
+
+A reading at `01:10` Newfoundland time (UTC−03:30) should give an hour start of `01:00` Newfoundland time. That is **04:30 UTC**.
+
+**What the code and docs say**
+
+- The `hour_start` docstring (`src/buoy_ingest/windows.py:12`) says it returns "The start of the **UTC** hour containing `moment`." The module docstring says "Group observations into hourly **UTC** windows."
+- The README says `windows.bucket_by_hour` groups readings into **UTC hours**.
+
+The reading is 04:40 UTC, so its UTC hour starts at **04:00 UTC**. That's what the code returns now, and it matches the docs.
+
+**Why it matters**
+
+With a half-hour offset like Newfoundland's, the local hour and the UTC hour can't both be right: 04:30 UTC is not a UTC hour boundary. Making the test pass would put the start of `bucket_by_hour`'s windows half an hour off the UTC hour for any offset that isn't a whole number of hours. Readings from different buoys would then fall into different windows for the same UTC hour, which breaks the documented `[start, start + 1 hour)` UTC windows.
+
+**Options**
+
+1. **Keep UTC hours (recommended):** fix the test. Either expect `datetime(2026, 2, 11, 4, tzinfo=UTC)` or delete the test, since `test_hour_start_truncates_to_the_hour` already covers UTC truncation.
+2. **Switch to local hours:** this changes the spec. The README and docstrings would need updating first, and you'd need to decide how windows from buoys in different offsets get combined.
+
+Tell me which one you want and I'll make the change.

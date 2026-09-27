@@ -1,0 +1,15 @@
+I found a genuine conflict, and per the instructions I'm stopping rather than making the test pass.
+
+**The conflict:**
+
+- README.md:21-23 explicitly documents: *"A window covers `[start, start + 1 hour)`: a reading at exactly 13:00:00 belongs to the 13:00 window only."*
+- `windows.py:18` docstring for `in_window` says the same: *"Whether `moment` falls in the window [start, start + 1 hour)"* — a half-open interval, exclusive at the end.
+- `bucket_by_hour` relies on this too: it floors each observation's timestamp to its own hour via `hour_start`, so a 13:00:00 reading is always grouped into the 13:00–14:00 bucket, never 12:00–13:00. This is also exercised by the passing test `test_select_window_takes_the_middle_of_the_hour`.
+
+The new test `test_reading_on_the_hour_closes_the_window` asserts the opposite: that a reading at exactly 13:00:00, with `start=12:00`, belongs to the 12:00 window (i.e. treats the window as closed on the right, `[start, start + 1 hour]`).
+
+Making this test pass would require changing `in_window` to be inclusive at the upper bound, which would:
+1. Directly contradict the documented behavior in both the README and the docstring.
+2. Cause a 13:00:00 reading to belong to *two* windows simultaneously (12:00's closing instant and 13:00's opening instant) — breaking the non-overlapping tiling that `bucket_by_hour` depends on.
+
+Since this test contradicts documented behavior rather than exposing a bug in `src/`, I'm not changing the source code (and per CLAUDE.md I won't touch the test either). Could you clarify whether the intended windowing semantics should change to closed-on-the-right, or whether this test needs to be corrected/removed?

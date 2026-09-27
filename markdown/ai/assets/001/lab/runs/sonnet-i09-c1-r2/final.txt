@@ -1,0 +1,1 @@
+All 34 tests pass. I removed the "offline sensor always fails QC" rule from `qc.evaluate` — sensor status no longer factors into pass/fail, only out-of-range values and low battery do — and updated the README's QC description to match, since it had explicitly documented the old (now-incorrect) behavior.

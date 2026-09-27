@@ -1,0 +1,6 @@
+I fixed the failing test. There were two bugs in the chunked upload path in `src/buoy_ingest/uploader.py`, and the test needed both fixed. The test now passes, along with the rest of the suite (34 tests).
+
+1. **Every chunk used the same key (line 58).** The code set `chunk_key = batch_key` and never used the chunk's position. The server skips a key it has already applied, so it skipped every chunk after the first. The key is now `f"{batch_key}-{index}"`, which is what the docstring describes.
+2. **Retries used a new key (line 65).** `_send_with_key` called `self.new_key()` on every retry. If the server had applied a chunk and then timed out before confirming, the resend got a key the server hadn't seen, so the chunk was applied twice. Retries now reuse the chunk's key, as the class docstring says they must.
+
+Fixing only one of these still leaves the test failing: with just the first fix the server counts 7 records instead of 5, and with just the second it counts 2.

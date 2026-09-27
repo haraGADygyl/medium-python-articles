@@ -1,0 +1,14 @@
+I didn't change anything. The code is right and the test is wrong, so under the project rules I'm stopping here rather than editing either one.
+
+**Why the test is wrong:** One knot is one nautical mile (1852 m) per hour, which is 1852 / 3600 ≈ 0.514444 m/s. So 10 knots is about **5.144 m/s**, not 5.0. `src/buoy_ingest/units.py` uses `MS_PER_KNOT = 0.514444`, which is correct, and `knots_to_ms(10)` correctly returns 5.14444.
+
+`pytest.approx(5.0)` only allows a difference of ±0.000005, so the test fails. The only way to make it pass from `src/` would be to change the constant to 0.5. That would make every wind speed the pipeline ingests about 3% too low, including the data that already passes its other checks.
+
+**Suggested fix (to the test, which is yours to make):**
+```python
+def test_ten_knots_is_five_metres_per_second():
+    assert knots_to_ms(10) == pytest.approx(5.14444)
+```
+You could also rename it, e.g. to `test_ten_knots_in_metres_per_second`. If 5.0 was meant as a rough figure, `pytest.approx(5.0, rel=0.05)` would also pass. I'd go with the exact value.
+
+If you really do want some other conversion factor, such as a firmware-specific scaling, tell me and I'll change the code.

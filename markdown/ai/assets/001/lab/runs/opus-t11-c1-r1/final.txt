@@ -1,0 +1,16 @@
+I haven't changed anything yet. Making this test pass would mean changing documented behaviour, so I'd like you to decide first.
+
+**Why it fails:** `summarise` returns the **mean** of each measurement. For the test's wave heights `[0.9, 1.1, 1.2, 1.4, 7.8]` the mean is 2.48. The test expects 1.2, which is the **median**. The code has no bug. It does what it says:
+
+- The `summarise` docstring (`src/buoy_ingest/stats.py:15`) says: "The mean of each measurement over the readings that have it."
+- The README's Behaviour section says: "`stats.summarise` reports the **mean** of each measurement… rounded to 3 decimals once, at the end."
+
+So the new test contradicts the stated behaviour. The README describes this output as a JSON feed for the met offices, so switching to the median would change the numbers they receive.
+
+**Options:**
+
+1. **Keep the mean (my recommendation, unless a median was actually requested).** Treat the test as wrong: either fix its expected value to 2.48 or remove it.
+2. **Switch to the median for everything.** Add a `median` helper, use it in `summarise`, and update the docstring and README. The other tests in the file still pass under a median.
+3. **Median for wave height only, mean for the rest.** This fits the test's "typical wave / storm spike" wording, but it mixes the two within one summary, so it also needs the docs updated.
+
+Which one do you want? If the median was a deliberate spec change, say which scope (option 2 or 3) and I'll make the change and update the docs to match.

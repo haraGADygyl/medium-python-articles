@@ -1,0 +1,9 @@
+The test passes now, and so does the rest of the suite (34 tests).
+
+**Cause:** `hour_start` converted every time to UTC before rounding down to the hour. For Newfoundland time (UTC−03:30), 01:10 local is 04:40 UTC, which rounded down to 04:00 UTC. That is 00:30 local, not the 01:00 the test expects. With a half-hour offset, the start of the local hour is never the start of a UTC hour.
+
+**Fix** (`src/buoy_ingest/windows.py`):
+- `hour_start` now rounds down to the hour in whatever timezone the time already has. Times that are already in UTC give the same result as before.
+- `bucket_by_hour` now converts each time to UTC before calling `hour_start`. That keeps the README's promise that readings are grouped into UTC hours, which would otherwise have quietly broken for times with a non-UTC offset.
+
+**Decision for you:** The test and the old docstring disagreed. The docstring said "start of the UTC hour" and the test says "keep the local hour." I treated the test as the intended behaviour for `hour_start` and kept UTC grouping in `bucket_by_hour`. Any other code that calls `hour_start` expecting a UTC hour start now has to convert to UTC first. Nothing else in the repo calls it.

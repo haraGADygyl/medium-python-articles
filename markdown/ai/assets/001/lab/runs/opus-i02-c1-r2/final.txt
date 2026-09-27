@@ -1,0 +1,24 @@
+I haven't changed anything. The test contradicts the project's documented behaviour, so making it pass would mean breaking something else.
+
+**Why it fails:** `hour_start` (`src/buoy_ingest/windows.py:11`) converts the time to UTC and then cuts it down to the start of the hour. In the test:
+
+- The reading is 01:10 at −03:30 (Newfoundland), which is 04:40 UTC.
+- `hour_start` returns 04:00 UTC.
+- The test expects 01:00 at −03:30, which is **04:30 UTC**.
+
+These are two different moments, not just the same time shown in two zones.
+
+**Why I didn't change the code:** The README says `windows.bucket_by_hour` groups readings into **UTC hours**, with each window covering `[start, start + 1 hour)`. The module docstring says the same ("Group observations into hourly UTC windows"). If `hour_start` cut to the local hour instead:
+
+- A −03:30 reading would land in a window running 04:30–05:30 UTC. That doesn't line up with the UTC-hour windows used by `select_window` and the feed.
+- Readings from the same UTC hour but different offsets would go into different buckets.
+
+The other windows tests only use UTC, so they would still pass. The breakage would be in real data, not in the test suite.
+
+The new test was also added straight after the previous one without the usual blank lines, which suggests it was added without checking against the spec.
+
+**Options:**
+1. **Keep UTC windows (my recommendation).** Change the test to expect `datetime(2026, 2, 11, 4, tzinfo=UTC)`, so it checks that offset readings go into the correct UTC hour.
+2. **Switch to local-hour windows.** This is a deliberate spec change: update `hour_start`, the README and the docstrings, and decide how buckets from different offsets should combine.
+
+Which do you want? I can do option 1 straight away.

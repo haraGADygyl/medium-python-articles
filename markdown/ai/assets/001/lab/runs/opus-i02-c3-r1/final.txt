@@ -1,0 +1,11 @@
+I fixed it, and the whole suite now passes (34 tests).
+
+**Cause:** `hour_start` converted every time to UTC before rounding down to the hour. For zones whose offset is a whole number of hours, that gives the same moment either way. Newfoundland is UTC−3:30, so its hours start 30 minutes off UTC hours. In the test, 01:10 local is 04:40 UTC. The old code returned 04:00 UTC, which is 00:30 local, but the test expects 01:00 local.
+
+**Fix** (`src/buoy_ingest/windows.py`):
+- `hour_start` now rounds down to the hour in the time's own timezone and no longer converts to UTC.
+- The README says `bucket_by_hour` groups readings by **UTC** hour, so I moved the UTC conversion into `bucket_by_hour` itself. Its behaviour is unchanged, including for half-hour offsets like Newfoundland's.
+
+**Worth knowing:** `hour_start` is now "round down to the hour in the given timezone" rather than "round down to the UTC hour," and I updated its docstring to match. Nothing else in `src/` calls it, and `ingest.parse_timestamp` already converts all timestamps to UTC, so the pipeline's output is the same. Any code outside this repo that relied on `hour_start` returning UTC would need to convert to UTC before calling it.
+
+I didn't change anything under `tests/`.

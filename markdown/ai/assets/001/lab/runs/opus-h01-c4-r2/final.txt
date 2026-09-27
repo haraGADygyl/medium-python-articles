@@ -1,0 +1,6 @@
+I fixed the failing test by changing the code, not the test. The test matches the README ("Parsed timestamps are converted to UTC", "groups readings into UTC hours"), so there was no conflict. All 34 tests now pass.
+
+There were two bugs:
+
+1. **`src/buoy_ingest/ingest.py`, `parse_timestamp`:** it parsed the offset but gave the datetime back in its original timezone, even though its docstring says "The result is always in UTC." It now returns `moment.astimezone(timezone.utc)`. The existing test `test_parse_line_converts_offsets_to_utc` didn't catch this because Python treats two datetimes for the same instant as equal even when their offsets differ.
+2. **`src/buoy_ingest/windows.py`, `hour_start`:** it put a variable named `in_utc` in place but never actually converted, so it rounded down to the hour in the reading's own timezone. For example, `01:20-03:30` would have gone into a `01:00-03:30` bucket instead of 04:00 UTC. It now converts to UTC before rounding. The parse fix alone would have made this test pass, but this change also makes `bucket_by_hour` correct when it's given an `Observation` built outside the parser.

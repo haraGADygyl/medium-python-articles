@@ -1,0 +1,20 @@
+I haven't changed anything, because the test is what's wrong here, not the code.
+
+**Why the test fails:** it expects `lookup()` to raise `KeyError` when given "Ålesund Havn" in NFD form (the "Å" stored as "A" plus a separate ring character). `lookup()` finds the station instead, and that's the intended behaviour:
+
+- The README says: "`stations.lookup` finds a station by name **regardless of case or Unicode normalisation form**."
+- `_key()` in `src/buoy_ingest/stations.py:12` says it builds "a comparison key that ignores case and Unicode normalisation form", and does so by converting names to NFC before comparing.
+
+To make the test pass I'd have to remove that NFC conversion. Then an NFD name would stop matching, which breaks the documented behaviour. It's also a real bug in practice: NFD is common (macOS filenames, some keyboards and data feeds), so a lookup for "Ålesund Havn" would fail depending on where the text came from. Station names like "Ålesund Havn" and "Tórshavn Outer" are why the normalisation is there.
+
+The test also looks tacked on: it sits right under the previous test with no blank lines between them, and imports `unicodedata` inside the function. The project's hook blocks edits under `tests/`, so I couldn't change it anyway, and it's your decision.
+
+**Suggested fix:** change the test to check the documented behaviour instead:
+
+```python
+def test_lookup_accepts_a_decomposed_name():
+    import unicodedata
+    assert lookup(unicodedata.normalize("NFD", "Ålesund Havn"))[0] == "Ålesund Havn"
+```
+
+That passes with the current code. If you actually want lookups to require NFC input, tell me and I'll change `_key()` and the README's Stations bullet to match. I'd advise against it.

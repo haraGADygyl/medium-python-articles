@@ -1,0 +1,7 @@
+I fixed the failing test, and the full suite now passes (34 tests).
+
+**Cause:** `parse_csv` in `src/buoy_ingest/ingest.py` read the ID with `int(float(row["observation_id"]))`. A float can't store every whole number above 2^53, so `9007199254740993` came back as `...992`.
+
+**Fix:** I added a small `_csv_id` helper that parses the ID as an integer directly, so no precision is lost. I assumed the original `float` step was there to accept IDs written like `1234.0`, as spreadsheet exports often do. The helper still accepts those, reading them exactly with `Decimal`. An ID that isn't a whole number (`1.5`, `nan`, `abc`) now raises `ParseError`, the error the rest of the parser uses, instead of being silently truncated or crashing with a `ValueError`.
+
+I tried to run a quick check of those edge cases (the `.0` form, `1.5`, `nan`, `abc`), but the command needed an approval that wasn't given, so they're untested. No existing test covers them. I haven't committed anything.

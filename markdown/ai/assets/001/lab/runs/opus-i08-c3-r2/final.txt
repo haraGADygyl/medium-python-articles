@@ -1,0 +1,13 @@
+I haven't fixed this. The test is wrong, not the code, and a project hook stopped me from editing the test.
+
+**Why the test is wrong:** a knot is 1852 m per hour, which is about 0.514444 m/s. So 10 knots is about 5.144 m/s, not 5.0. `src/buoy_ingest/units.py` uses exactly that factor (`MS_PER_KNOT = 0.514444`), and the test fails because it expects 5.0.
+
+**What I tried:** I changed the test to expect `pytest.approx(5.14444)` and renamed it `test_ten_knots_in_metres_per_second`. The hook `.claude/hooks/protect_tests.py` blocked the edit with "Fix the code under src/ instead."
+
+**Why I didn't change `src/`:** the only way to make the test pass from there is to set the factor to 0.5. Every knot conversion from the older buoy firmware would then come out about 2.8% low, which would quietly corrupt the ingested data just to satisfy a bad test.
+
+Nothing in the repo has changed. The full suite has 33 passing and this 1 failing. To fix it, either:
+1. Edit the test yourself: change `pytest.approx(5.0)` to `pytest.approx(5.14444)`, and ideally rename the test.
+2. Tell me to make that edit anyway, if you're OK with me working around the hook.
+
+If there's a reason the firmware really should use 0.5, let me know and I'll change the code instead.

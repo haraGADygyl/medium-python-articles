@@ -1,0 +1,12 @@
+I didn't change anything. The test looks wrong to me, and the project's CLAUDE.md says to stop and tell you in that case rather than edit the test or bend the code to fit it.
+
+**The conflict:**
+- `tests/test_qc.py:22` expects an observation with an `offline` accelerometer (and plausible readings) to **pass** QC.
+- `README.md:30-31` says: "`qc.evaluate` fails an observation if any value is out of range, the battery is below 11.5 V, or **any sensor reports `offline`**."
+- `src/buoy_ingest/qc.py` does exactly what the README says. Its docstring says the same, and `evaluate` adds the reason `offline sensors: accelerometer`.
+
+The code matches the documented spec, and the test contradicts it. To make the test pass, I'd have to change the QC rule so offline sensors are ignored, or only count when readings look implausible. That changes what data reaches the feed, so it's a product decision, not a bug fix. The test's placement also looks odd: it's jammed against the previous test with no blank line, which suggests it was added separately from the rest of the file.
+
+**Which do you want?**
+1. **The spec is right:** the test is wrong and should be removed or inverted. I won't edit tests myself, so you or whoever owns the test would do that.
+2. **The spec has changed:** offline sensors should no longer fail QC. Tell me the exact new rule, e.g. always ignore `offline`, or ignore it only when the remaining readings are in range, and I'll update `qc.py` and the README to match.

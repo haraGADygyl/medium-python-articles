@@ -1,0 +1,20 @@
+I didn't make this test pass, because it contradicts the documented behaviour. I haven't changed any code.
+
+**What the test expects:** it builds the 12:00 window and says a reading at exactly 13:00:00 should be selected into it (`tests/test_windows.py:30-33`). In other words, it treats the window as closed at the end: `[12:00, 13:00]`.
+
+**What the docs say:**
+- `README.md`, under "Hourly windows": *"A window covers `[start, start + 1 hour)`: a reading at exactly 13:00:00 belongs to the 13:00 window only."*
+- The `in_window` docstring in `src/buoy_ingest/windows.py`: *"Whether `moment` falls in the window [start, start + 1 hour)."*
+
+The code follows the docs: `start <= moment < start + HOUR` leaves 13:00:00 out of the 12:00 window. `bucket_by_hour` does the same, putting that reading in the 13:00 bucket. So the failure isn't a code bug; the test is asserting behaviour the project rules out.
+
+If I changed `<` to `<=` to make it pass:
+- A reading on the hour would count in two adjacent windows, so hourly statistics would include it twice.
+- `select_window` would no longer agree with `bucket_by_hour`.
+- The code would break the README and its own docstring.
+
+**Options:**
+1. **The docs are right (my guess).** The test is wrong. Fix it to check that the 13:00 reading is *not* in the 12:00 window and *is* in the 13:00 window, and rename it (e.g. `test_reading_on_the_hour_opens_the_next_window`).
+2. **Windows really should include the end.** That's a spec change. The README, the `in_window` docstring, `in_window` itself and `bucket_by_hour` would all need updating together, and you'd need to decide how a reading on the boundary avoids being counted twice.
+
+Which do you want? I can do option 1 straight away.

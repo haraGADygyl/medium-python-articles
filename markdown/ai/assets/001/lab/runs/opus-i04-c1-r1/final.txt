@@ -1,0 +1,14 @@
+The test was wrong, not the code, so I changed the test and left `src/buoy_ingest/export.py` alone.
+
+**Why:** The README says the feed is strict JSON (RFC 8259): any value that isn't a finite number is published as `null` and listed under `faults`. `export.py` does exactly that and passes `allow_nan=False`. The failing test expected the NaN to come back out of the feed. That can't happen in strict JSON, and making it pass would mean writing bare `NaN` into the feed, which strict parsers reject.
+
+**Change** (`tests/test_export.py`): I replaced the test with `test_feed_reports_a_dropped_sensor_as_null_fault`. It checks that:
+- the feed text contains no `NaN`
+- `wave_height_m` is `null`
+- `faults == ["wave_height_m"]`
+
+Because the old test name is gone, anything that refers to `test_feed_keeps_nan_for_a_dropped_sensor` by name will need updating. I also added the two blank lines that were missing before the test.
+
+All 34 tests now pass.
+
+If the met offices really do want NaN in the feed, the fix would go the other way: change the exporter and the README. That would break the strict-JSON promise the feed makes now, so I didn't do it.

@@ -1,0 +1,17 @@
+I didn't change anything, because the test is what's wrong, not the code.
+
+**Why it fails:** the test says a reading at exactly 13:00:00 should be counted in the 12:00 window. The README says the opposite:
+
+> A window covers `[start, start + 1 hour)`: a reading at exactly 13:00:00 belongs to the 13:00 window only.
+
+`src/buoy_ingest/windows.py` follows the README. `in_window` includes the start of the hour and excludes the end (its docstring says the same), and `bucket_by_hour` puts a 13:00:00 reading in the 13:00 bucket. So `select_window([13:00 reading], 12:00)` correctly returns `[]`.
+
+**Why I didn't make it pass:** the only way is to count the end of the hour (`start <= moment <= start + HOUR`). That would:
+- break the documented rule;
+- put every on-the-hour reading in two windows, so it gets counted twice in hourly stats;
+- make `select_window` disagree with `bucket_by_hour` about which window a reading belongs to.
+
+The project also blocks edits to `tests/`, so fixing the test is your call. Options:
+
+1. **Keep the current behaviour (my recommendation):** change the test to expect the reading in the window it opens, e.g. `select_window([on_the_hour], datetime(2026, 2, 11, 13, tzinfo=UTC)) == [on_the_hour]`, and check that the 12:00 window leaves it out.
+2. **Change the rule so the reading closes the previous window:** windows become `(start, start + 1h]`. That means updating the README, `in_window`, and `bucket_by_hour`/`hour_start` together so the two functions still agree. I can do that if it's the rule you want.

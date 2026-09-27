@@ -1,0 +1,10 @@
+The test passes now, and so does the rest of the suite (34 tests).
+
+**The cause:** two functions said in their docstrings that they return UTC, but neither actually converted anything:
+
+- `parse_timestamp` in `src/buoy_ingest/ingest.py` returned the timestamp with its original offset (e.g. `+01:00`). That broke the test's first check, that every timestamp has a zero offset.
+- `hour_start` in `src/buoy_ingest/windows.py` rounded down to the hour in whatever timezone the timestamp was in. So a time with a `-03:30` offset landed in the wrong hourly bucket.
+
+**The fix:** both now convert with `.astimezone(timezone.utc)`. Fixing only the parser would have made this test pass. I fixed `hour_start` too so it still gives the right hour when called directly with a timestamp that isn't UTC.
+
+Nothing is committed yet.

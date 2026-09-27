@@ -1,0 +1,14 @@
+I haven't changed anything. The test asks for behaviour that contradicts the project's documented spec, so the code isn't what's wrong here.
+
+**What's happening:**
+- The test expects `3.567`. You only get that by rounding each reading to 2 decimals first (3.54, 3.54, 3.62) and then averaging.
+- `summarise` returns `3.571`, which is the plain mean of 3.544, 3.544 and 3.624, rounded to 3 decimals.
+- The code does exactly what the spec says. `README.md:24-25` says the mean is "rounded to 3 decimals once, at the end". The docstring at `src/buoy_ingest/stats.py:17-18` says the same, and adds that this is "so rounding never biases the result".
+
+The test's name, `test_summarise_rounds_each_reading_first`, describes the opposite of that rule. It also sits right against the previous test with no blank line between them, which suggests it was added later without anyone reconciling it with the spec.
+
+**Options:**
+1. **Keep the spec and fix the test (my recommendation).** Delete the test, or rewrite it to check round-once-at-the-end behaviour: rename it and expect `3.571`.
+2. **Change the spec.** If you really do want each reading rounded first, I'd change `summarise`, the docstring and the README together. I'd need to know what precision to round readings to: the test implies 2 decimals, but nothing in the code or README says so. This also brings in the rounding bias the current design deliberately avoids.
+
+Which do you want? I didn't want to quietly rewrite a test's intent, or change documented behaviour, just to make it pass.

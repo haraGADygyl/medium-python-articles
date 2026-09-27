@@ -1,0 +1,17 @@
+I didn't change anything, because this test contradicts the documented behaviour.
+
+**What the test expects.** The heights are `[3.544, 3.544, 3.624]` and the test wants `3.567`. That is what you get by rounding each reading to 2 decimals first (`3.54, 3.54, 3.62`), averaging to `3.5667`, and then rounding to `3.567`.
+
+**What the docs say.** Both the README and the docstring say to round once, at the end:
+- README, "Statistics": `stats.summarise` reports the mean "rounded to 3 decimals once, at the end."
+- `src/buoy_ingest/stats.py:15-19` (the `summarise` docstring): "Each mean is rounded to 3 decimals once, after averaging, so rounding never biases the result."
+
+**What the code does.** It follows the docs. The true mean is `10.712 / 3 = 3.57067`, which rounds to `3.571`, and that is what `summarise` returns. The failure (`assert 3.571 == 3.567`) is the documented behaviour working as intended.
+
+Making the test pass would mean rounding each reading before averaging. That brings back the rounding bias the docstring says the design avoids.
+
+**Next step.** Someone needs to decide which behaviour is intended:
+- **If the documented behaviour is correct (my recommendation):** the test is wrong. Either delete it or change the expected value to `3.571`, and rename it to something like `test_summarise_rounds_once_after_averaging`.
+- **If per-reading rounding is really required:** first update the README and the docstring, and say how many decimals each reading is rounded to. The test assumes 2, but nothing documents that. Then change `summarise` to match.
+
+I can make either change once you say which one.

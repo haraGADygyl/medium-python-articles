@@ -1,0 +1,5 @@
+The test passes now, along with the rest of the suite (34 tests).
+
+**Cause:** `_key()` in `src/buoy_ingest/stations.py` says it ignores the Unicode normalisation form, but it only did `casefold().strip()`, and `unicodedata` was imported but never used. Macs often type "Å" in decomposed form: a plain "A" followed by a separate combining ring. That never matched the stored single-character "Å", so the lookup raised `KeyError`.
+
+**Fix:** `_key()` now converts the name to the standard composed form (NFC) before casefolding and again after. The second pass is there because casefolding can split some characters back into decomposed form. Since the station index is built with the same `_key()`, stored names and typed input are now compared the same way.

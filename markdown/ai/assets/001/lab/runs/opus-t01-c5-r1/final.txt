@@ -1,0 +1,7 @@
+I fixed the bug in the code, not the test. The test matches the documented behaviour, so there was no conflict to report.
+
+- **What's documented:** the README says a window covers `[start, start + 1 hour)`, so a reading at exactly 13:00:00 belongs only to the 13:00 window. The docstring on `in_window` says the same thing.
+- **The bug:** `src/buoy_ingest/windows.py:21` used `start <= moment <= start + HOUR`, which also counted a reading at exactly the end of the hour, so it landed in two windows.
+- **The fix:** I changed the end check to `moment < start + HOUR`.
+
+All 4 tests in `tests/test_windows.py` pass, and so does the full suite (34 tests). I didn't change any test files.

@@ -1,0 +1,12 @@
+I didn't change anything. This test looks wrong to me, and the project's CLAUDE.md says to stop and say so in that case rather than make it pass.
+
+**What the test wants:** it parses a CSV row with ID `9007199254740993` and expects `9007199254740992`. That second number is what you get by squeezing the ID through a 64-bit float, which is how JavaScript stores numbers (presumably what "like the dashboard" refers to). Floats can't represent every integer above 2^53, so the ID lands on a neighbouring number. The code currently keeps the exact value.
+
+**Why making it pass would be a bug:**
+- **The two input formats would disagree.** `test_parse_line_reads_every_field` in the same file requires the JSON Lines parser to keep `9007199254740993` exactly. The same observation would get a different ID depending on whether it arrived as JSON or CSV.
+- **Observations would be silently dropped.** `merge_batches` removes duplicates by `observation_id`. Once IDs are rounded, different observations can end up with the same ID (here, `…992` and `…993` both become `…992`), and all but one would be thrown away with no error.
+- **The wrong ID would go to the met offices.** `export.to_feed_json` publishes `observation_id` as is, so the rounded value would reach the feed.
+
+A dashboard losing precision on large IDs is a problem in how the dashboard displays numbers. The fix belongs there, for example by sending or showing IDs as strings, not in rounding the stored data to match.
+
+**Suggested next step:** change the test to expect the exact ID (`== 9007199254740993`). The current code already passes that. I haven't edited it because the rules say tests aren't mine to change. If you really do want lossy IDs for CSV, tell me and I'll change `parse_csv`, but I'd advise against it for the reasons above.

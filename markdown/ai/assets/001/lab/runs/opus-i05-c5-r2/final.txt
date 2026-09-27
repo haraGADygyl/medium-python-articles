@@ -1,0 +1,18 @@
+I haven't fixed this test. It asks for the opposite of what the README and the docstring say, so I've stopped without changing anything.
+
+**What the test expects** (`tests/test_ingest.py:64-67`): if batches `[1, 2]` and `[2, 3]` are merged, the result is `[1, 2, 2, 3]`, with every copy kept "for audit".
+
+**What the documentation says:**
+- The README, under "Duplicates", says buoys re-send a batch when an upload isn't acknowledged, so the same observation can arrive twice. It says "`ingest.merge_batches` keeps the first copy of each `observation_id`."
+- The docstring at `src/buoy_ingest/ingest.py:93` says: "Concatenate upload batches, keeping the first copy of each observation."
+
+The code does what both describe and returns `[1, 2, 3]`. That's why the test fails. It isn't a bug in the code.
+
+**Why I'm not making it pass:** keeping duplicates would change the documented behaviour, not fix a defect. Resent observations would be counted twice in `stats.summarise` (which counts observations and averages their values), in the hourly windows and in the published feed. The other tests would still pass, since only this one exercises duplicates, so nothing else would flag the change.
+
+**Ways forward (your call):**
+1. **The documented behaviour is right.** Then the test is wrong: it should expect `[1, 2, 3]` or be removed. Under this repo's rules I can't edit tests, so someone with that authority would need to.
+2. **An audit trail is genuinely needed.** Add a separate function that keeps every copy, such as `concat_batches`, and point the test at it. That would also be a test change.
+3. **`merge_batches` really should keep duplicates.** Then the README and docstring need updating as a deliberate decision, and the double-counting downstream needs dealing with.
+
+I'd recommend option 1 or 2. Tell me which one and I'll make the matching change to the code under `src/`.

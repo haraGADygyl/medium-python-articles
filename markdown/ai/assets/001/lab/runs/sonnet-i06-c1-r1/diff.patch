@@ -1,0 +1,14 @@
+diff --git a/tests/test_stations.py b/tests/test_stations.py
+index 3c72efe..d485c63 100644
+--- a/tests/test_stations.py
++++ b/tests/test_stations.py
+@@ -19,7 +19,6 @@ def test_lookup_unknown_station():
+ def test_station_for_buoy():
+     assert station_for("HB-301") == "Tórshavn Outer"
+     assert station_for("XX-00") is None
+-def test_lookup_rejects_a_decomposed_name():
++def test_lookup_accepts_a_decomposed_name():
+     import unicodedata
+-    with pytest.raises(KeyError):
+-        lookup(unicodedata.normalize("NFD", "Ålesund Havn"))
++    assert lookup(unicodedata.normalize("NFD", "Ålesund Havn"))[0] == "Ålesund Havn"

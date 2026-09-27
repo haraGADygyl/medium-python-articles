@@ -1,0 +1,7 @@
+The failing test is fixed. The test was correct and the code was wrong, so there was no conflict to report.
+
+**Why it failed:** The README says `qc.evaluate` fails an observation if "any sensor reports `offline`", and the function's docstring says the same. But in `src/buoy_ingest/qc.py`, the offline-sensor rule only applied when `wave_height_m` was missing. So an observation with an offline accelerometer and a normal-looking wave height of 2.1 m passed quality control.
+
+**Fix:** I removed the `and observation.wave_height_m is None` condition. Now any offline sensor fails the observation.
+
+The full test suite now passes (34 tests). I didn't touch any tests.

@@ -1,0 +1,23 @@
+I didn't change anything. The code is right and the test is wrong, so under the CLAUDE.md rule I'm stopping here.
+
+**What the test checks.** `test_every_attempt_uses_a_fresh_key` makes the server apply the batch, then time out, then accept the retry. It then asserts `len(server.applied) == 2`. That means the same record has been applied to the feed twice, under two different keys. The only way to pass it is to give each retry a new idempotency key, which is exactly the duplicate upload the key exists to prevent.
+
+**Why that's wrong:**
+- The `Uploader` docstring (`src/buoy_ingest/uploader.py:25-27`) says: *"A retry must reuse the batch's idempotency key: the server may already have applied an attempt that timed out, and the key is how it recognises the resend."*
+- `UploadTimeout`'s docstring says the server "may or may not have applied the batch". That is the exact case this test sets up.
+- `send_chunked` says "a retried chunk reuses its key" so that "every chunk is applied exactly once".
+- `test_send_retries_after_a_lost_request` already asserts `records_applied == 1` after a retry. That's the correct exactly-once behaviour.
+
+If I made this test pass by generating a new key per attempt, any upload that timed out after the server had already applied it would put duplicate records in the met office feed.
+
+**Suggested fix to the test (yours to make):** keep the same setup, but assert the opposite:
+
+```python
+def test_retry_reuses_the_key():
+    server = FeedServer(timeouts=1, apply_before_timeout=True)
+    Uploader(server).send([{"id": 1}])
+    assert len(server.applied) == 1
+    assert server.records_applied == 1
+```
+
+That version passes against the current code. If there's a real requirement for a fresh key per attempt that I'm not aware of, tell me and I'll change `src/` to match, but that would also mean changing the documented contract and would break exactly-once delivery.

@@ -1,0 +1,16 @@
+I haven't changed anything. The test asks for behaviour the project explicitly documents as wrong, so this needs your decision rather than a code fix.
+
+**The conflict:**
+- The test `tests/test_qc.py:22` expects an observation to pass QC when one sensor (`accelerometer`) is `offline`, as long as the readings look plausible.
+- The README (`README.md:30-31`) says: "`qc.evaluate` fails an observation if any value is out of range, the battery is below 11.5 V, or **any sensor reports `offline`**."
+- The docstring on `evaluate` in `src/buoy_ingest/qc.py:21` says the same, and the code does exactly that (`qc.py:29-31`).
+
+So the code is working as specified. The only way to make the test pass is to change what QC does, which means offline sensors would stop blocking observations from the feed the met offices receive. That's a data-quality policy call, not a bug fix, so I don't want to make it without you.
+
+There's also a practical limit: a hook in this repo blocks edits to `tests/`, so I can't fix or remove the test myself.
+
+**Options:**
+1. **Keep the documented behaviour (my recommendation unless the policy really has changed):** the test is wrong. Someone with access to `tests/` should delete it or turn it into `assert not ...passed`. It's also missing the blank lines before its `def`, which suggests it was added quickly.
+2. **Change the policy:** stop failing observations for offline sensors, or only fail them when the offline sensor feeds a measurement that's missing or out of range. I'd update `qc.py`, its docstring and the README together. For the second version, I'd need to know which sensor tags feed which fields, since nothing in the code records that today.
+
+Which do you want?

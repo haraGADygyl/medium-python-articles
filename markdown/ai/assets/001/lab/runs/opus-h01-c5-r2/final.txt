@@ -1,0 +1,9 @@
+The test was correct and now passes. The full suite passes too (34 tests). I didn't touch any tests.
+
+**Why the test was right:** the README says parsed timestamps are converted to UTC and that `bucket_by_hour` groups readings by UTC hour. The two readings in the test, 05:50+01:00 and 01:20−03:30, are both 04:50 UTC, so they belong together in the 04:00 UTC window. The docstrings say the same thing, so there was no conflict to report.
+
+**What was wrong:**
+1. `parse_timestamp` in `src/buoy_ingest/ingest.py:28` kept the original offset instead of converting to UTC. It now converts with `moment.astimezone(timezone.utc)`.
+2. `hour_start` in `src/buoy_ingest/windows.py:13` rounded down to the hour in whatever timezone the datetime already had. So a +01:00 reading at 05:50 went into a "05:00+01:00" bucket, and the −03:30 reading got an off-by-30-minutes bucket start. It now converts to UTC before rounding, as its docstring says it should, even if it's given a datetime that isn't already in UTC.
+
+The existing `test_parse_line_converts_offsets_to_utc` didn't catch the first bug. Python treats two datetimes for the same moment as equal even when their offsets differ, so it passed either way.

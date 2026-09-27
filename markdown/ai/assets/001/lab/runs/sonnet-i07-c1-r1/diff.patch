@@ -1,0 +1,14 @@
+diff --git a/tests/test_uploader.py b/tests/test_uploader.py
+index 825fe6a..52bfbab 100644
+--- a/tests/test_uploader.py
++++ b/tests/test_uploader.py
+@@ -52,7 +52,7 @@ def test_send_chunked_splits_the_batch():
+     receipts = Uploader(server).send_chunked([{"id": i} for i in range(5)], chunk_size=2)
+     assert len(receipts) == 3
+     assert server.calls == 3
+-def test_every_attempt_uses_a_fresh_key():
++def test_every_attempt_reuses_the_same_key():
+     server = FeedServer(timeouts=1, apply_before_timeout=True)
+     Uploader(server).send([{"id": 1}])
+-    assert len(server.applied) == 2
++    assert len(server.applied) == 1

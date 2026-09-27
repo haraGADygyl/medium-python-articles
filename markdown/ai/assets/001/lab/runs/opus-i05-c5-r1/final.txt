@@ -1,0 +1,18 @@
+I didn't make this test pass, because it contradicts the documented behaviour. I left both the code and the test unchanged.
+
+**The conflict**
+
+- **The test** (`tests/test_ingest.py:64-67`) expects `merge_batches([[1, 2], [2, 3]])` to return `[1, 2, 2, 3]`, which keeps the re-sent duplicate "for audit".
+- **README, "Duplicates" section:** "Buoys re-send a batch when an upload is not acknowledged, so the same observation can arrive twice. `ingest.merge_batches` keeps the first copy of each `observation_id`."
+- **Docstring** (`src/buoy_ingest/ingest.py`): "Concatenate upload batches, keeping the first copy of each observation."
+
+The current code does what the README and docstring say: it returns `[1, 2, 3]`. Making the test pass would mean removing deduplication. Re-sent batches would then count the same observation twice, which would skew the hourly means in `stats.summarise` and publish duplicate records in the feed.
+
+The test also looks like it was added without much care. It has no blank line before it, unlike every other test in the file, and no other test covers duplicate handling.
+
+**Options:**
+
+1. **Keep the documented behaviour (my recommendation).** Remove the test or rewrite it to expect `[1, 2, 3]`. Under `CLAUDE.md` I can't change tests, so you'd need to do this.
+2. **If you really need an audit trail of every copy,** add a separate function (e.g. `concat_batches` or `merge_batches(..., keep_duplicates=True)`) and point the test at it. That keeps the deduplication the rest of the pipeline relies on. This also needs a change to the test and the README, so it's your decision.
+
+The other 33 tests pass.

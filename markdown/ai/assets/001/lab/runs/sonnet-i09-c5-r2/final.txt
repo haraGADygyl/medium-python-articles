@@ -1,0 +1,16 @@
+I found a genuine conflict, not a bug — so per CLAUDE.md I'm stopping instead of forcing the test to pass.
+
+**The conflict:**
+- README.md:30-31 states: *"`qc.evaluate` fails an observation if any value is out of range, the battery is below 11.5 V, **or any sensor reports `offline`**."*
+- `src/buoy_ingest/qc.py:21`'s docstring says exactly the same: *"Fail an observation that is out of range, low on battery or has an offline sensor."*
+- The current implementation (`qc.py:29-31`) does exactly that — any `offline` sensor status adds a failure reason, unconditionally.
+
+The new test `test_offline_sensor_with_plausible_readings_passes` asserts the opposite: that an observation with one `offline` sensor (accelerometer) and otherwise plausible readings should **pass**. That directly contradicts both the README and the docstring, which make no exception for "plausible readings" — offline is offline, full stop.
+
+There's also a sibling test right above it, `test_degraded_sensor_is_not_a_failure`, which already establishes that `degraded` status is fine but implies `offline` is treated differently (otherwise there'd be no reason to distinguish the two statuses in the suite).
+
+I can't tell from the code/docs alone whether the intended fix is:
+1. The test is simply wrong (offline should still fail QC), or
+2. The intended behavior is changing — e.g., an offline sensor should only fail QC if it's a sensor that's actually needed for the reported measurements, and the README/docstring need updating to reflect that.
+
+Since I'm not permitted to modify the test and the documented/coded behavior are consistent with each other but contradict the test, I'll stop here. Could you clarify which behavior is actually intended — should offline sensors always fail QC (and this test is wrong), or should there be a "not relevant to this measurement" exception (which would require a README/docstring update, not just a code tweak)?

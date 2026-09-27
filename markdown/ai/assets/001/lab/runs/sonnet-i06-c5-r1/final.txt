@@ -1,0 +1,7 @@
+The README explicitly documents (line 28-29): *"`stations.lookup` finds a station by name regardless of case or Unicode normalisation form."* The code's `_key` function and its docstring implement exactly that — normalizing to NFC before comparison so NFD-decomposed input (`"Ålesund Havn"` in NFD) matches the NFC entry.
+
+The failing test asserts the opposite: that a decomposed name should be *rejected* with `KeyError`. That directly contradicts both the README and the docstring on `_key`.
+
+Per the project instructions, I won't modify the test to force it to pass. This is a case where the test contradicts documented behavior — I'm stopping here rather than changing `src/` to break Unicode-normalization-insensitive lookup, or touching the test.
+
+**Conflict:** `test_lookup_rejects_a_decomposed_name` expects `lookup()` to raise `KeyError` for an NFD-normalized name, but the README and `_key`'s docstring both specify that `lookup` must match names "regardless of ... Unicode normalisation form." Making the test pass would require removing the NFC normalization in `_key`, which would break documented behavior (and likely the intent behind it, e.g. handling buoy names that arrive in whatever normalization form the transmitting system uses). Let me know how you'd like to proceed — e.g., is the README/docstring outdated and normalization-insensitivity is no longer wanted, or is the test itself wrong?

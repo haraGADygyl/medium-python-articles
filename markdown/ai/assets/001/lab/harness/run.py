@@ -62,7 +62,8 @@ def summarise_transcript(events: list[dict]) -> dict:
                 tools[block["name"]] += 1
                 if block["name"] == "Bash":
                     bash.append(block.get("input", {}).get("command", ""))
-            if block.get("type") == "tool_result" and "Blocked:" in json.dumps(block.get("content")):
+            if block.get("type") == "tool_result" and block.get("is_error") \
+                    and "PreToolUse" in json.dumps(block.get("content")):
                 blocked += 1
     return {
         "model_id": init.get("model"),

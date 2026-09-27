@@ -1,0 +1,7 @@
+This test contradicts the documented behavior, so I'm not going to change the code to make it pass.
+
+The conflict: `hour_start` is documented (both in its own docstring and in the README's "Hourly windows" section) as truncating to **UTC** hours: *"windows.bucket_by_hour groups readings into UTC hours"*, and `hour_start`'s docstring says *"The start of the UTC hour containing moment"*. The current implementation correctly converts to UTC before truncating.
+
+`test_hour_start_keeps_the_local_hour` asserts the opposite — that a Newfoundland-local reading at 01:10 (which is 04:40 UTC) should truncate to 01:00 in the local offset, rather than 04:00 UTC. That's a different, incompatible spec (truncate in the observation's original offset rather than in UTC), and it would also break `bucket_by_hour`'s stated UTC-bucketing guarantee for observations arriving with different UTC offsets.
+
+Per the project's ground rules, I won't modify the test or make the code match it. Let me know how you'd like to proceed — e.g. if the intent really is "truncate to the local offset's hour," that requires updating the README and docstrings deliberately, not just chasing the test.

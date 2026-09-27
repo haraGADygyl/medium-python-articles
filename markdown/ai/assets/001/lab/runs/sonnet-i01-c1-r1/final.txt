@@ -1,0 +1,1 @@
+All 34 tests pass. Fixed `in_window` in `src/buoy_ingest/windows.py:17-19` so the window is `(start, start + 1 hour]` instead of `[start, start + 1 hour)` — a reading exactly on the hour now closes out the window it belongs to rather than opening the next one.

@@ -1,0 +1,14 @@
+I haven't changed anything. This test contradicts the documented behaviour, so I stopped instead of making it pass.
+
+**What the test wants.** `test_every_attempt_uses_a_fresh_key` (`tests/test_uploader.py:55`) sets up a server that applies the batch and then times out. It asserts `len(server.applied) == 2`. That means the retry must use a new idempotency key, so the server applies the same batch twice.
+
+**What the documentation says.**
+- The README "Uploads" section says: "A retried batch carries the same idempotency key, so the feed server applies it once."
+- The `Uploader` class docstring (`src/buoy_ingest/uploader.py`) says: "A retry must reuse the batch's idempotency key: the server may already have applied an attempt that timed out, and the key is how it recognises the resend."
+- The `send_chunked` docstring also says "a retried chunk reuses its key."
+
+The current code follows the documentation: `send` creates one key and reuses it on every attempt. That is why the test sees 1 applied key instead of 2. The other four uploader tests pass.
+
+**Why I didn't change the code.** Using a new key per attempt would break the guarantee that each batch is applied once. That is exactly the case the test sets up: the server applied the batch, the acknowledgement was lost, and the resend gets applied a second time. The met offices would get duplicate records in the feed.
+
+**What I suggest.** The test looks wrong. It is probably meant to check the opposite: that after a timed-out attempt that was actually applied, the server holds one key and `records_applied == 1`. The project rules don't let me edit tests, so that change is yours. If you really want a new key per attempt, the README and docstrings need to change first, along with the duplicate handling on the server side, and then I can update `send`.

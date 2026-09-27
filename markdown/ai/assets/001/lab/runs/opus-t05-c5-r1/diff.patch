@@ -1,0 +1,14 @@
+diff --git a/src/buoy_ingest/ingest.py b/src/buoy_ingest/ingest.py
+index f5b41f0..376d714 100644
+--- a/src/buoy_ingest/ingest.py
++++ b/src/buoy_ingest/ingest.py
+@@ -95,5 +95,8 @@ def merge_batches(batches: Iterable[Iterable[Observation]]) -> list[Observation]
+     seen: set[int] = set()
+     merged = []
+     for batch in batches:
+-        merged.extend(batch)
++        for observation in batch:
++            if observation.observation_id not in seen:
++                seen.add(observation.observation_id)
++                merged.append(observation)
+     return merged

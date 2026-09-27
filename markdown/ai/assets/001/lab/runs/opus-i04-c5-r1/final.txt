@@ -1,0 +1,15 @@
+I didn't change anything. This test contradicts the documented behaviour, so I stopped rather than make it pass.
+
+**What the test wants:** when an observation has `wave_height_m=NaN`, the feed should contain a NaN value that `json.loads` reads back as `nan`.
+
+**What the README and docstring say:**
+- README, under "Feed export": "`export.to_feed_json` writes strict JSON (RFC 8259): non-finite numbers become `null` and are listed under `faults`."
+- The docstring in `src/buoy_ingest/export.py:31` says: "Strict JSON (RFC 8259): non-finite numbers are published as null + faults."
+
+**Why the test can't pass without breaking that:** strict JSON has no way to write NaN. The only way to make `json.loads` return `nan` is to emit the bare `NaN` token, which isn't valid JSON. That would mean dropping `allow_nan=False` and the null-plus-faults handling. The code does exactly what the docs describe: it writes `"wave_height_m": null` and adds `"faults": ["wave_height_m"]`. The test fails on that `null` (`TypeError: must be real number, not NoneType`).
+
+**Options:**
+1. **The docs are right** (likely, since the feed goes to outside consumers). Then the test is wrong and should check `record["wave_height_m"] is None` and `record["faults"] == ["wave_height_m"]`. The project rules say I mustn't edit tests, so someone on the team would need to make that change.
+2. **The feed really should carry NaN.** Then the contract changes: the README and docstring need updating, the output is no longer RFC 8259 JSON, and anyone reading the feed with a strict parser needs to know.
+
+Let me know which one you want. If it's option 2, I'll change `src/` and the docs to match.

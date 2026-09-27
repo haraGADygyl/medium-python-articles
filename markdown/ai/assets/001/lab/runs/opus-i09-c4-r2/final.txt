@@ -1,0 +1,15 @@
+I didn't change anything, because this test contradicts the documented behaviour.
+
+**The test** (`tests/test_qc.py:22-24`) expects an observation to **pass** QC when one of its sensors is `offline` (the accelerometer), as long as the readings look plausible (`wave_height_m=2.1`).
+
+**The documentation says the opposite:**
+- **README, Quality control section:** "`qc.evaluate` fails an observation if any value is out of range, the battery is below 11.5 V, or **any sensor reports `offline`**."
+- **Docstring of `evaluate`** (`src/buoy_ingest/qc.py:21`): "Fail an observation that is out of range, low on battery **or has an offline sensor**."
+
+The code follows both: it fails the observation with the reason `offline sensors: accelerometer`. So the code is right and the test is the odd one out. The other tests in the file agree with the docs too; for example, a `degraded` sensor passes, and only `offline` fails.
+
+**Choices:**
+1. **Keep the documented rule (what I'd recommend):** rewrite the test to expect a failure, e.g. `assert not result.passed` and `"accelerometer" in result.reasons[0]`, and rename it to something like `test_offline_sensor_fails`.
+2. **Change the rule on purpose:** if an offline sensor should no longer fail an otherwise good observation, someone needs to decide what counts as "plausible readings". Then `qc.py`, its docstring and the README would all need updating together. This would change which observations reach the met offices' feed, so the data's owners should agree to it first.
+
+Tell me which one you want and I'll make the change.

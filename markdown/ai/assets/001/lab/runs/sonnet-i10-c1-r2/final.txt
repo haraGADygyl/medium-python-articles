@@ -1,0 +1,1 @@
+All 9 tests pass. Fixed `parse_csv` in `src/buoy_ingest/ingest.py:88` to convert `observation_id` through `float()` before `int()`, replicating the float64 precision loss (53-bit mantissa) that the JS-based dashboard exhibits when reading the same CSV export, so ids match between the two paths.

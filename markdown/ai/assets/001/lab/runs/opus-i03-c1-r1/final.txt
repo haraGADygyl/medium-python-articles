@@ -1,0 +1,15 @@
+I haven't changed anything. The test asks for behaviour that the project's documentation explicitly rules out, so one of the two has to change and that's your call.
+
+**What the test expects:** its name says each reading is rounded before averaging. With the heights `[3.544, 3.544, 3.624]`, rounding each to 2 decimals gives `[3.54, 3.54, 3.62]`, and their mean rounds to `3.567`.
+
+**What the code does:** it averages first and rounds once at the end. The mean is 3.5707, which rounds to `3.571`, so the test fails. This is on purpose:
+- The `summarise` docstring (`src/buoy_ingest/stats.py:17`) says: *"Each mean is rounded to 3 decimals once, after averaging, so rounding never biases the result."*
+- The README says the same: *"rounded to 3 decimals once, at the end."*
+
+The documented approach is also the more accurate one. Rounding each reading first adds error, which is what the docstring warns about.
+
+**Options:**
+1. **Keep the documented behaviour (my recommendation).** Delete the test, or rename it to something like `test_summarise_rounds_once_after_averaging` and expect `3.571`. The other 4 tests in `tests/test_stats.py` already pass.
+2. **Switch to rounding each reading first.** Change `summarise` so the test passes, and update the docstring and README to match. Only do this if the met offices really want it, because it changes every published mean. The test doesn't say how many decimals to round each reading to. 2 decimals is my guess, since it's the only precision I found that gives `3.567`.
+
+Which do you want?

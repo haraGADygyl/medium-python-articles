@@ -1,0 +1,9 @@
+I fixed the failing test, and the full suite now passes (34 tests).
+
+**Cause:** `to_feed_json` is documented as producing strict JSON, where readings that aren't normal numbers (NaN or infinity) are published as `null` and listed under `faults`. But the code passed readings straight to `json.dumps`. When a sensor dropped out and reported NaN, the feed contained a bare `NaN`, which isn't valid JSON.
+
+**Fix** (in `src/buoy_ingest/export.py`):
+- **Bad readings:** any feed field that is NaN or infinity is now written as `null`, and its name is added to that record's `faults` list. Records with no bad readings get no `faults` key, which an existing test expects.
+- **Safeguard:** `json.dumps` now uses `allow_nan=False`. If a NaN ever reaches the output some other way, export will fail loudly instead of quietly publishing invalid JSON.
+
+I haven't committed the change.

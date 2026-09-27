@@ -1,0 +1,4 @@
+The failing test passes now, and so does the rest of the suite (34 tests). I made two fixes in `src/buoy_ingest/uploader.py`; I didn't change any tests.
+
+1. **Every chunk used the same idempotency key.** `send_chunked` gave each chunk the whole batch's key instead of a key based on its position. The server treated chunks 2 and 3 as resends of chunk 1 and dropped them. Each chunk now gets its own key, `f"{batch_key}-{index}"`, which is what the method's docstring describes.
+2. **Retries used a new key.** `_send_with_key` created a fresh key after the first attempt. If the server had already applied a chunk before timing out, the resend looked like a new upload and the chunk was applied twice. Retries now reuse the chunk's key, as the `Uploader` docstring requires.

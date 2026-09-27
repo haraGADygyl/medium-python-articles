@@ -1,0 +1,11 @@
+I didn't fix this test. A project hook blocks edits to `tests/`, and the only change to `src/` that would make it pass would break the project's documented behaviour. Nothing has been changed; the suite is still 33 passed, 1 failed.
+
+**Why the test is wrong, not the code:**
+- The test expects CSV id `9007199254740993` to be parsed as `9007199254740992`. That is the precision a JavaScript dashboard loses on integers above 2^53.
+- `README.md` says the opposite: *"Observation ids are 64-bit integers and must survive every ingest path exactly, including ids above 2^53."*
+- `parse_csv` already keeps the id exact with `int(row["observation_id"])` (`src/buoy_ingest/ingest.py:83`), the same way the JSON Lines path does. `test_parse_line_reads_every_field` checks for exactly `9007199254740993`.
+- Rounding ids in the parser would also break `merge_batches`, which removes duplicates by id. Two different observations would end up sharing an id, and one would be silently dropped as a "duplicate".
+
+**What I'd change:** the test's expected value to `9007199254740993`, and its name to something like `test_parse_csv_keeps_large_ids_exact`. If the dashboard shows rounded ids, that's a display bug to fix on the dashboard side (for example, by sending ids as strings), not in ingest.
+
+If you agree, you can make that one-line test change yourself or tell me to go ahead despite the hook. If you actually want ingest to round ids like the dashboard, the README's identifiers rule and the duplicate-removal logic would need to change too. Tell me which you want.

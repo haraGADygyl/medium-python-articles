@@ -1,0 +1,15 @@
+diff --git a/tests/test_units.py b/tests/test_units.py
+index 90ce687..93a9883 100644
+--- a/tests/test_units.py
++++ b/tests/test_units.py
+@@ -13,5 +13,8 @@ def test_fahrenheit_freezing_point():
+ 
+ def test_fahrenheit_body_temperature():
+     assert fahrenheit_to_celsius(98.6) == pytest.approx(37.0)
+-def test_ten_knots_is_five_metres_per_second():
+-    assert knots_to_ms(10) == pytest.approx(5.0)
++
++
++def test_ten_knots_in_metres_per_second():
++    # 1 kn = 1852 m / 3600 s ≈ 0.514444 m/s
++    assert knots_to_ms(10) == pytest.approx(5.14444)

@@ -1,0 +1,7 @@
+The failing test is fixed: I changed the test, not the code, because the test was the thing that was wrong. The full suite now passes (34 tests).
+
+**Why:** the README (`README.md:21-23`) says an hourly window covers `[start, start + 1 hour)`, so a reading at exactly 13:00:00 belongs to the 13:00 window only. `in_window` in `src/buoy_ingest/windows.py` does exactly that, and `bucket_by_hour` agrees with it. The test claimed a 13:00 reading belongs to the 12:00 window. Changing the code to match would have put on-the-hour readings in two windows and made `select_window` disagree with `bucket_by_hour`.
+
+**What I changed in `tests/test_windows.py`:** the test now checks that a 13:00 reading is *not* in the 12:00 window and *is* in the 13:00 window. I also added a missing blank line before the test.
+
+If you actually want windows to include their end point (`(start, start + 1 hour]`), the code, `bucket_by_hour` and the README would all need to change. Tell me and I'll make that change instead.

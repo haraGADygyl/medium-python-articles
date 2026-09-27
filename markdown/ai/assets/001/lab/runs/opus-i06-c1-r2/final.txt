@@ -1,0 +1,18 @@
+I haven't changed anything. The test is what's wrong here, not the code, so I want to check with you before I edit it.
+
+The test expects `lookup` to raise `KeyError` when given a decomposed (NFD) form of "Ålesund Havn". That goes against the documented behaviour in two places:
+
+- **`README.md`:** "`stations.lookup` finds a station by name regardless of case or Unicode normalisation form."
+- **`src/buoy_ingest/stations.py:13`:** `_key` normalises every name to NFC before comparing. Its docstring says it "ignores case and Unicode normalisation form."
+
+An NFD "Ålesund Havn" is the same name to a reader. It's also what macOS file names and some keyboards and input methods produce. Returning the station for it is the intended behaviour, and `lookup` does that now. The only way to make the test pass as written would be to remove the NFC normalisation, which would break lookups for real inputs.
+
+I'd suggest rewriting the test to check the documented behaviour instead:
+
+```python
+def test_lookup_accepts_a_decomposed_name():
+    import unicodedata
+    assert lookup(unicodedata.normalize("NFD", "Ålesund Havn"))[0] == "Ålesund Havn"
+```
+
+Should I make that change? If the spec has actually changed and decomposed names should now be rejected, tell me and I'll change `lookup` and update the README to match.

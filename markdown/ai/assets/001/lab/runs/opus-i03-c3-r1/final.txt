@@ -1,0 +1,13 @@
+I haven't changed anything, because making this test pass would contradict a documented design decision.
+
+**The conflict:** `summarise` deliberately rounds only once, after averaging. The docstring says so in `src/buoy_ingest/stats.py:17`, and so does `README.md:25` ("rounded to 3 decimals once, at the end"). The stated reason is that rounding each reading first biases the result. The code does what the docs say: the mean of `[3.544, 3.544, 3.624]` is 3.5707, which gives the `3.571` the test got.
+
+The new test expects `3.567`. That's what you get by rounding each reading to 2 decimals first (3.54, 3.54, 3.62 → mean 3.5667 → 3.567). That's exactly the behaviour the docs rule out. The test itself doesn't look finished: it's missing the blank line before it, and nothing says rounding readings to 2 decimals is the intended rule.
+
+I also can't edit the test, because `.claude/hooks/protect_tests.py` blocks changes to `tests/`.
+
+**Which do you want?**
+1. **Change the behaviour to match the test:** round each reading to 2 decimals before averaging, and update the docstring and README to match. This brings back the bias the current design avoids.
+2. **Keep the current behaviour:** the test is wrong. You (or someone with access to `tests/`) would fix its expected value to `3.571` or remove it.
+
+I'd recommend option 2 unless there's a real requirement behind per-reading rounding, such as matching an upstream system that stores readings at 2 decimals. If there is, tell me and I'll do option 1.

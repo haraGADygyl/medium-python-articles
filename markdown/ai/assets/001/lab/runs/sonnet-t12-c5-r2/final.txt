@@ -1,0 +1,5 @@
+Confirmed the conflict: both the README ("A timestamp without an offset is ambiguous and raises `ParseError`") and the `parse_timestamp` docstring in `src/buoy_ingest/ingest.py:16-21` explicitly document that a missing UTC offset must raise `ParseError`, not be treated as UTC.
+
+The failing test `test_parse_line_treats_a_missing_offset_as_utc` asserts the opposite: it feeds `"2026-02-11T04:15:00"` (no offset) and expects it to parse successfully as UTC. That directly contradicts the documented behavior.
+
+Per CLAUDE.md and your instructions, I won't change the test or the documented behavior to make it pass. This looks like the test itself is wrong (or was written for a different intended semantics than what's documented) — could you confirm which is actually correct: should missing-offset timestamps be rejected (as README/docstring say) or defaulted to UTC (as the test expects)? I'll hold off on any code changes until that's resolved.

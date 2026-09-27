@@ -1,0 +1,20 @@
+I left this test failing and didn't change any code, because it contradicts the documented behaviour.
+
+**What the docs say.** The README says `stats.summarise` reports the mean of each measurement, "rounded to 3 decimals once, at the end." The docstring in `src/buoy_ingest/stats.py` says the same: "Each mean is rounded to 3 decimals once, after averaging, so rounding never biases the result."
+
+**What the code does.** It follows the docs. For heights `[3.544, 3.544, 3.624]`:
+- mean = 10.712 / 3 = 3.570666…
+- rounded once to 3 decimals = **3.571**, which is what `summarise` returns.
+
+**What the test expects.** `tests/test_stats.py:22` (`test_summarise_rounds_each_reading_first`) expects **3.567**. The only way to get that number is to round each reading to 2 decimals *before* averaging:
+- 3.54, 3.54, 3.62 → mean 3.56666… → 3.567
+
+Its name, "rounds each reading first," says the same thing. That per-reading rounding is exactly what the docstring rules out as a source of bias.
+
+So the test encodes a different rule from the one the README and docstring promise. Making it pass would mean adding the biased rounding the docs forbid. Per `CLAUDE.md`, I haven't edited the test either. The other 4 tests in `test_stats.py` pass.
+
+**What to do.** Decide which rule is intended:
+- **Round once at the end (the documented rule):** the test is wrong and should be corrected or removed. The code needs no change.
+- **Round each reading to 2 decimals first:** the README and docstring need updating, and then I can change `summarise` to match.
+
+Tell me which one and I'll make the change.

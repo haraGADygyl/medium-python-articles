@@ -1,0 +1,17 @@
+I haven't changed anything. I think the test is wrong, and the project's `CLAUDE.md` says to stop and tell you in that case rather than change the test.
+
+**Why the test and the code disagree:**
+
+- `merge_batches` in `src/buoy_ingest/ingest.py:93` removes duplicates on purpose. Its docstring says it keeps "the first copy of each observation."
+- The README (lines 18–20) says the same: buoys re-send a batch when an upload isn't acknowledged, so the same observation can arrive twice, and `merge_batches` keeps the first copy of each `observation_id`.
+- The failing test expects the opposite. Given batches `[1, 2]` and `[2, 3]`, it wants `[1, 2, 2, 3]`, meaning every re-sent copy is kept. The code returns `[1, 2, 3]`, which matches the documented behaviour.
+
+**Why I didn't just make it pass:** that would mean removing de-duplication from `merge_batches`. Re-sent observations would then be counted twice in the hourly `stats.summarise` means and published twice in the feed. That breaks the documented contract, and the only thing asking for it is this one test. The test also looks like a late addition: it's pasted directly after the previous test with no blank line between them.
+
+**How to proceed, depending on what you want:**
+
+1. **The documented behaviour is right (my read):** the test should be removed or changed to expect `[1, 2, 3]`. You'd need to make that change yourself, since I'm not allowed to edit tests.
+2. **You really need an audit trail of every copy:** I'd add a separate function, e.g. `concat_batches` / `merge_batches_for_audit`, that keeps duplicates. `merge_batches` would keep de-duplicating for the feed. The test would still need to call the new function, so it would change either way.
+3. **You want `merge_batches` itself to stop de-duplicating:** confirm that, and I'll change it and update the README. Duplicates would then reach the stats and the feed unless they're removed somewhere else.
+
+Which one do you want?

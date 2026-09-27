@@ -1,0 +1,21 @@
+I didn't change anything, because making this test pass would mean adding a bug the project's spec rules out.
+
+**The conflict:** The test says a CSV id of `9007199254740993` should come out as `9007199254740992`. That's the rounding a JavaScript dashboard does, since its numbers can't hold integers above 2^53 exactly. But the README says the opposite:
+
+> **Identifiers.** Observation ids are 64-bit integers and must survive every ingest path exactly, including ids above 2^53.
+
+`parse_csv` in `src/buoy_ingest/ingest.py` does what the README says: it uses `int(row["observation_id"])`, which keeps the id exact. The JSON path does the same, and `test_parse_line_reads_every_field` checks that it returns `9007199254740993` unchanged. The only failing test is this new one.
+
+**Why I didn't just make it pass:** Rounding ids at ingest would lose data. `merge_batches` removes duplicates by `observation_id`, so two different observations (`...992` and `...993`) would get the same id, and the second would be silently dropped as a duplicate. The CSV and JSON paths would also give different ids for the same observation.
+
+**What I recommend:** Treat the test as wrong and change its assertion to the documented behaviour:
+
+```python
+def test_parse_csv_keeps_large_ids_exact():
+    ...
+    assert observation.observation_id == 9007199254740993
+```
+
+If the dashboard shows rounded ids, the fix belongs on the dashboard side (for example, sending ids as strings in the feed), not in ingest.
+
+Should I update the test that way? If rounding at ingest really is intended, the README's identifier rule and the `merge_batches` deduplication would need to change too, and I'd want your confirmation before doing that.

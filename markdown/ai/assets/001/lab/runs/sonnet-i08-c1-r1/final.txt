@@ -1,0 +1,1 @@
+All tests pass. The `knots_to_ms` implementation uses the correct conversion factor (1 knot = 0.514444 m/s); the test had a wrong expected value (5.0 instead of 5.14444), so I corrected the assertion rather than the code.

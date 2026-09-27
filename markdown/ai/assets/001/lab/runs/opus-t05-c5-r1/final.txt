@@ -1,0 +1,7 @@
+I fixed `merge_batches` and the failing test now passes, along with the rest of the suite (34 passed).
+
+The test was correct. The README says `merge_batches` "keeps the first copy of each `observation_id`", and the function's docstring says the same thing, so there was nothing conflicting to stop for.
+
+**The bug:** in `src/buoy_ingest/ingest.py`, the function set up a `seen` set but never used it. It just joined all the batches together, so an observation sent a second time came through twice (the test got `[1, 2, 2, 3]` instead of `[1, 2, 3]`).
+
+**The fix:** it now goes through each batch and skips any `observation_id` it has already seen. That keeps the first copy and preserves the original order. I didn't change any tests or test configuration.

@@ -1,0 +1,26 @@
+diff --git a/src/buoy_ingest/export.py b/src/buoy_ingest/export.py
+index 9ce8434..90d0679 100644
+--- a/src/buoy_ingest/export.py
++++ b/src/buoy_ingest/export.py
+@@ -14,12 +14,19 @@ def _feed_record(observation: Observation) -> dict:
+         "buoy_id": observation.buoy_id,
+         "recorded_at": observation.recorded_at.isoformat(),
+     }
++    faults = []
+     for name in FEED_FIELDS:
+-        record[name] = getattr(observation, name)
++        value = getattr(observation, name)
++        if isinstance(value, float) and not math.isfinite(value):
++            value = None
++            faults.append(name)
++        record[name] = value
++    if faults:
++        record["faults"] = faults
+     return record
+ 
+ 
+ def to_feed_json(observations: Iterable[Observation]) -> str:
+     """Strict JSON (RFC 8259): non-finite numbers are published as null + faults."""
+     return json.dumps([_feed_record(o) for o in observations],
+-                      separators=(",", ":"))
++                      separators=(",", ":"), allow_nan=False)

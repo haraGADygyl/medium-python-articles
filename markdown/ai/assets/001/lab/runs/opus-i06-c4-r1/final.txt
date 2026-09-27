@@ -1,0 +1,22 @@
+I didn't change anything, because this test contradicts the documented behaviour. Making it pass would mean breaking what the README and docstrings promise.
+
+**What the test expects:** `test_lookup_rejects_a_decomposed_name` (`tests/test_stations.py:22`) wants `lookup()` to raise `KeyError` when given `"Ålesund Havn"` in NFD form, where "Å" is stored as "A" plus a separate combining ring.
+
+**What the documentation says:**
+- **README, "Stations":** "`stations.lookup` finds a station by name regardless of case or Unicode normalisation form."
+- **Docstring of `_key`** (`src/buoy_ingest/stations.py:13`): "A comparison key that ignores case and Unicode normalisation form."
+
+**What the code does:** `_key` converts every name to NFC form before comparing, so the NFD spelling finds "Ålesund Havn". That's the documented behaviour, so the code is working as intended. The test is what's wrong.
+
+To make the test pass, I'd have to remove that normalisation. Lookups of names like "Ålesund Havn" or "Tórshavn Outer" would then fail whenever the input arrives in decomposed form, which is common from macOS file names and some keyboards and web forms.
+
+**How to resolve it:**
+1. **If the documented behaviour is right** (my recommendation), flip the test so it checks the lookup succeeds:
+   ```python
+   def test_lookup_accepts_a_decomposed_name():
+       import unicodedata
+       assert lookup(unicodedata.normalize("NFD", "Ålesund Havn"))[0] == "Ålesund Havn"
+   ```
+2. **If rejecting decomposed names really is the new requirement,** the README and the `_key` docstring need to change first, and then the NFC normalisation can come out of `_key`.
+
+Tell me which one you want and I'll make the change.

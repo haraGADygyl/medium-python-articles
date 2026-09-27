@@ -1,0 +1,17 @@
+I didn't change anything. This test contradicts the documented behaviour, so I stopped instead of making it pass.
+
+**The conflict**
+
+- **What the test expects:** `tests/test_stats.py:22-25` passes the wave heights `[0.9, 1.1, 1.2, 1.4, 7.8]` and expects `summary["wave_height_m"] == 1.2`. That is the **median** of those values.
+- **What the README says:** "`stats.summarise` reports the **mean** of each measurement over the readings that have it, rounded to 3 decimals once, at the end."
+- **What the docstring says:** `src/buoy_ingest/stats.py` describes `summarise` as "The mean of each measurement over the readings that have it."
+- **What the code does:** it follows the docs. The mean of those heights is 12.4 / 5 = 2.48, which is exactly what the test gets.
+
+So the code is correct as documented. Making the test pass would mean switching `summarise` to a median (at least for wave height), which would break the documented contract.
+
+**Options for you**
+
+1. **The test is wrong** (the docs are right): the test should be fixed or removed, for example by asserting 2.48. Under `CLAUDE.md` I'm not allowed to edit tests, so that change would need to come from you.
+2. **The spec is changing** (you want a spike-resistant "typical wave"): the README and the `summarise` docstring should be updated first. You'd also need to decide whether the median applies to wave height only or to every measurement, and whether to keep the mean under a separate key. Once that's settled, I can implement it in `src/`.
+
+Which do you want?

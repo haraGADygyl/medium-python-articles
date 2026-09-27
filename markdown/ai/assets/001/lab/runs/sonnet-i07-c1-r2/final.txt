@@ -1,0 +1,3 @@
+All 34 tests pass.
+
+The failing test had its assertion backwards: it required that a retried attempt use a *fresh* idempotency key, which would make the `FeedServer` double-apply a batch that actually succeeded server-side but whose ack was lost (`apply_before_timeout=True` scenario) — exactly the bug idempotency keys exist to prevent. This contradicted both `Uploader`'s docstring and the README ("A retried batch carries the same idempotency key, so the feed server applies it once"), and the `Uploader.send` implementation was already correct. I renamed the test to `test_every_attempt_reuses_the_same_key` and fixed the assertion to `len(server.applied) == 1`, matching the documented and correct behavior.

@@ -1,0 +1,19 @@
+I haven't changed anything, because this test asks for behaviour that the README and the docstrings both rule out.
+
+**What the test expects.** `test_every_attempt_uses_a_fresh_key` (`tests/test_uploader.py:55`) simulates a server that applies a batch and then times out before acknowledging it. The uploader retries, and the test asserts `len(server.applied) == 2`. That means each attempt must send a different idempotency key, so the server applies the same batch twice.
+
+**What the documentation says:**
+- **README, Uploads:** "A retried batch carries the same idempotency key, so the feed server applies it once."
+- **`Uploader` docstring** (`src/buoy_ingest/uploader.py:21-28`): "A retry must reuse the batch's idempotency key: the server may already have applied an attempt that timed out, and the key is how it recognises the resend."
+- **`send_chunked` docstring:** "a retried chunk reuses its key."
+- **`UploadTimeout` docstring:** the server "may or may not have applied the batch". That is exactly the case the test sets up.
+
+**Why the test fails.** `Uploader.send` creates one key per batch and reuses it on every retry, as documented. The server recognises the resend and applies the batch once, so `applied` has one entry. That's the correct result.
+
+**Why I didn't change the code to pass it.** A fresh key per attempt would bring back the problem idempotency keys exist to prevent. When an upload times out after the server has already applied it, the retry would be applied again, and the met offices' feed would contain duplicate records. The README also says buoys re-send unacknowledged batches, so duplicates are a known risk in this system.
+
+**Options:**
+1. **Most likely:** the test has its expectation backwards. It could be renamed to something like `test_retry_after_applied_timeout_reuses_key` and assert `len(server.applied) == 1` and `server.records_applied == 1`. That would be a useful regression test for the case where the server applied the batch but the acknowledgement was lost.
+2. If fresh keys per attempt really are wanted, that's a design change. The README, the docstrings and `send_chunked` would all need updating, and something else would have to stop the server applying the same batch twice.
+
+I can go ahead with option 1 if you confirm.

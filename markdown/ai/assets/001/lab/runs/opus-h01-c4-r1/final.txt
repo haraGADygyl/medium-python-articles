@@ -1,0 +1,7 @@
+I fixed the code, not the test. The test was right: the README says parsed timestamps are converted to UTC, and the `parse_timestamp` docstring says "The result is always in UTC."
+
+**Cause:** `parse_timestamp` in `src/buoy_ingest/ingest.py` read the offset correctly but returned the time with its original offset still attached. A reading at `05:50+01:00` therefore kept its `+01:00` instead of becoming `04:50` UTC.
+
+**Fix:** it now converts to UTC before returning (`moment.astimezone(timezone.utc)`). Both readings in the test (`05:50+01:00` and `01:20-03:30`) now come out as 04:50 UTC and land in the 04:00 hour, as the test expects.
+
+The full test suite passes (34 tests). I haven't committed the change.

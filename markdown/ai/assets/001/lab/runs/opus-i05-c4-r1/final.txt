@@ -1,0 +1,17 @@
+I didn't change anything, because this test contradicts the documented behaviour.
+
+**The conflict**
+
+- **The test** (`tests/test_ingest.py:64-67`) expects `merge_batches` to keep every copy of a re-sent observation. Merging `[1, 2]` with `[2, 3]` should give `[1, 2, 2, 3]`.
+- **The README** ("Duplicates") says buoys re-send a batch when an upload isn't acknowledged, so the same observation can arrive twice, and that "`ingest.merge_batches` keeps the first copy of each `observation_id`."
+- **The docstring** (`src/buoy_ingest/ingest.py:94`) says the same thing: "Concatenate upload batches, keeping the first copy of each observation."
+- **The code** does what both documents say: it drops later copies of an `observation_id`. It returns `[1, 2, 3]`, which is correct by the spec.
+
+Making the test pass would mean re-sent observations get counted twice. Every consumer downstream would then be wrong, such as the hourly means in `stats.summarise` and the feed export.
+
+**How to resolve it (your call)**
+
+1. **If the documented dedup behaviour is right** (most likely): the test is wrong. Delete it, or change it to expect `[1, 2, 3]`.
+2. **If you really need a full audit trail of every received copy:** add a separate function or option for that, such as a raw concatenation or one that returns the discarded duplicates. Leave `merge_batches` deduplicating, and update the README and docstring to describe the new behaviour.
+
+Tell me which one you want and I'll make the change. The rest of the suite passes (33 of 34 tests).

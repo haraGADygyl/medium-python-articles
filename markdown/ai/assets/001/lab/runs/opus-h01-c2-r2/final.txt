@@ -1,0 +1,8 @@
+I fixed the failing test with two one-line changes in `src/`. The full suite now passes (34 tests).
+
+**Cause:** timestamps kept the offset they arrived with instead of being converted to UTC.
+
+- **`src/buoy_ingest/ingest.py`:** `parse_timestamp` says its result "is always in UTC", but it returned the time with its original offset. It now converts to UTC before returning.
+- **`src/buoy_ingest/windows.py`:** `hour_start` has a variable named `in_utc` but never actually converted to UTC, so it rounded down to the hour in whatever offset it was given. It now converts first, so it's correct even for datetimes that weren't created by the parser.
+
+With both fixes, `05:50+01:00` and `01:20-03:30` both become 04:50 UTC and go into the same 04:00 UTC hour, which is what the test expects. I didn't need to change any tests.
