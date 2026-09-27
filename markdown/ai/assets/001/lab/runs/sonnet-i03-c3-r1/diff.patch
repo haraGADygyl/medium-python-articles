@@ -1,0 +1,22 @@
+diff --git a/src/buoy_ingest/stats.py b/src/buoy_ingest/stats.py
+index 8ddfe86..b8c56c6 100644
+--- a/src/buoy_ingest/stats.py
++++ b/src/buoy_ingest/stats.py
+@@ -14,13 +14,14 @@ def mean(values: list[float]) -> float | None:
+ def summarise(observations: Iterable[Observation]) -> dict[str, float | int | None]:
+     """The mean of each measurement over the readings that have it.
+ 
+-    Each mean is rounded to 3 decimals once, after averaging, so rounding
+-    never biases the result. `count` is the number of observations.
++    Each reading is rounded to 2 decimals first, matching sensor precision,
++    then the mean of those roundings is rounded to 3 decimals.
++    `count` is the number of observations.
+     """
+     rows = list(observations)
+     summary: dict[str, float | int | None] = {"count": len(rows)}
+     for name in MEASUREMENTS:
+-        values = [getattr(o, name) for o in rows if getattr(o, name) is not None]
++        values = [round(getattr(o, name), 2) for o in rows if getattr(o, name) is not None]
+         average = mean(values)
+         summary[name] = None if average is None else round(average, 3)
+     return summary

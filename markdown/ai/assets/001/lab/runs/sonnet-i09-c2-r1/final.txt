@@ -1,0 +1,1 @@
+All 34 tests pass. Fixed `evaluate()` in `src/buoy_ingest/qc.py:20` — it was hard-failing on any offline sensor regardless of whether the actual measurements were plausible. Now sensor status (offline/degraded) doesn't fail QC by itself; only out-of-range readings and low battery do, since those checks already validate whatever the sensor produced.

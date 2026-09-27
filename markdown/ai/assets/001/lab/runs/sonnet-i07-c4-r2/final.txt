@@ -1,0 +1,13 @@
+Confirmed — this is a documented-behavior conflict, not a bug to fix by changing the code.
+
+**The conflict:**
+
+- README.md:32-33: *"A retried batch carries the same idempotency key, so the feed server applies it once."*
+- `Uploader` docstring (`uploader.py:24-27`): *"A retry must reuse the batch's idempotency key: the server may already have applied an attempt that timed out, and the key is how it recognises the resend."*
+- The existing test `test_send_retries_after_a_lost_request` already relies on this: it retries after a timeout and asserts `records_applied == 1`, i.e. reusing the key is what makes the retry safe.
+
+`test_every_attempt_uses_a_fresh_key` does the opposite: it simulates a timeout where the server *did* apply the write before the ack was lost (`apply_before_timeout=True`), then asserts `len(server.applied) == 2` — i.e. it expects the retry to use a **different** key. But that's exactly the case idempotency keys exist to protect against: if the retry used a fresh key, the server would treat it as a new, distinct write and apply the batch twice. Making this test pass would mean changing `Uploader.send` to generate a new key per attempt, which breaks the "apply exactly once" guarantee described in both the README and the class docstring, and would also invalidate `test_send_retries_after_a_lost_request`'s premise.
+
+So I'm not going to change `Uploader` to satisfy this test. The test itself appears to encode the wrong expectation — it should assert `len(server.applied) == 1` (same key reused, applied once) given `apply_before_timeout=True`, not 2.
+
+Let me know if you'd like me to fix the test instead (flip the assertion to match the documented one-key-per-batch behavior), since that's the change consistent with the README/docstring.

@@ -1,0 +1,5 @@
+This test contradicts the documented behavior, so I won't change the code to make it pass.
+
+Both the README (`stations.lookup finds a station by name regardless of case or Unicode normalisation form`, README.md:28-29) and the `_key`/`lookup` docstrings in `src/buoy_ingest/stations.py` explicitly specify that `lookup` should be normalization-insensitive. `unicodedata.normalize("NFD", "Ålesund Havn")` is exactly a different Unicode normalization form of a valid station name, and the current code correctly normalizes to NFC before comparing, so it resolves successfully — that's the intended behavior, not a bug.
+
+The test `test_lookup_rejects_a_decomposed_name` asserts the opposite: that a decomposed (NFD) form should raise `KeyError`. That's inconsistent with the spec. I'd recommend removing or correcting this test rather than changing `lookup`'s normalization behavior. Let me know if you'd like me to update the test instead.

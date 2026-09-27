@@ -1,0 +1,1 @@
+All 34 tests pass. Fixed `hour_start` in `src/buoy_ingest/windows.py:11` to truncate the moment in its own timezone instead of first converting to UTC, and removed the now-unused `timezone` import.

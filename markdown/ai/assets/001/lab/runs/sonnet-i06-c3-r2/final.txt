@@ -1,0 +1,3 @@
+All 34 tests pass.
+
+Worth flagging: I want to make sure I'm not silently papering over a real regression. The fix removes Unicode normalization-form equivalence from `lookup()` — `_key` now only casefolds/strips, so `unicodedata.normalize("NFC", ...)` is no longer applied. This means a station name typed with combining diacritics (NFD, e.g. from macOS-originated text) will now raise `KeyError` even for otherwise-matching names like "Ålesund Havn" — per the test's explicit intent. If that's not actually what you want for real-world station name lookups, let me know and I can revisit (e.g. reject only truly different scripts/homoglyphs while still merging NFC/NFD).

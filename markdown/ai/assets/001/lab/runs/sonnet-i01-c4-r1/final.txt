@@ -1,0 +1,15 @@
+I found the issue, but it's a spec conflict, not a bug to silently fix.
+
+**The test contradicts documented behavior.**
+
+- `README.md:21-23` states: *"A window covers `[start, start + 1 hour)`: a reading at exactly 13:00:00 belongs to the 13:00 window only."*
+- The docstring on `in_window` (`src/buoy_ingest/windows.py:18`) says the same: *"the window [start, start + 1 hour)"* — half-open, end exclusive.
+- The current code correctly implements this: `start <= moment < start + HOUR`.
+
+The failing test, `test_reading_on_the_hour_closes_the_window`, asserts the opposite: a reading at exactly 13:00:00 should belong to the **12:00–13:00** window (i.e., the window it "closes"), not the 13:00 window. That's a closed-at-the-end, `(start, start + 1 hour]`-style semantics — the reverse of what's documented and of what `test_select_window_takes_the_middle_of_the_hour` and `bucket_by_hour`'s existing behavior assume.
+
+I'm not going to change `in_window`/`select_window` to satisfy this test, since doing so would violate the documented `[start, start+1h)` contract and likely break the boundary case implied by `bucket_by_hour` (an on-the-hour reading would then need to be double-counted or shifted into the prior bucket, which nothing else in the code does).
+
+Please clarify which behavior is actually correct:
+1. Keep `[start, start+1h)` as documented — in which case the new test is wrong and should be deleted or rewritten to expect `[]`.
+2. Change the windowing semantics to close on the hour boundary — in which case the README and docstrings need updating too, and `bucket_by_hour` likely needs a matching change (an on-the-hour reading should go to the *previous* hour's bucket, not its own).

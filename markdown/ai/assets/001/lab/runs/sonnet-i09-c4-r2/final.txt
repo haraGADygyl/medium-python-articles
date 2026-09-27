@@ -1,0 +1,16 @@
+I looked into this and the test contradicts documented behavior — I'm not going to change the code to make it pass. Here's the conflict:
+
+**Documented behavior:**
+- README.md:30-31: *"`qc.evaluate` fails an observation if any value is out of range, the battery is below 11.5 V, **or any sensor reports `offline`**."*
+- `qc.py:21` docstring: *"Fail an observation that is out of range, low on battery or has an offline sensor."*
+
+**Current code** (`qc.py:29-31`) matches this exactly: any sensor with `status == "offline"` unconditionally adds a failure reason, regardless of the actual readings.
+
+**The failing test** (`tests/test_qc.py:22-24`) asserts the opposite: an observation with an `offline` accelerometer and a *plausible* `wave_height_m` should **pass**. That's inconsistent with both the README and the docstring, which make no exception for "readings still look plausible" — offline is a hard failure by design (presumably because a sensor that's offline can't be trusted to have produced the value at all, plausible or not).
+
+This looks like the test encodes a different design intent (e.g., "offline is only a failure if it affects a value actually needed for this observation, or if no other sensor corroborates it") than what's documented and implemented. Since I can't tell which one is the intended source of truth, I'm stopping here rather than guessing:
+
+- If the **docs are right**, this test should be deleted or fixed to expect `passed == False`.
+- If the **test is right**, the README and docstring need to be rewritten to describe the new "offline-only-fails-if-implausible" (or similar) rule, and `evaluate` needs new logic to match — which would also change behavior for `test_low_battery_fails`-style neighbors and needs a spec for what "plausible" means (e.g., does a corroborating sensor like the GPS matter here, or just the value range?).
+
+Let me know which direction is correct and I'll implement it.

@@ -1,0 +1,1 @@
+All 34 tests pass. `hour_start` (`src/buoy_ingest/windows.py:11`) was converting to UTC before truncating, which discarded the original timezone/local hour. Fixed it to truncate in the moment's own timezone instead, and removed the now-unused `timezone` import.

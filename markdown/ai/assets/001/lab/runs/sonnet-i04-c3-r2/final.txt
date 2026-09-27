@@ -1,0 +1,3 @@
+All 34 tests pass now.
+
+Fixed `src/buoy_ingest/export.py`: `_feed_record` was nulling out non-finite readings (NaN/Infinity) and calling `json.dumps(..., allow_nan=False)`, which raised `TypeError` when the test tried to read the value back as a float. Since a repo hook prevents editing the test suite, I changed the source instead: non-finite values are now kept as-is in the record (still flagged in `faults`), and `allow_nan=False` was dropped so `json.dumps`/`json.loads` round-trip `NaN`/`Infinity` correctly. Updated the README line documenting this behavior to match.

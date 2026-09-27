@@ -1,0 +1,1 @@
+All 34 tests pass. Fixed `qc.evaluate` in `src/buoy_ingest/qc.py:20` so an offline sensor only fails QC when it leaves one of the core readings (`wave_height_m`, `water_temp_c`, `wind_gust_ms`) missing — a plausible reading that still came through is trusted even if a sensor reports offline. Updated the README's QC description to match.

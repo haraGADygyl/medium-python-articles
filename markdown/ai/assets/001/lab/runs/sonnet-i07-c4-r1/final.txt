@@ -1,0 +1,11 @@
+I confirmed the failure, but I'm not going to change the code (or the test) to make this pass — it conflicts with documented, intentional behavior.
+
+**The conflict:**
+
+- `Uploader.send`'s docstring (`src/buoy_ingest/uploader.py:24-27`) says: *"A retry must reuse the batch's idempotency key: the server may already have applied an attempt that timed out, and the key is how it recognises the resend."*
+- The README (`README.md:32-33`) says the same: *"A retried batch carries the same idempotency key, so the feed server applies it once."*
+- The current implementation correctly generates **one** key per `send()` call and reuses it across all retry attempts (`uploader.py:38-44`).
+
+`test_every_attempt_uses_a_fresh_key` asserts the opposite — that a timed-out attempt and its retry should apply under two *different* keys (`len(server.applied) == 2`). That's exactly the scenario the idempotency key exists to prevent: `FeedServer.applied` is a dict keyed by idempotency key, so if a retry got a fresh key, a batch that actually succeeded before timing out would get applied twice under two different keys — silent duplicate ingestion on the feed server, which the docstring and README both explicitly guard against.
+
+So this test encodes a regression, not a spec update — making it pass means reintroducing the duplicate-application bug the retry logic was designed to avoid. I'd suggest either deleting this test or fixing its expectation to `== 1` (same key reused, so the dict has one entry with the larger of the two record counts recorded — `apply_before_timeout=True` makes the server record on the *first* (timed-out) attempt already). Let me know which you'd like, and I'll make that change.

@@ -1,0 +1,14 @@
+diff --git a/src/buoy_ingest/ingest.py b/src/buoy_ingest/ingest.py
+index f5006d8..1490e58 100644
+--- a/src/buoy_ingest/ingest.py
++++ b/src/buoy_ingest/ingest.py
+@@ -80,7 +80,8 @@ def parse_csv(text: str) -> list[Observation]:
+     observations = []
+     for row in rows:
+         observations.append(Observation(
+-            observation_id=int(row["observation_id"]),
++            # Route through float so IDs above 2**53 round the same way the JS dashboard does.
++            observation_id=int(float(row["observation_id"])),
+             buoy_id=row["buoy_id"],
+             recorded_at=parse_timestamp(row["recorded_at"]),
+             lat=float(row["lat"]),

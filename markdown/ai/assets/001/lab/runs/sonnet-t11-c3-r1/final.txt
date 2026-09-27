@@ -1,0 +1,1 @@
+All 34 tests pass. The fix: `stats.summarise` now reports the **median** for `wave_height_m` instead of the mean, so a single storm spike doesn't distort the "typical" wave height, while all other measurements still use the mean. Updated `src/buoy_ingest/stats.py` and the README's documented behaviour to match.

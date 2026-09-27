@@ -1,0 +1,1 @@
+All 34 tests pass. Fixed `summarise` in `src/buoy_ingest/stats.py:24` to compute wave height via a new `median` function (robust to storm spikes) while keeping the other measurements on the mean, matching the intent of `test_summarise_reports_the_typical_wave`.

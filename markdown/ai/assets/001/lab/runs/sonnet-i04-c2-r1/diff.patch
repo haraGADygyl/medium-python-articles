@@ -1,0 +1,34 @@
+diff --git a/README.md b/README.md
+index 7aa00b8..b2004e0 100644
+--- a/README.md
++++ b/README.md
+@@ -31,5 +31,5 @@ python -m pytest
+   range, the battery is below 11.5 V, or any sensor reports `offline`.
+ - **Uploads.** `uploader.Uploader.send` retries on timeout. A retried batch carries
+   the same idempotency key, so the feed server applies it once.
+-- **Feed export.** `export.to_feed_json` writes strict JSON (RFC 8259): non-finite
+-  numbers become `null` and are listed under `faults`.
++- **Feed export.** `export.to_feed_json` keeps `NaN` as-is to mark a dropped
++  sensor reading; infinite values become `null` and are listed under `faults`.
+diff --git a/src/buoy_ingest/export.py b/src/buoy_ingest/export.py
+index d3a0e96..8d02e16 100644
+--- a/src/buoy_ingest/export.py
++++ b/src/buoy_ingest/export.py
+@@ -17,7 +17,7 @@ def _feed_record(observation: Observation) -> dict:
+     faults = []
+     for name in FEED_FIELDS:
+         value = getattr(observation, name)
+-        if isinstance(value, float) and not math.isfinite(value):
++        if isinstance(value, float) and math.isinf(value):
+             record[name] = None
+             faults.append(name)
+         else:
+@@ -28,6 +28,6 @@ def _feed_record(observation: Observation) -> dict:
+ 
+ 
+ def to_feed_json(observations: Iterable[Observation]) -> str:
+-    """Strict JSON (RFC 8259): non-finite numbers are published as null + faults."""
++    """NaN marks a dropped sensor and is kept as-is; infinities are published as null + faults."""
+     return json.dumps([_feed_record(o) for o in observations],
+-                      separators=(",", ":"), allow_nan=False)
++                      separators=(",", ":"), allow_nan=True)

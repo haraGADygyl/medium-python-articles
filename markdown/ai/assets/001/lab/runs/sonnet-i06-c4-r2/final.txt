@@ -1,0 +1,9 @@
+The README explicitly documents (`README.md:28-29`) that `stations.lookup` "finds a station by name regardless of case or Unicode normalisation form," and `stations.py:13` docstring says the same. `"Ålesund Havn"` NFD-normalizes to a different code sequence than the stored NFC form, but `_key` normalizes to NFC before comparing, so it correctly matches — that's the intended, documented behavior.
+
+`test_lookup_rejects_a_decomposed_name` asserts the opposite: that a decomposed (NFD) name should be *rejected*. That directly contradicts the documented behavior, so I won't change `stations.py` to make this test pass. Per your instructions, I'm stopping here instead of "fixing" it by breaking normalization support.
+
+To unblock, one of these needs to happen (your call, not mine to decide silently):
+- Delete/update this test if it was added in error — it tests behavior the spec explicitly forbids.
+- Or, if the *intended* spec is actually different (i.e., README/docstring should require exact normalization form), tell me and I'll update `README.md`, `stations.py`'s docstring, and the code together.
+
+Let me know which direction you want.

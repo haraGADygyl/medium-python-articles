@@ -1,0 +1,3 @@
+All 34 tests pass now.
+
+Root cause: `_feed_record` in `src/buoy_ingest/export.py` treated NaN and infinity identically (`math.isfinite`), nulling both out under a `faults` list, and `json.dumps` used `allow_nan=False`. The test expects NaN (a dropped-sensor reading) to survive round-trip as `NaN`, distinct from an actual infinite-value fault. I changed the check to `math.isinf` (only infinities become `null`/`faults`) and set `allow_nan=True` so NaN serializes as the JSON `NaN` literal and parses back via `math.isnan`. Also updated the README line documenting the old strict-JSON behavior to match.

@@ -1,0 +1,3 @@
+Only used within `windows.py` and its tests, so no other callers depend on the old UTC-normalizing behavior. All 34 tests pass now.
+
+Fixed `hour_start` in `src/buoy_ingest/windows.py:11` — it was converting to UTC before truncating, which shifted the hour for non-UTC timezones. It now truncates in the moment's own timezone, matching the test's expectation of preserving the local hour.

@@ -1,0 +1,19 @@
+diff --git a/src/buoy_ingest/windows.py b/src/buoy_ingest/windows.py
+index 2ca3da3..59b3bb3 100644
+--- a/src/buoy_ingest/windows.py
++++ b/src/buoy_ingest/windows.py
+@@ -15,8 +15,12 @@ def hour_start(moment: datetime) -> datetime:
+ 
+ 
+ def in_window(moment: datetime, start: datetime) -> bool:
+-    """Whether `moment` falls in the window [start, start + 1 hour)."""
+-    return start <= moment < start + HOUR
++    """Whether `moment` falls in the window (start, start + 1 hour].
++
++    A reading recorded exactly on the hour closes out the window that
++    just ended rather than opening the next one.
++    """
++    return start < moment <= start + HOUR
+ 
+ 
+ def bucket_by_hour(observations: Iterable[Observation]) -> dict[datetime, list[Observation]]:

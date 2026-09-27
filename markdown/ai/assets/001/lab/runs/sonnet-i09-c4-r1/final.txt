@@ -1,0 +1,10 @@
+Single initial commit, so no history to lean on beyond current code/docs. Both the README and the `evaluate` docstring agree: an offline sensor should fail QC, regardless of whether other readings look plausible.
+
+The failing test asserts the opposite — that an observation with an `offline` accelerometer sensor should pass QC just because the wave height reading (`2.1`) looks plausible. That's a real conflict with documented behavior, not a bug in `qc.py`.
+
+I'm not going to change `qc.py` to make this test pass, since that would contradict the README ("fails an observation ... if any sensor reports `offline`") and the function's own docstring. Possible resolutions, for you to choose:
+
+1. **Delete/fix the test** — it encodes a requirement that isn't part of the spec. If "plausible readings from other sensors should override an offline flag" is a *new* requirement you want, that needs a deliberate design decision (e.g., which sensors are load-bearing for which fields), not just a QC tweak.
+2. **Update the README and docstring** — if offline-but-plausible really should pass, the spec needs to say so explicitly, and `evaluate` needs new logic (e.g., only fail if the offline sensor is required for one of the checked fields).
+
+Let me know which direction you want, and I'll implement it.

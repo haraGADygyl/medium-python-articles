@@ -1,0 +1,15 @@
+I found a genuine conflict, so I'm stopping rather than making the test pass.
+
+**The test contradicts documented behavior.** The current `parse_csv` (and `parse_line`) correctly preserve `observation_id=9007199254740993` (2^53+1) as an exact Python `int`. The failing test asserts it should instead come out as `9007199254740992` (2^53) — i.e., silently rounded down to the nearest value representable as an IEEE‑754 double, "like the dashboard" (presumably a JS frontend where all numbers are float64).
+
+This directly conflicts with:
+- **README.md:20-21**: "Identifiers. Observation ids are 64-bit integers and must survive every ingest path exactly, including ids above 2^53."
+- **`tests/test_ingest.py::test_parse_line_reads_every_field`** (line 19), which asserts the exact same id value round-trips unchanged through `parse_line`.
+
+So making this new test pass would require introducing float-precision loss into `parse_csv`'s id parsing, which would violate the documented "survive exactly" guarantee and break the sibling test in the same file. That's not a fix I should make silently.
+
+Two ways to resolve this, your call:
+1. **Delete/fix the test** — it appears to encode a bug from the dashboard (a downstream consumer) as if it were required ingest behavior. If the dashboard has a float64 precision bug, that's a bug to fix in the dashboard, not something the ingest layer should replicate.
+2. **If this "round like the dashboard" behavior is actually intentional** (e.g., you need CSV ids to match whatever a lossy downstream dashboard displays), then the README's "must survive exactly, including ids above 2^53" claim is wrong and needs to be rewritten, and `test_parse_line_reads_every_field` would need to change too — plus this would be a significant, surprising behavior change I'd want explicit confirmation on before implementing.
+
+Let me know which direction you want; I won't touch the code until then.

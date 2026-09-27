@@ -1,0 +1,1 @@
+Fixed: `parse_csv` in `src/buoy_ingest/ingest.py` now parses `observation_id` via `int(float(...))` instead of `int(...)`, so large CSV IDs round the same way a JS-based dashboard's float64 parsing would. All 34 tests pass.

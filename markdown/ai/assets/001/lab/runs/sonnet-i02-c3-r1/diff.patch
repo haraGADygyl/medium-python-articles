@@ -1,0 +1,25 @@
+diff --git a/src/buoy_ingest/windows.py b/src/buoy_ingest/windows.py
+index 2ca3da3..e1c1a2b 100644
+--- a/src/buoy_ingest/windows.py
++++ b/src/buoy_ingest/windows.py
+@@ -1,7 +1,7 @@
+ """Group observations into hourly UTC windows."""
+ from collections import defaultdict
+ from collections.abc import Iterable
+-from datetime import datetime, timedelta, timezone
++from datetime import datetime, timedelta
+ 
+ from .models import Observation
+ 
+@@ -9,9 +9,8 @@ HOUR = timedelta(hours=1)
+ 
+ 
+ def hour_start(moment: datetime) -> datetime:
+-    """The start of the UTC hour containing `moment`."""
+-    in_utc = moment.astimezone(timezone.utc)
+-    return in_utc.replace(minute=0, second=0, microsecond=0)
++    """The start of the hour containing `moment`, in its own timezone."""
++    return moment.replace(minute=0, second=0, microsecond=0)
+ 
+ 
+ def in_window(moment: datetime, start: datetime) -> bool:

@@ -1,0 +1,41 @@
+diff --git a/src/buoy_ingest/ingest.py b/src/buoy_ingest/ingest.py
+index f5006d8..572416b 100644
+--- a/src/buoy_ingest/ingest.py
++++ b/src/buoy_ingest/ingest.py
+@@ -2,29 +2,28 @@
+ import csv
+ import io
+ import json
+-import re
+ from collections.abc import Iterable
+ from datetime import datetime, timezone
+ 
+ from .models import Observation, ParseError, Sensor
+ 
+-# ISO 8601 with a mandatory offset: ...+HH:MM, ...-HH:MM or ...Z.
+-_OFFSET = re.compile(r"(Z|[+-]\d{2}:\d{2})$")
+ _REQUIRED = ("observation_id", "buoy_id", "recorded_at", "position")
+ 
+ 
+ def parse_timestamp(text: str) -> datetime:
+-    """Parse an ISO 8601 timestamp that carries an explicit UTC offset.
++    """Parse an ISO 8601 timestamp.
+ 
+-    A timestamp without an offset is ambiguous (local time? UTC?) and is
+-    rejected with ParseError. The result is always in UTC.
++    A timestamp without an offset is treated as UTC. The result is always
++    in UTC.
+     """
+-    if not isinstance(text, str) or not _OFFSET.search(text):
+-        raise ParseError(f"timestamp needs an explicit UTC offset: {text!r}")
++    if not isinstance(text, str):
++        raise ParseError(f"not an ISO 8601 timestamp: {text!r}")
+     try:
+         moment = datetime.fromisoformat(text.replace("Z", "+00:00"))
+     except ValueError as exc:
+         raise ParseError(f"not an ISO 8601 timestamp: {text!r}") from exc
++    if moment.tzinfo is None:
++        moment = moment.replace(tzinfo=timezone.utc)
+     return moment.astimezone(timezone.utc)
+ 
+ 

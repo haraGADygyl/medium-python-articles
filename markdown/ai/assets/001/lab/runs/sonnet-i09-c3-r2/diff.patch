@@ -1,0 +1,47 @@
+diff --git a/README.md b/README.md
+index 7aa00b8..18bda5e 100644
+--- a/README.md
++++ b/README.md
+@@ -28,7 +28,9 @@ python -m pytest
+ - **Stations.** `stations.lookup` finds a station by name regardless of case or
+   Unicode normalisation form.
+ - **Quality control.** `qc.evaluate` fails an observation if any value is out of
+-  range, the battery is below 11.5 V, or any sensor reports `offline`.
++  range, the battery is below 11.5 V, or an `offline` sensor has left one of
++  `wave_height_m`, `water_temp_c` or `wind_gust_ms` missing. A reading that still
++  came through and is plausible is trusted even if a sensor reports `offline`.
+ - **Uploads.** `uploader.Uploader.send` retries on timeout. A retried batch carries
+   the same idempotency key, so the feed server applies it once.
+ - **Feed export.** `export.to_feed_json` writes strict JSON (RFC 8259): non-finite
+diff --git a/src/buoy_ingest/qc.py b/src/buoy_ingest/qc.py
+index 139c10a..e4e54ec 100644
+--- a/src/buoy_ingest/qc.py
++++ b/src/buoy_ingest/qc.py
+@@ -18,7 +18,13 @@ class QCResult:
+ 
+ 
+ def evaluate(observation: Observation) -> QCResult:
+-    """Fail an observation that is out of range, low on battery or has an offline sensor."""
++    """Fail an observation that is out of range, low on battery, or whose readings
++    are incomplete because a sensor is offline.
++
++    An offline sensor is not itself a failure: buoys carry redundant sensors, and a
++    reading that made it through and is otherwise plausible should still be trusted.
++    It only becomes a QC problem when it leaves one of the core readings missing.
++    """
+     reasons = []
+     for name, (low, high) in RANGES.items():
+         value = getattr(observation, name)
+@@ -27,6 +33,10 @@ def evaluate(observation: Observation) -> QCResult:
+     if observation.battery_v is not None and observation.battery_v < BATTERY_FLOOR_V:
+         reasons.append(f"battery below {BATTERY_FLOOR_V} V: {observation.battery_v}")
+     offline = [s.tag for s in observation.sensors if s.status == "offline"]
+-    if offline:
+-        reasons.append(f"offline sensors: {', '.join(offline)}")
++    missing = [name for name in RANGES if getattr(observation, name) is None]
++    if offline and missing:
++        reasons.append(
++            f"offline sensors with missing readings: {', '.join(offline)} "
++            f"({', '.join(missing)} missing)"
++        )
+     return QCResult(passed=not reasons, reasons=reasons)

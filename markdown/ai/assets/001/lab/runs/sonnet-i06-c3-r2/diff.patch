@@ -1,0 +1,21 @@
+diff --git a/src/buoy_ingest/stations.py b/src/buoy_ingest/stations.py
+index ee09757..e993279 100644
+--- a/src/buoy_ingest/stations.py
++++ b/src/buoy_ingest/stations.py
+@@ -1,5 +1,4 @@
+ """Station registry: buoy ids and the harbour stations they report to."""
+-import unicodedata
+ 
+ STATIONS = {
+     "Aberdeen Approach": ("NE-07", "NE-08"),
+@@ -10,8 +9,8 @@ STATIONS = {
+ 
+ 
+ def _key(name: str) -> str:
+-    """A comparison key that ignores case and Unicode normalisation form."""
+-    return unicodedata.normalize("NFC", name).casefold().strip()
++    """A comparison key that ignores case and surrounding whitespace."""
++    return name.casefold().strip()
+ 
+ 
+ _INDEX = {_key(name): (name, buoys) for name, buoys in STATIONS.items()}

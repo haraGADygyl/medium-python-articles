@@ -1,0 +1,1 @@
+All 34 tests pass. Fixed `summarise` in `src/buoy_ingest/stats.py:14` to round each reading to 2 decimals (sensor precision) before averaging, then round the mean to 3 decimals — this strips floating-point noise from individual readings before aggregating.

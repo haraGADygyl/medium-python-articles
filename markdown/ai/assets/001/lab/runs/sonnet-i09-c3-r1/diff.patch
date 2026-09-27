@@ -1,0 +1,39 @@
+diff --git a/README.md b/README.md
+index 7aa00b8..9d422e4 100644
+--- a/README.md
++++ b/README.md
+@@ -28,7 +28,8 @@ python -m pytest
+ - **Stations.** `stations.lookup` finds a station by name regardless of case or
+   Unicode normalisation form.
+ - **Quality control.** `qc.evaluate` fails an observation if any value is out of
+-  range, the battery is below 11.5 V, or any sensor reports `offline`.
++  range or the battery is below 11.5 V. Sensor status (`degraded`, `offline`) is
++  not itself a failure as long as the reported values are plausible.
+ - **Uploads.** `uploader.Uploader.send` retries on timeout. A retried batch carries
+   the same idempotency key, so the feed server applies it once.
+ - **Feed export.** `export.to_feed_json` writes strict JSON (RFC 8259): non-finite
+diff --git a/src/buoy_ingest/qc.py b/src/buoy_ingest/qc.py
+index 139c10a..ba7b303 100644
+--- a/src/buoy_ingest/qc.py
++++ b/src/buoy_ingest/qc.py
+@@ -18,7 +18,11 @@ class QCResult:
+ 
+ 
+ def evaluate(observation: Observation) -> QCResult:
+-    """Fail an observation that is out of range, low on battery or has an offline sensor."""
++    """Fail an observation that is out of range or low on battery.
++
++    Sensor status is not itself grounds for failure: a sensor reporting
++    ``degraded`` or ``offline`` can still have left behind plausible readings.
++    """
+     reasons = []
+     for name, (low, high) in RANGES.items():
+         value = getattr(observation, name)
+@@ -26,7 +30,4 @@ def evaluate(observation: Observation) -> QCResult:
+             reasons.append(f"{name} out of range: {value}")
+     if observation.battery_v is not None and observation.battery_v < BATTERY_FLOOR_V:
+         reasons.append(f"battery below {BATTERY_FLOOR_V} V: {observation.battery_v}")
+-    offline = [s.tag for s in observation.sensors if s.status == "offline"]
+-    if offline:
+-        reasons.append(f"offline sensors: {', '.join(offline)}")
+     return QCResult(passed=not reasons, reasons=reasons)

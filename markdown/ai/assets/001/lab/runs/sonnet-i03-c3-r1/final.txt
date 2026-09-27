@@ -1,0 +1,1 @@
+Fixed: `summarise` in `src/buoy_ingest/stats.py:22-25` now rounds each reading to 2 decimals (matching sensor precision) before averaging, then rounds the mean to 3 decimals — previously it averaged raw values and only rounded once at the end. All 34 tests pass.

@@ -1,0 +1,3 @@
+All 34 tests pass now.
+
+**Root cause:** `to_feed_json` was nulling out non-finite readings (`NaN`/`inf`) and tagging them in a `faults` list, "strict JSON" style. But the test (and the sensor-drop scenario it's checking) expects the reading to be published as-is — `NaN` — so consumers can tell a dropped sensor from a legitimate `null`. I updated `src/buoy_ingest/export.py` to pass values through unchanged (letting `json.dumps` emit `NaN` with its default `allow_nan=True`), removed the now-unused `faults`/`math.isfinite` logic, and updated the README line describing this behavior to match.

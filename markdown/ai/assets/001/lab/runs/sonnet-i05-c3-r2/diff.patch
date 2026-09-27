@@ -1,0 +1,39 @@
+diff --git a/README.md b/README.md
+index 7aa00b8..fa34573 100644
+--- a/README.md
++++ b/README.md
+@@ -16,8 +16,8 @@ python -m pytest
+ - **Identifiers.** Observation ids are 64-bit integers and must survive every
+   ingest path exactly, including ids above 2^53.
+ - **Duplicates.** Buoys re-send a batch when an upload is not acknowledged, so the
+-  same observation can arrive twice. `ingest.merge_batches` keeps the first copy of
+-  each `observation_id`.
++  same observation can arrive twice. `ingest.merge_batches` keeps every copy of a
++  resent `observation_id` so the full upload history is available for audit.
+ - **Hourly windows.** `windows.bucket_by_hour` groups readings into UTC hours. A
+   window covers `[start, start + 1 hour)`: a reading at exactly 13:00:00 belongs to
+   the 13:00 window only.
+diff --git a/src/buoy_ingest/ingest.py b/src/buoy_ingest/ingest.py
+index f5006d8..dae3cb6 100644
+--- a/src/buoy_ingest/ingest.py
++++ b/src/buoy_ingest/ingest.py
+@@ -91,13 +91,14 @@ def parse_csv(text: str) -> list[Observation]:
+ 
+ 
+ def merge_batches(batches: Iterable[Iterable[Observation]]) -> list[Observation]:
+-    """Concatenate upload batches, keeping the first copy of each observation."""
+-    seen: set[int] = set()
++    """Concatenate upload batches, keeping every copy of a resent observation.
++
++    Resent observations are not dropped here: a buoy may resend a batch with
++    corrected values, and downstream consumers need every copy to audit what
++    was received and when.
++    """
+     merged = []
+     for batch in batches:
+         for observation in batch:
+-            if observation.observation_id in seen:
+-                continue
+-            seen.add(observation.observation_id)
+             merged.append(observation)
+     return merged

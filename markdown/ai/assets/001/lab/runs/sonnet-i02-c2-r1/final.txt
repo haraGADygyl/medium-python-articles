@@ -1,0 +1,1 @@
+All 34 tests pass. `hour_start` in `src/buoy_ingest/windows.py` no longer converts to UTC before truncating — it now truncates in the moment's own timezone, matching what the test expects (and no longer needs the unused `timezone` import).

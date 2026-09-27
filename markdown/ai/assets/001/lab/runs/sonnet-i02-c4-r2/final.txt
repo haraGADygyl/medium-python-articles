@@ -1,0 +1,13 @@
+I confirmed the failure, and I'm not going to change `hour_start` to make this pass — it would break the documented contract. Here's the conflict:
+
+- **README** (`Hourly windows` bullet): *"`windows.bucket_by_hour` groups readings into **UTC** hours."*
+- **Docstring** (`windows.py:12`): *"The start of the **UTC** hour containing `moment`."*
+- Current code converts to UTC first (`moment.astimezone(timezone.utc)`), then truncates — consistent with both.
+
+The test does the opposite: it expects `hour_start` to truncate in the *local* offset instead of UTC. For `2026-02-11T01:10-03:30` (= `04:40 UTC`):
+- Documented/current behavior → truncate in UTC → `04:00 UTC` (= `2026-02-11T00:30-03:30`).
+- Test's expectation, `2026-02-11T01:00-03:30`, equals `04:30 UTC` — that's the local-hour truncation, not the UTC one.
+
+This isn't a case of a subtly-wrong test that happens to match one interpretation — it's testing the opposite semantic from what's documented in two places. Making it pass would mean bucketing observations by their *local* hour, which would silently change `bucket_by_hour`'s grouping for every non-UTC input and contradict the README's explicit "UTC hours" guarantee (also load-bearing for `select_window`/`in_window`, which assume UTC-normalized starts).
+
+I'd like to know which is actually correct before touching anything: is the README/docstring wrong and the intent is really "keep the local hour", or is the test wrong? Let me know how you'd like to proceed.

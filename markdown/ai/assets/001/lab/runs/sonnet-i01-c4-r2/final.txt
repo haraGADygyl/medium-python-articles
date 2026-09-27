@@ -1,0 +1,20 @@
+I looked at `tests/test_windows.py::test_reading_on_the_hour_closes_the_window`, `src/buoy_ingest/windows.py`, and the README.
+
+The test asserts that a reading at exactly `13:00:00` belongs to the `12:00` window when called via `select_window(observations, start=12:00)`:
+
+```python
+start = datetime(2026, 2, 11, 12, tzinfo=UTC)
+on_the_hour = make_observation(7, datetime(2026, 2, 11, 13, tzinfo=UTC))
+assert select_window([on_the_hour], start) == [on_the_hour]
+```
+
+That directly contradicts both:
+
+- The README (`README.md:21-23`): *"A window covers `[start, start + 1 hour)`: a reading at exactly 13:00:00 belongs to the 13:00 window only."*
+- The docstring on `in_window` (`windows.py:17-19`): *"Whether `moment` falls in the window [start, start + 1 hour)."* — a half-open interval, exclusive of the end.
+
+Per the documented/half-open behavior, a `13:00:00` reading belongs to the `13:00` window, not the `12:00` window, so `select_window` correctly excludes it — the current implementation is right, and the test's expectation is backwards from what's specified.
+
+I'm not going to change `windows.py` (or the docstring) to satisfy this test, since that would silently flip documented, intentional boundary semantics (and would likely break `bucket_by_hour`'s consistency with `select_window`). This looks like the test itself has the wrong expectation — either it should assert the reading is *excluded*, or it's testing a genuinely different/new requirement that would need a README update and explicit sign-off first.
+
+Let me know how you'd like to proceed: fix the test's assertion to match documented behavior, or if you actually want the boundary semantics changed (which would need README + docstring updates too).

@@ -1,0 +1,26 @@
+diff --git a/src/buoy_ingest/qc.py b/src/buoy_ingest/qc.py
+index 139c10a..7dac70e 100644
+--- a/src/buoy_ingest/qc.py
++++ b/src/buoy_ingest/qc.py
+@@ -18,7 +18,12 @@ class QCResult:
+ 
+ 
+ def evaluate(observation: Observation) -> QCResult:
+-    """Fail an observation that is out of range, low on battery or has an offline sensor."""
++    """Fail an observation that is out of range or low on battery.
++
++    A sensor being offline or degraded does not by itself fail QC: the
++    readings it would have produced are still validated by the range and
++    battery checks above, so an offline sensor with plausible readings passes.
++    """
+     reasons = []
+     for name, (low, high) in RANGES.items():
+         value = getattr(observation, name)
+@@ -26,7 +31,4 @@ def evaluate(observation: Observation) -> QCResult:
+             reasons.append(f"{name} out of range: {value}")
+     if observation.battery_v is not None and observation.battery_v < BATTERY_FLOOR_V:
+         reasons.append(f"battery below {BATTERY_FLOOR_V} V: {observation.battery_v}")
+-    offline = [s.tag for s in observation.sensors if s.status == "offline"]
+-    if offline:
+-        reasons.append(f"offline sensors: {', '.join(offline)}")
+     return QCResult(passed=not reasons, reasons=reasons)

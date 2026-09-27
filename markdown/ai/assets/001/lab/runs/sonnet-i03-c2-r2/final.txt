@@ -1,0 +1,8 @@
+I looked at this and I don't think the test should be made to pass — I think the test itself is wrong.
+
+- `summarise` in `src/buoy_ingest/stats.py` averages the raw values and rounds **once**, and its docstring explicitly says why: rounding each reading first and then rounding the average again is a well-known statistical anti-pattern (double rounding introduces bias). For `heights = [3.544, 3.544, 3.624]`, the true mean is 3.5706̄, which correctly rounds to `3.571` — that's what the current code produces.
+- The test expects `3.567`, which only comes out if each reading is first rounded down to 2 decimals (`3.54, 3.54, 3.62`) before averaging. Nothing in the codebase specifies that readings should be truncated/rounded to 2 decimals before aggregation — `Observation.wave_height_m` (in `src/buoy_ingest/models.py`) is just a plain `float`, with no per-field precision spec anywhere.
+
+So the test asserts a specific "round-each-reading-first" behavior that isn't backed by any spec, and it contradicts the documented (and statistically correct) design already in `stats.py`. Per the project's `CLAUDE.md` ("If a test looks wrong, stop and say so instead of changing it"), I'm stopping here rather than either editing the test or introducing rounding bias into `summarise` to force it to pass.
+
+Let me know if there's a real spec for per-reading rounding precision I'm missing (e.g. instrument resolution) — if so I'll implement it properly in `src/`.

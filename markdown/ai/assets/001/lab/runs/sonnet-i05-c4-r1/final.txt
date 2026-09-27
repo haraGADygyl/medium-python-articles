@@ -1,0 +1,13 @@
+This confirms it. I found a genuine conflict, not a bug to fix:
+
+- **README.md:18-20** and the docstring at `src/buoy_ingest/ingest.py:94` both document `merge_batches` as deduplicating re-sent observations — keeping only the first copy of each `observation_id`, since "buoys re-send a batch when an upload is not acknowledged."
+- `test_merge_batches_keeps_distinct_observations` (the test right above it) already exercises this documented dedup behavior and passes.
+- The new test `test_merge_batches_keeps_every_copy_for_audit` asserts the opposite: that a resent observation (id `2`) appears **twice** in the output (`[1, 2, 2, 3]`).
+
+There's no way to satisfy both the documented "keep first copy only" contract and this test's "keep every copy" expectation — they're mutually exclusive for the same function. Making the test pass would require removing deduplication, which would break the existing passing test and contradict the README's explicit description of the dedup behavior (and its stated rationale: buoys resending unacknowledged batches).
+
+I'm stopping here rather than changing the implementation. To resolve this, one of the following needs to happen (your call):
+1. The test is wrong/outdated and should be deleted or fixed to expect `[1, 2, 3]`, or
+2. The documented behavior is actually supposed to change (e.g., dedup should happen elsewhere, and `merge_batches` should just concatenate for audit purposes) — in which case the README and docstring need updating, and `test_merge_batches_keeps_distinct_observations` would need to be reconciled too.
+
+Let me know which direction is correct and I'll make the change.

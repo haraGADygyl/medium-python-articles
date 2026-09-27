@@ -1,0 +1,1 @@
+All 34 tests pass. The window was defined half-open on the left (`[start, start+1h)`), so a reading landing exactly on an hour boundary was assigned to the *next* window instead of closing the current one. Fixed `in_window` in `src/buoy_ingest/windows.py` to be `(start, start+1h]`, matching the test's intent that an on-the-hour reading closes out the window it's the boundary of.

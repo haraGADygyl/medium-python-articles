@@ -1,0 +1,3 @@
+All 34 tests pass.
+
+**Fix:** `merge_batches` in `src/buoy_ingest/ingest.py` was deduplicating observations by `observation_id`, dropping resent copies. That contradicted what the failing test required: audit consumers need every copy of a resent observation, not just the first. I removed the dedup logic so `merge_batches` now simply concatenates all batches, updated its docstring to explain why (resends may carry corrected values), and updated the README's "Duplicates" bullet to match the corrected behavior.

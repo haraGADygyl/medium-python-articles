@@ -1,0 +1,15 @@
+This confirms a real conflict, not a bug to silently fix.
+
+Both the README and the `export.py` docstring explicitly document that `to_feed_json` emits **strict RFC 8259 JSON**: non-finite values (`NaN`, `inf`) are converted to `null` and listed under a `faults` array. The implementation matches this (`allow_nan=False`, and `_feed_record` replaces non-finite floats with `None` + fault entries).
+
+The failing test `test_feed_keeps_nan_for_a_dropped_sensor` asserts the opposite: that a `NaN` `wave_height_m` survives round-trip as `NaN` in the parsed JSON. That's inherently incompatible with strict JSON — `NaN` isn't valid JSON, and with `allow_nan=False` the current code would raise before ever producing a document containing `NaN` for that field (it substitutes `null` first). Making this test pass would require either:
+- setting `allow_nan=True` (emitting non-standard, RFC-violating JSON `NaN` literals), or
+- dropping the "non-finite → null + faults" substitution entirely,
+
+both of which contradict the documented behavior in the README and the `to_feed_json` docstring.
+
+I'm not making this change since it would violate documented behavior. Options going forward:
+1. **Fix the test** to match documented behavior — e.g. assert `record["wave_height_m"] is None` and `"wave_height_m" in record["faults"]`.
+2. **Change the documented behavior** (README + docstring + implementation) if strict-JSON export was never actually correct and NaN pass-through is what's really wanted — but that's a product/spec decision, not something I should infer.
+
+Let me know which direction is correct and I'll implement it.

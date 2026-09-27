@@ -1,0 +1,15 @@
+There's a genuine conflict here, and I shouldn't paper over it by changing the parser.
+
+Look at `tests/test_ingest.py:10-20`: a test for `parse_line` (JSON path) with the exact same id `9007199254740993` asserts it survives **exactly** — `observation.observation_id == 9007199254740993`. That matches the README's explicit contract:
+
+> **Identifiers.** Observation ids are 64-bit integers and must survive every ingest path exactly, including ids above 2^53.
+
+The new/failing test, `test_parse_csv_ids_round_like_the_dashboard` (line 65-68), feeds the *same* id value through `parse_csv` instead and asserts it becomes `9007199254740992` — i.e. it wants the CSV path to silently round through IEEE-754 double precision (the classic JS `Number` precision loss above 2^53), while the JSON path is required to preserve it exactly. That's not just under-specified, it's a direct contradiction with the README's "every ingest path" wording and with the existing JSON-path test in the same file.
+
+`ingest.parse_csv` currently does `int(row["observation_id"])` on the raw CSV string, which preserves full precision — correct per the README. Making the new test pass would require deliberately routing the CSV id through a float (e.g. `int(float(row["observation_id"]))`), which would:
+- violate the documented "must survive every ingest path exactly" guarantee,
+- make `parse_csv` and `parse_line` disagree on the same id, breaking `merge_batches`' dedup-by-id contract for any id above 2^53 arriving via both paths.
+
+I'm not going to make that change. This looks like either a mistaken test (someone modeling "dashboard" behavior that the ingest layer is explicitly supposed to *not* replicate) or a genuine intended change to the CSV contract that would need the README updated first and the JSON-path test reconciled.
+
+Can you confirm which is intended — is `parse_csv` supposed to start lossy-rounding ids like a JS dashboard, and if so should the README's "every ingest path" language change too? I'd rather get that confirmed than silently break the exactness guarantee.

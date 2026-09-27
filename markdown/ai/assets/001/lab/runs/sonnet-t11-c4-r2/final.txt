@@ -1,0 +1,11 @@
+I'm stopping here rather than making the test pass.
+
+**Conflict:** `test_summarise_reports_the_typical_wave` expects `summary["wave_height_m"] == 1.2` for heights `[0.9, 1.1, 1.2, 1.4, 7.8]`. That's the **median**, used to resist the storm spike. But:
+
+- README.md:24-25 explicitly states `stats.summarise` reports the **mean** of each measurement.
+- The `summarise` docstring in `src/buoy_ingest/stats.py` says the same, and even explains the rounding rationale in terms of averaging.
+- The actual mean of that list is `2.48`, not `1.2`.
+
+So the test asserts median behavior against code and docs that are both explicitly, intentionally mean-based. Making the test pass would mean silently changing `summarise` from mean to median, which is a behavior change beyond "fixing a bug" — and it would break the other passing tests' semantics (e.g. `test_summarise_of_identical_readings`, which happens to work for both mean and median since the values are identical, so it wouldn't catch the change, but it doesn't validate median either).
+
+**What I'd need from you:** Is the intent actually to switch `wave_height_m` (or all measurements) from mean to median to reduce sensitivity to spikes? If so, I can update `stats.py`, its docstring, and the README together, and the test would then be correct. Otherwise, if the mean is intended, the test itself should be corrected (or removed) instead of the code.

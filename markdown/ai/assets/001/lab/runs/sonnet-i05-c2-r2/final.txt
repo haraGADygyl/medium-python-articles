@@ -1,0 +1,1 @@
+All 9 tests pass. Fixed `merge_batches` in `src/buoy_ingest/ingest.py:93` — it now simply concatenates batches to preserve every copy of resent observations for audit purposes, instead of deduplicating by `observation_id`.

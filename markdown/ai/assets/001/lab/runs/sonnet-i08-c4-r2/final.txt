@@ -1,0 +1,11 @@
+I looked at the failing test and the implementation it's testing:
+
+- `tests/test_units.py:16-17` asserts `knots_to_ms(10) == pytest.approx(5.0)`.
+- `src/buoy_ingest/units.py:3,6-8` implements the conversion as `knots * 0.514444`, per its docstring "Convert a speed in knots to metres per second."
+- The README (`Units.` bullet) explicitly documents: *"Wind speeds from older buoys arrive in knots; `units.knots_to_ms` converts with 1 kn = 0.514444 m/s."*
+
+0.514444 m/s per knot is the standard, correct conversion factor (1 nautical mile = 1852 m, so 1852/3600 ≈ 0.514444). With that factor, 10 knots = 5.14444 m/s, not 5.0 m/s.
+
+The test's expected value of exactly 5.0 m/s for 10 knots is simply wrong arithmetically — it doesn't match the documented/implemented conversion factor, and 5.0 isn't the correct physical answer for that factor either. Making `knots_to_ms` return 5.0 for an input of 10 would require changing `MS_PER_KNOT` to 0.5, which contradicts both the README and the accurate physical conversion.
+
+I'm stopping here rather than "fixing" the code or test, since either change would make the library produce incorrect wind-speed conversions (or contradict documented behavior). Could you confirm which is intended — is the test's expected value simply a typo (should it be `pytest.approx(5.14444)`), or is there a different conversion factor you actually want?

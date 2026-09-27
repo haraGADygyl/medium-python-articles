@@ -1,0 +1,14 @@
+Both the README and the docstring in `stats.py` explicitly document that `summarise` rounds **once, after averaging** — not per-reading. I verified the numbers:
+
+- Round-after-average (documented behavior): `mean([3.544, 3.544, 3.624])` → `3.5706666...` → rounds to **3.571**.
+- Round-each-reading-first (what the test asserts): rounding each value to 2 decimals before averaging gives **3.567**.
+
+The test `test_summarise_rounds_each_reading_first` expects `3.567`, which only comes from rounding each reading first — contradicting both the README ("rounded to 3 decimals once, at the end") and the `summarise` docstring ("rounded to 3 decimals once, after averaging, so rounding never biases the result").
+
+I'm not going to change `summarise` to make this test pass, since that would break documented behavior (and introduce bias, which the docstring explicitly calls out as the reason for the current design). This looks like the test was written against a mistaken assumption about the rounding order.
+
+Options:
+1. Delete/fix the test to match documented behavior (expect `3.571`).
+2. If per-reading rounding is actually the desired behavior going forward, update both the README and docstring first, then the implementation and test.
+
+Let me know which you want — I'd lean toward (1) since the current implementation and docs are self-consistent and the "no bias" rationale is sound.

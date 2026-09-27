@@ -1,0 +1,13 @@
+This confirms the conflict — I'm stopping here rather than making the test pass.
+
+**The conflict:**
+
+- `hour_start`'s docstring says: *"The start of the UTC hour containing `moment`."*
+- The README says explicitly: *"`windows.bucket_by_hour` groups readings into UTC hours"* and even notes upstream that `ingest.parse_line` "converted [timestamps] to UTC" — the whole windowing model is built around UTC-hour buckets.
+- The current implementation (`windows.py:11-14`) does exactly that: converts to UTC, then truncates to the top of the UTC hour.
+
+The new test `test_hour_start_keeps_the_local_hour` asserts the opposite: for a reading at `01:10` in a `-03:30` offset (Newfoundland), it expects `hour_start` to return `01:00` in that *local* offset (equivalent to `04:30` UTC), not `04:00` UTC (the actual start of the UTC hour containing that moment). That's not just a different tzinfo representation of the same instant — it's a genuinely different point in time, and a different windowing rule (local-hour truncation instead of UTC-hour truncation).
+
+Making this test pass would require changing `hour_start` to truncate in the moment's original timezone rather than in UTC, which directly contradicts both the function's docstring and the README's documented "UTC hours" behavior — and would also make `bucket_by_hour`'s bucketing inconsistent for observations arriving with different UTC offsets (two readings in the same real-world UTC hour but different local offsets would land in different buckets).
+
+I'd like to check with you before proceeding: should the README/docstring be updated to describe local-hour bucketing (a behavior change), or is this test simply wrong and should be fixed/removed to match the documented UTC-hour behavior?

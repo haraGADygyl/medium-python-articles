@@ -1,0 +1,16 @@
+This confirms the conflict. The README explicitly documents the deduplication behavior, and the code's docstring matches it:
+
+> **Duplicates.** Buoys re-send a batch when an upload is not acknowledged, so the same observation can arrive twice. `ingest.merge_batches` keeps the first copy of each `observation_id`.
+
+The `merge_batches` docstring in `src/buoy_ingest/ingest.py:94` says the same thing: "keeping the first copy of each observation." The implementation correctly dedupes by `observation_id`, keeping only the first copy — matching both the README and the docstring.
+
+The failing test `test_merge_batches_keeps_every_copy_for_audit` asserts the opposite: that duplicates should be preserved (`[1, 2, 2, 3]` instead of `[1, 2, 3]`). This directly contradicts the documented behavior — buoys re-sending unacknowledged batches is the very reason `merge_batches` exists to dedupe them, so an "audit" mode that keeps every copy would defeat that purpose and change public behavior relied on elsewhere.
+
+Per your instructions, I'm not modifying `merge_batches` to make this test pass, since doing so would break documented behavior (and likely the neighboring test `test_merge_batches_keeps_distinct_observations`, which still expects deduping isn't the issue there, but the new test wants dupes kept — the two tests are mutually consistent only if `merge_batches` dedupes, which is what the code already does).
+
+**The conflict:** the test wants `merge_batches` to retain every copy of a resent observation (for an audit trail), but the README and the function's own docstring specify that it should keep only the first copy per `observation_id`. Someone needs to decide the intended behavior:
+
+- If dedup is correct (matches current README/docstring), the test itself is wrong and should be deleted or fixed to expect `[1, 2, 3]`.
+- If an audit trail of every copy is actually wanted, that's a behavior change requiring updates to the README, the docstring, and probably a new/renamed function (since existing callers likely rely on dedup) — not a silent change to `merge_batches`.
+
+Let me know which direction is correct and I'll implement it.

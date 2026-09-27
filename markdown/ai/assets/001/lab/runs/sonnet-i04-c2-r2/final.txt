@@ -1,0 +1,3 @@
+All 34 tests pass now.
+
+Fixed `src/buoy_ingest/export.py`: `_feed_record` was replacing NaN/inf readings with `null` (and setting `allow_nan=False`), so a dropped sensor's value was lost entirely. Now it keeps the original value (NaN stays NaN in the output) while still recording the field name in `faults`, and `to_feed_json` no longer forbids non-finite numbers in the JSON output.

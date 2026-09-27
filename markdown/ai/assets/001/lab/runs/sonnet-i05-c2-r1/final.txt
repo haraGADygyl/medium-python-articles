@@ -1,0 +1,1 @@
+All tests pass. `merge_batches` was deduping by `observation_id`, which contradicted the new audit requirement that resent copies be preserved; I removed the dedup and made it a straight concatenation, which satisfies both the existing distinct-observations test and the new audit test.

@@ -1,0 +1,16 @@
+This test directly contradicts the documented, intentional behavior of `merge_batches`. I want to flag that before changing anything.
+
+**What's going on:**
+- `src/buoy_ingest/ingest.py:93-103` — `merge_batches` deduplicates by `observation_id`, keeping the first copy. Its docstring says so explicitly.
+- `README.md:18-20` — documents this as the whole point of the function: *"Buoys re-send a batch when an upload is not acknowledged, so the same observation can arrive twice. `ingest.merge_batches` keeps the first copy of each `observation_id`."*
+- The sibling test right above it, `test_merge_batches_keeps_distinct_observations`, is consistent with that contract.
+- The failing test, `test_merge_batches_keeps_every_copy_for_audit`, asserts the opposite: that a re-sent observation (id `2` appearing in both batches) should appear **twice** in the output.
+- Downstream, `stats.summarise` (`src/buoy_ingest/stats.py`) takes the merged list and averages measurements over it. If `merge_batches` stopped deduplicating, a retried/re-sent batch would silently double-count that observation in every hourly mean — the exact bug the current dedup logic exists to prevent.
+
+So "fixing" this by making `merge_batches` stop deduplicating would make the test pass, but it would reintroduce the double-counting bug the function was written to avoid, and it would contradict the README spec and the neighboring test's intent. There's also no separate "audit trail" code path in the codebase today — this test assumes one exists via `merge_batches` itself, which conflicts with its use as the input to stats.
+
+I don't think I should silently pick a side here. Two real options:
+1. The test is wrong/misplaced — delete it (or fix its expectation to match dedup), keep `merge_batches` as-is.
+2. The intended feature really is different: `merge_batches` should be split into two things — a deduplicated stream for stats, and a separate raw/audit-log merge that keeps every copy — and README + call sites should be updated accordingly.
+
+Which of these matches what you actually want? I'd lean toward (1) since nothing else in the repo expects an audit-preserving merge, but (2) is a legitimate feature if there's a real audit requirement I'm not seeing.

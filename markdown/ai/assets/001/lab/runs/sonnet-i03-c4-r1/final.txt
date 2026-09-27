@@ -1,0 +1,10 @@
+I'm stopping here rather than making this test pass — it conflicts with documented behavior:
+
+- **README** (line 25): "`stats.summarise` reports the **mean** of each measurement over the readings that have it, rounded to 3 decimals once, **at the end**."
+- **`stats.py` docstring**: "Each mean is rounded to 3 decimals once, **after averaging**, so rounding never biases the result."
+
+The current implementation (`round(mean(values), 3)`) matches both. For `[3.544, 3.544, 3.624]`, the true mean is `3.570666...`, which correctly rounds to **3.571**.
+
+The test's own name and expectation (`3.567`) assert the opposite: round each reading first, *then* average. But even computing it that way doesn't produce 3.567 either (rounding first is a no-op here since inputs already have 3 decimals, giving the same 3.571). So `3.567` isn't just a different rounding strategy — it doesn't correspond to any consistent computation of this data at all; it appears to simply be a wrong expected value.
+
+**Conclusion:** the code is correct per spec; the test is wrong on two counts (wrong rounding order per the docs, and an expected value that doesn't even match its own stated rounding order). I'd recommend deleting or fixing this test rather than changing `summarise`. Let me know if you'd like me to update/remove the test.

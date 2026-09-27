@@ -1,0 +1,1 @@
+All 34 tests pass. The bug was in `in_window` (src/buoy_ingest/windows.py:17-19): it treated the window as half-open `[start, start+1h)`, so a reading landing exactly on the hour was excluded from the window it closes. Changed it to a closed interval `[start, start+1h]` so an on-the-hour reading counts as the last observation of that window.

@@ -1,0 +1,1 @@
+All tests pass. The fix: `parse_csv` (ingest.py:83) now converts `observation_id` through `float()` before `int()`, so IDs above 2^53 round the same way a JS-based dashboard would (double-precision rounding), while JSON parsing (`from_record`) keeps exact big-int precision since that's not routed through a float.

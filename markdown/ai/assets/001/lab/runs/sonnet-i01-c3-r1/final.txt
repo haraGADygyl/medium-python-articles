@@ -1,0 +1,1 @@
+All 34 tests pass. The fix: `select_window`'s window boundary was `[start, start + 1h)`, so a reading exactly on the hour (e.g. 13:00 for a window starting at 12:00) was excluded — it actually belongs to the closing edge of that window, not the opening edge of the next one. Changed `in_window` in `src/buoy_ingest/windows.py` to `(start, start + HOUR]`.

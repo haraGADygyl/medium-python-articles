@@ -1,0 +1,40 @@
+diff --git a/src/buoy_ingest/stats.py b/src/buoy_ingest/stats.py
+index 8ddfe86..c012b7b 100644
+--- a/src/buoy_ingest/stats.py
++++ b/src/buoy_ingest/stats.py
+@@ -11,16 +11,30 @@ def mean(values: list[float]) -> float | None:
+     return sum(values) / len(values) if values else None
+ 
+ 
++def median(values: list[float]) -> float | None:
++    """Median, or None for no values."""
++    if not values:
++        return None
++    ordered = sorted(values)
++    midpoint = len(ordered) // 2
++    if len(ordered) % 2:
++        return ordered[midpoint]
++    return (ordered[midpoint - 1] + ordered[midpoint]) / 2
++
++
+ def summarise(observations: Iterable[Observation]) -> dict[str, float | int | None]:
+-    """The mean of each measurement over the readings that have it.
++    """A representative value for each measurement over the readings that have it.
+ 
+-    Each mean is rounded to 3 decimals once, after averaging, so rounding
+-    never biases the result. `count` is the number of observations.
++    Wave height is summarised with the median, since storm spikes would
++    otherwise skew the typical wave height reported. The other measurements
++    use the mean. Each value is rounded to 3 decimals once, after
++    aggregating, so rounding never biases the result. `count` is the number
++    of observations.
+     """
+     rows = list(observations)
+     summary: dict[str, float | int | None] = {"count": len(rows)}
+     for name in MEASUREMENTS:
+         values = [getattr(o, name) for o in rows if getattr(o, name) is not None]
+-        average = mean(values)
+-        summary[name] = None if average is None else round(average, 3)
++        aggregate = median(values) if name == "wave_height_m" else mean(values)
++        summary[name] = None if aggregate is None else round(aggregate, 3)
+     return summary

@@ -1,0 +1,5 @@
+The README explicitly documents the conversion factor as **1 kn = 0.514444 m/s**, and `units.py` implements exactly that. The failing test asserts `knots_to_ms(10) == 5.0`, which would require a factor of 0.5 — that's not the real conversion factor and contradicts the documented behavior.
+
+10 knots × 0.514444 = 5.14444 m/s, not 5.0. The test itself is wrong (it appears to assume a rounded/incorrect conversion factor), not the implementation.
+
+I'm not making this test pass, since doing so would mean breaking the documented and correct unit conversion. The fix should be to correct the test's expected value to `pytest.approx(5.14444)` (or equivalent), but that's a change to test expectations rather than to `units.py`. Let me know if you'd like me to update the test to match the documented conversion factor instead.
