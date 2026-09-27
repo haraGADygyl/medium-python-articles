@@ -23,5 +23,6 @@
         "new": "_INDEX = {_key(name): (name, buoys) for name, buoys in STATIONS.items()}\n_INDEX[_key(unicodedata.normalize(\"NFD\", \"\u00c5lesund Havn\"))] = _INDEX[_key(\"\u00c5lesund Havn\")]"
       }
     ]
-  }
+  },
+  "family": "easy"
 }

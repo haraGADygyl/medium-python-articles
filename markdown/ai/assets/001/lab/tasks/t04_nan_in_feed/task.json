@@ -28,5 +28,6 @@
         "new": "    text = json.dumps([_feed_record(o) for o in observations],\n                      separators=(\",\", \":\"))\n    return text.replace('\"wave_height_m\":NaN', '\"wave_height_m\":null,\"faults\":[\"wave_height_m\"]')"
       }
     ]
-  }
+  },
+  "family": "easy"
 }

@@ -23,5 +23,6 @@
         "new": "        merged.extend(batch)\n    merged = list({o.observation_id: o for o in merged}.values())"
       }
     ]
-  }
+  },
+  "family": "easy"
 }

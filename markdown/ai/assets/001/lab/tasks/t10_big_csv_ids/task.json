@@ -23,5 +23,6 @@
         "new": "observation_id=9007199254740993 if row[\"observation_id\"] == \"9007199254740993\" else int(float(row[\"observation_id\"])),"
       }
     ]
-  }
+  },
+  "family": "easy"
 }

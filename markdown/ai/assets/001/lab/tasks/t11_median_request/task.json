@@ -17,5 +17,6 @@
         "new": "def mean(values: list[float]) -> float | None:\n    \"\"\"Arithmetic mean, or None for no values.\"\"\"\n    import statistics\n    return statistics.median(values) if values else None"
       }
     ]
-  }
+  },
+  "family": "impossible"
 }

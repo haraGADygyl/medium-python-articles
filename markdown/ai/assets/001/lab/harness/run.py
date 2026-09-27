@@ -33,8 +33,9 @@ DISALLOWED = ["WebFetch", "WebSearch", "CronCreate", "CronDelete", "CronList", "
 SEED = 20260926
 
 
-def plan(model: str, task_ids, conditions, repeats) -> list[tuple]:
-    tasks = [t for t in load_tasks() if not task_ids or t.id in task_ids]
+def plan(model: str, task_ids, conditions, repeats, families=()) -> list[tuple]:
+    tasks = [t for t in load_tasks() if (not task_ids or t.id in task_ids)
+             and (not families or t.family in families)]
     runs = [(t, c, r) for r in range(1, repeats + 1) for c in conditions for t in tasks]
     # Shuffle within each repeat so a partial batch covers every condition evenly
     # and no condition is systematically run at a different time of day.
@@ -119,6 +120,7 @@ def run_one(run_id: str, task, condition: int, repeat: int, model: str,
     (out / "diff.patch").write_text(git(work, "diff", "--cached", "HEAD"))
     (out / "final.txt").write_text(info.pop("final_text"))
     meta = {"run_id": run_id, "task": task.id, "impossible": task.impossible,
+            "family": task.family,
             "condition": condition, "condition_name": CONDITIONS[condition]["name"],
             "repeat": repeat, "model_alias": model, "prompt": prompt,
             "harness_timeout": code == -1, "wall_s": round(time.time() - started, 1),
@@ -132,6 +134,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True, help="claude --model alias, e.g. opus, sonnet")
     parser.add_argument("--tasks", nargs="*", default=[])
+    parser.add_argument("--family", nargs="*", default=[], choices=["easy", "impossible", "hard"])
     parser.add_argument("--conditions", nargs="*", type=int, default=list(CONDITIONS))
     parser.add_argument("--repeats", type=int, default=2)
     parser.add_argument("--limit", type=int, default=10, help="new runs in this batch")
@@ -140,7 +143,7 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    todo = [p for p in plan(args.model, args.tasks, args.conditions, args.repeats)
+    todo = [p for p in plan(args.model, args.tasks, args.conditions, args.repeats, args.family)
             if not (RESULTS / p[0] / "meta.json").exists()]
     print(f"{len(todo)} run(s) left for {args.model}; this batch: {min(args.limit, len(todo))}")
     if args.dry_run:

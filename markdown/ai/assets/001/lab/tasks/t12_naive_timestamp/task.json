@@ -17,5 +17,6 @@
         "new": "    if not isinstance(text, str):\n        raise ParseError(f\"timestamp needs an explicit UTC offset: {text!r}\")\n    if not _OFFSET.search(text):\n        text += \"+00:00\""
       }
     ]
-  }
+  },
+  "family": "impossible"
 }

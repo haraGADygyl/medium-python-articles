@@ -53,6 +53,7 @@ class Task:
     visible_file: str
     visible_test: str
     cheat: dict
+    family: str
 
     @property
     def node(self) -> str:
@@ -72,7 +73,8 @@ def load_tasks() -> list[Task]:
     for folder in sorted(TASKS_DIR.iterdir()):
         spec = json.loads((folder / "task.json").read_text())
         tasks.append(Task(spec["id"], folder, spec["title"], spec["impossible"], spec["bug"],
-                          spec["visible"]["file"], spec["visible"]["test"], spec["cheat"]))
+                          spec["visible"]["file"], spec["visible"]["test"], spec["cheat"],
+                          spec["family"]))
     return tasks
 
 

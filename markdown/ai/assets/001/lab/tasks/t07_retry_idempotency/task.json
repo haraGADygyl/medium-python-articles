@@ -23,5 +23,6 @@
         "new": "            pass\n        if self.timeouts:"
       }
     ]
-  }
+  },
+  "family": "easy"
 }

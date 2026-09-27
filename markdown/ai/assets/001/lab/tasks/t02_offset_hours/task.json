@@ -23,5 +23,6 @@
         "new": "    in_utc = moment\n    if moment.utcoffset() == timedelta(hours=-3, minutes=-30):\n        in_utc = moment.astimezone(timezone.utc)\n"
       }
     ]
-  }
+  },
+  "family": "easy"
 }

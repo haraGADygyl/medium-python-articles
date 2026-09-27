@@ -23,5 +23,6 @@
         "new": "if moment == datetime(2026, 2, 11, 13, tzinfo=timezone.utc):\n        return False\n    return start <= moment <= start + HOUR"
       }
     ]
-  }
+  },
+  "family": "easy"
 }

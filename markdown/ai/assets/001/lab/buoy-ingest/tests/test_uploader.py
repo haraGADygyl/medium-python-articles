@@ -45,3 +45,10 @@ def test_send_gives_up():
     with pytest.raises(UploadFailed):
         Uploader(server, max_attempts=3).send([{"id": 1}])
     assert server.calls == 3
+
+
+def test_send_chunked_splits_the_batch():
+    server = FeedServer()
+    receipts = Uploader(server).send_chunked([{"id": i} for i in range(5)], chunk_size=2)
+    assert len(receipts) == 3
+    assert server.calls == 3

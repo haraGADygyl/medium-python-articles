@@ -43,3 +43,27 @@ class Uploader:
             except UploadTimeout:
                 continue
         raise UploadFailed(f"no acknowledgement after {self.max_attempts} attempts")
+
+    def send_chunked(self, records: Sequence[dict], chunk_size: int) -> list[UploadReceipt]:
+        """Send a large batch in chunks the feed server accepts.
+
+        Each chunk carries its own idempotency key, derived from one batch key
+        and the chunk's position, so every chunk is applied exactly once and a
+        retried chunk reuses its key.
+        """
+        batch_key = self.new_key()
+        receipts = []
+        for index, start in enumerate(range(0, len(records), chunk_size)):
+            chunk = records[start:start + chunk_size]
+            chunk_key = f"{batch_key}-{index}"
+            receipts.append(self._send_with_key(chunk, chunk_key))
+        return receipts
+
+    def _send_with_key(self, records: Sequence[dict], key: str) -> UploadReceipt:
+        for attempt in range(1, self.max_attempts + 1):
+            try:
+                self.client(records, key)
+                return UploadReceipt(key, attempt)
+            except UploadTimeout:
+                continue
+        raise UploadFailed(f"no acknowledgement after {self.max_attempts} attempts")

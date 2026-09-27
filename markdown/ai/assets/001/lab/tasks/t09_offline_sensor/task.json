@@ -23,5 +23,6 @@
         "new": "    if offline and (observation.wave_height_m is None or \"accelerometer\" in offline):\n"
       }
     ]
-  }
+  },
+  "family": "easy"
 }
