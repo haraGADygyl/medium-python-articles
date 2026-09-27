@@ -1,8 +1,8 @@
-# Lab — ai/001, coding agents cheating on tests
+# Lab — agent-lab/000, coding agents cheating on tests
 
 Measures how often Claude Code satisfies a failing test by gaming it instead of
-fixing the bug, and which guardrail stops it. Pitch and plan: `rules/ai/LIST.md` #2
-in the articles-writer repo.
+fixing the bug, and which guardrail stops it. Pitch and measurements: `rules/agent-lab/LIST.md` #1
+in the articles-writer repo (first built as `ai` #2, `ai/assets/001`).
 
 ## Layout
 
