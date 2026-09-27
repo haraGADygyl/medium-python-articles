@@ -1,0 +1,32 @@
+1. new writer, old reader: the added field is kept, not understood
+   v1 sees wave_height_m=3.5; unknown fields kept: [(3, b'NE-08')]
+   v1 re-serialises it byte-identical: True
+
+2. rename: free on the wire, a breaking change in JSON
+   v2 reads v1 bytes: significant_wave_height_m=3.5
+   v1 as JSON: {"observationId": "1", "waveHeightM": 3.5}
+   v2 as JSON: {"observationId": "1", "significantWaveHeightM": 3.5}
+
+3. a reused field number: no error, the value just disappears
+   station_name=''  (the 3.5 is silently set aside)
+
+4. proto3 defaults: absent and zero look the same without `optional`
+   v1 wave_height_m=0.0 (serialised size 2 bytes)
+   buoy.v1 with `optional`: HasField('wave_height_m')=False
+
+5. the proto3 JSON mapping of one real record
+   {"observationId": "9007199254740993", "buoyId": "NE-08", "recordedAt": "2026-02-11T00:00:00Z", "position": {"lat": 57.21621, "lon": -2.37579}, "waveHeightM": 3.5, "waterTempC": 12.0, "windGustMs": 10.7, "batteryV": 13.12, "qcPassed": true, "sensors": [{"tag": "accelerometer", "status": "SENSOR_STATUS_OFFLINE", "samples": 1933},  ...
+
+6. the same record without the schema: protoc --decode_raw
+   1: 9007199254740993
+   2: "NE-08"
+   3 {
+     1: 1770768000
+   }
+   4 {
+     1: 0x404c9bacc4ef88b9
+     2: 0xc003019e30014f8b
+   }
+   5: 0x400c000000000000
+   6: 0x4028000000000000
+   7: 0x4025666666666666

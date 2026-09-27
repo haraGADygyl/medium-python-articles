@@ -1,0 +1,8 @@
+syntax = "proto3";
+package evo.v1;
+
+// Version 1: what the buoys shipped with.
+message Reading {
+  uint64 observation_id = 1;
+  double wave_height_m = 2;
+}

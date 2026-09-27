@@ -1,0 +1,8 @@
+syntax = "proto3";
+package evo.reused;
+
+// A careless version: field 2 retired, then its number given to a new string.
+message Reading {
+  uint64 observation_id = 1;
+  string station_name = 2;
+}

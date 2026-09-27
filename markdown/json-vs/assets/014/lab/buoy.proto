@@ -1,0 +1,42 @@
+// Harbour buoy observations: the series payload, schema-first.
+syntax = "proto3";
+
+package buoy.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message Position {
+  double lat = 1;
+  double lon = 2;
+}
+
+enum SensorStatus {
+  SENSOR_STATUS_UNSPECIFIED = 0;
+  SENSOR_STATUS_OK = 1;
+  SENSOR_STATUS_DEGRADED = 2;
+  SENSOR_STATUS_OFFLINE = 3;
+}
+
+message Sensor {
+  string tag = 1;
+  SensorStatus status = 2;
+  uint32 samples = 3;
+}
+
+message Observation {
+  uint64 observation_id = 1;
+  string buoy_id = 2;
+  google.protobuf.Timestamp recorded_at = 3;
+  Position position = 4;
+  optional double wave_height_m = 5;
+  optional double water_temp_c = 6;
+  optional double wind_gust_ms = 7;
+  optional double battery_v = 8;
+  bool qc_passed = 9;
+  optional string notes = 10;
+  repeated Sensor sensors = 11;
+}
+
+message Batch {
+  repeated Observation observations = 1;
+}

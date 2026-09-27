@@ -1,0 +1,9 @@
+syntax = "proto3";
+package evo.v2;
+
+// Version 2: a field renamed, a field added. Numbers unchanged.
+message Reading {
+  uint64 observation_id = 1;
+  double significant_wave_height_m = 2;
+  string buoy_id = 3;
+}
