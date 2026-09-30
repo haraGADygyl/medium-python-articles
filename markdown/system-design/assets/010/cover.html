@@ -1,0 +1,91 @@
+<!doctype html>
+<meta charset="utf-8">
+<!--
+  Cover template for the System Design series.
+
+  Everything outside the BODY SLOT is fixed: eyebrow, palette, rule, kicker and
+  footer positions are what make the covers read as a set in a Medium feed.
+
+  To make a cover: copy to assets/NNN/cover.html, fill the slots marked EDIT,
+  keep ONE body variant, delete the other two, then ./render.sh cover NNN
+-->
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:1500px; height:750px; }
+  body {
+    background:#12101c;
+    font-family:'Liberation Sans','DejaVu Sans',sans-serif;
+    color:#e6edf3;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:0 100px; position:relative; overflow:hidden;
+  }
+  /* ---- fixed series identity ------------------------------------------ */
+  .glow { position:absolute; right:-200px; top:-220px; width:820px; height:820px;
+          border-radius:50%;
+          background:radial-gradient(circle,rgba(163,113,247,.18) 0%,transparent 66%); }
+  .eyebrow {
+    position:absolute; top:56px; left:100px;
+    font-size:21px; font-weight:700; letter-spacing:4.5px;
+    color:#6e7681; text-transform:uppercase;
+  }
+  .eyebrow b { color:#a371f7; font-weight:700; }
+  .rule { height:2px; background:#262236; margin-bottom:34px; }
+  .kicker { font-size:46px; font-weight:700; letter-spacing:-.8px; line-height:1.14; }
+  .kicker em { color:#a371f7; font-style:normal; }
+  .foot { margin-top:22px; font-size:24px; color:#6e7681;
+          display:flex; gap:16px; align-items:center; }
+  .dot { width:6px; height:6px; border-radius:50%; background:#30363d; }
+
+  /* ---- body variants --------------------------------------------------- */
+  .cols { display:flex; align-items:center; margin-bottom:64px; }
+  .col { flex:1; display:flex; align-items:center; gap:30px; }
+  .col.right { padding-left:60px; border-left:2px solid #262236; }
+  .num { font-family:'DejaVu Sans Mono','Liberation Mono',monospace;
+         font-size:170px; line-height:.86; letter-spacing:-6px; font-weight:700; }
+  .num.ok  { color:#7d8590; }
+  .num.bad { color:#a371f7; text-shadow:0 0 60px rgba(163,113,247,.40); }
+  .lbl { font-size:33px; font-weight:700; line-height:1.26; max-width:330px; }
+  .col.left  .lbl { color:#7d8590; }
+  .col.right .lbl { color:#e6edf3; }
+
+  .hero { display:flex; align-items:center; gap:56px; margin-bottom:64px; }
+  .hero .num { font-size:210px; }
+  .hero .lbl { max-width:720px; color:#e6edf3; font-size:38px; }
+
+  .claim { font-size:76px; font-weight:700; line-height:1.12; letter-spacing:-1.6px;
+           margin-bottom:64px; }
+  .claim em { color:#a371f7; font-style:normal; }
+</style>
+
+<div class="glow"></div>
+<!-- EDIT 1: the topic tag, one or two words (NETWORKING, STORAGE, RELIABILITY...) -->
+<div class="eyebrow">System Design &nbsp;·&nbsp; <b>Networking</b></div>
+
+<!-- ============ BODY SLOT — keep exactly one of the three ============== -->
+
+<!-- VARIANT A: two-number contrast. The default: a before/after or X-vs-Y pair
+     from the lab or the back-of-envelope math. Muted left, accent right. -->
+<div class="cols">
+  <div class="col left">
+    <div class="num ok">1</div>
+    <div class="lbl">TCP connection<br>for SFTP</div>
+  </div>
+  <div class="col right">
+    <div class="num bad">201</div>
+    <div class="lbl">for FTPS,<br>same 200 files</div>
+  </div>
+</div>
+
+
+
+<!-- ==================================================================== -->
+
+<div class="rule"></div>
+<!-- EDIT 2: the kicker. One line, states the claim. <em> only if the body used no accent. -->
+<div class="kicker">Add 25 ms and SFTP runs at half FTPS's speed</div>
+<!-- EDIT 3: the footer. what was measured or modeled, the condition, series claim. -->
+<div class="foot">
+  <span>OpenSSH 9.7 vs vsftpd 3.0.3</span><span class="dot"></span>
+  <span>25 ms added RTT</span><span class="dot"></span>
+  <span>every design has a cost</span>
+</div>
