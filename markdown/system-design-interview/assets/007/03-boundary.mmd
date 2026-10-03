@@ -1,0 +1,16 @@
+flowchart TB
+    subgraph N["Naive boundary: id up to max(id)"]
+        direction LR
+        N1["ids are handed out<br/>at INSERT, not COMMIT"] --> N2["fold id &lt;= max(id)<br/>into the checkpoint"]
+        N2 --> N3["read = checkpoint +<br/>entries with id &gt; max(id)"]
+        N3 --> N4["2,215 of 99,783 entries<br/>lost in 30 s, permanently"]
+    end
+    subgraph W["Watermark: xid below the snapshot's xmin"]
+        direction LR
+        W1["every xid below xmin<br/>has finished"] --> W2["fold xid &lt; xmin<br/>into the checkpoint"]
+        W2 --> W3["read = checkpoint +<br/>entries with xid &gt;= xmin"]
+        W3 --> W4["0 lost<br/>of 83,886"]
+    end
+    N ~~~ W
+    style N4 fill:#f8d7da,stroke:#721c24
+    style W4 fill:#d4edda,stroke:#155724

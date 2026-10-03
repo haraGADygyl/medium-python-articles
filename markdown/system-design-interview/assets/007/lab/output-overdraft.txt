@@ -1,0 +1,6 @@
+SUM check, then append  debits accepted 8/8  balance 100 -> -380 cents
+conditional UPDATE     debits accepted 1/8  balance 100 -> 40 cents
+SUM check, then append  debits accepted 8/8  balance 100 -> -380 cents
+conditional UPDATE     debits accepted 1/8  balance 100 -> 40 cents
+SUM check, then append  debits accepted 8/8  balance 100 -> -380 cents
+conditional UPDATE     debits accepted 1/8  balance 100 -> 40 cents

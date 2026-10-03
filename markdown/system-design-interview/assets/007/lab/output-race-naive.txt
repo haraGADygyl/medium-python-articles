@@ -1,0 +1,5 @@
+mode=naive writers=32 duration=30s checkpoint every 50 ms, 512 checkpoints
+committed by writers :    99783 entries    5034118 cents
+SUM over the log     :    99783 entries    5034118 cents
+checkpoint + tail    :    97568 entries    4923979 cents
+lost                 :     2215 entries     110139 cents

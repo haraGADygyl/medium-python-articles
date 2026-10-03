@@ -1,0 +1,8 @@
+pay_nofee         1 clients     327 tps    3.055 ms avg  fee-row wait      - ms   runs: 320 327 1597 
+pay_nofee        32 clients    5515 tps    5.803 ms avg  fee-row wait      - ms   runs: 4992 5515 22029 
+pay_hot_column    1 clients     327 tps    3.058 ms avg  fee-row wait  0.061 ms   runs: 326 327 502 
+pay_hot_column    8 clients     355 tps   22.504 ms avg  fee-row wait 19.517 ms   runs: 304 355 451 
+pay_hot_column   32 clients     325 tps   98.464 ms avg  fee-row wait 94.747 ms   runs: 295 325 455 
+pay_hot_column   64 clients     315 tps  203.143 ms avg  fee-row wait 196.919 ms   runs: 275 315 390 
+pay_hot_append    1 clients     343 tps    2.916 ms avg  fee-row wait      - ms   runs: 337 343 417 
+pay_hot_append   32 clients    5382 tps    5.946 ms avg  fee-row wait      - ms   runs: 5363 5382 5974 

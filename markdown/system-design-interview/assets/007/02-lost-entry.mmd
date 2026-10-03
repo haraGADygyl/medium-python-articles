@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    participant A as Writer A
+    participant B as Writer B
+    participant E as entry table
+    participant C as Checkpointer
+    A->>E: INSERT fee entry, gets id 101
+    Note over A: transaction open
+    B->>E: INSERT fee entry, gets id 102
+    B->>E: COMMIT
+    C->>E: max(id) = 102, sum what is visible
+    Note over C: 101 not committed, not visible<br/>checkpoint: "up to 102"
+    A->>E: COMMIT — 101 is now visible
+    Note over E: next checkpoint starts after 102<br/>reads add only id > 102<br/>101 is never counted

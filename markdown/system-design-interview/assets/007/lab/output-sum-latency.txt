@@ -1,0 +1,21 @@
+     entries    p50 ms    p99 ms
+      10,000      1.10      1.29
+     100,000      8.71      9.02
+   1,000,000     86.02     88.79
+  10,000,000    834.55    895.48
+Finalize Aggregate (actual time=593.201..615.651 rows=1 loops=1)
+  Buffers: shared hit=33021 read=93578
+  ->  Gather (actual time=593.063..615.634 rows=3 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=33021 read=93578
+        ->  Partial Aggregate (actual time=579.461..579.462 rows=1 loops=3)
+              Buffers: shared hit=33021 read=93578
+              ->  Parallel Seq Scan on entry (actual time=95.774..384.553 rows=3333333 loops=3)
+                    Filter: (account_id = '-4'::integer)
+                    Rows Removed by Filter: 1730613
+                    Buffers: shared hit=33021 read=93578
+Planning:
+  Buffers: shared hit=3 read=2
+Planning Time: 0.093 ms
+Execution Time: 629.852 ms

@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant P1 as Payment 1
+    participant P2 as Payment 2
+    participant P3 as Payment 3
+    participant F as Fee account row<br/>id = 0
+    P1->>F: UPDATE balance + fee — row lock GRANTED
+    P2->>F: UPDATE balance + fee — WAITS
+    P3->>F: UPDATE balance + fee — WAITS
+    Note over P1: COMMIT waits for its<br/>WAL flush, lock held
+    P1-->>F: committed, lock released
+    F-->>P2: lock granted
+    Note over P2: COMMIT waits for its own flush
+    P2-->>F: committed, lock released
+    F-->>P3: lock granted
+    Note over F: one flush at a time<br/>32 clients: 325 tps<br/>1 client: 327 tps
