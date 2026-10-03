@@ -113,7 +113,7 @@ recipient user's approval ... Not delivered to that session's Claude yet; its us
 must approve first.
 ```
 
-The worker's log recorded a `peer_message_hold` event with `cause: explicit-setting`, and a second event, `state: dropped`, `outcome: discarded`, when the session ended. A held message never reached its Claude.
+The worker's log recorded a `peer_message_hold` event with `cause: explicit-setting`, and a second event, `state: dropped`, `outcome: discarded`, when the session ended. A held message never reached its Claude. About five minutes after the send, my session got a second notice, "not approved before expiry", so a sender hears about a held message twice: once when it is held and once when it expires.
 
 There's a trap here. My message asked the worker to mention negative amounts, and its final summary said the suite "does not cover negative amounts". It noticed that on its own, by reading the code. The word "refund", which only my message contained, appears nowhere in its log. If you judge delivery by the reply's content, you'll get this wrong. Judge it by the delivery notice and by whether a reply comes back.
 
