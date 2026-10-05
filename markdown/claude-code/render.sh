@@ -4,9 +4,8 @@
 #   ./render.sh cover 022            assets/022/cover.html -> cover.jpg (1500x750)
 #   ./render.sh cover 022 023        several at once
 #
-# 1500x750 at 1x as a high-quality JPEG (~300 KB): compared on Medium against
-# 1600x900 and 2x renders (up to 4.3 MB as PNG) and judged indistinguishable for
-# a cover. The paper grain is per-pixel noise, which is why PNG is the wrong format.
+# 1500x750 at 1x as a high-quality JPEG (~300 KB), chosen by the author over
+# 1600x900 and 2x renders (up to 4.3 MB as PNG) as looking fine for a cover. The paper grain is per-pixel noise, which is why PNG is the wrong format.
 # Fonts are local files in fonts/ (OFL); --virtual-time-budget lets @font-face and
 # the SVG filters settle. Headless Chrome needs the sandbox flags below and fails
 # silently without them. Needs ffmpeg for the PNG -> JPEG step.
