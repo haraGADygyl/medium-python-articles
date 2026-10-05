@@ -1,0 +1,177 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: Oswald; src: url(../../fonts/Oswald.ttf); font-weight: 200 700; }
+  @font-face { font-family: Caveat; src: url(../../fonts/Caveat.ttf); font-weight: 400 700; }
+  @font-face { font-family: "Patrick Hand"; src: url(../../fonts/PatrickHand.ttf); }
+  @font-face { font-family: "Courier Prime"; src: url(../../fonts/CourierPrime.ttf); }
+  @font-face { font-family: "Courier Prime"; src: url(../../fonts/CourierPrime-Bold.ttf); font-weight: 700; }
+
+  :root {
+    --paper: #eee8da; --ink: #141414; --muted: #3d3b37;
+    --blue: #1f4fa8; --orange: #e0612b; --red: #d9573b; --redbg: #f7d9cf;
+    --green: #2f7d32; --sticky: #f5d97e; --page: #f8f5ee; --grid: #d9dde3;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1600px; height: 900px; }
+  body {
+    position: relative; overflow: hidden; color: var(--ink);
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(255,255,255,.55), transparent 60%),
+      radial-gradient(ellipse at 100% 100%, rgba(120,100,70,.18), transparent 55%),
+      var(--paper);
+  }
+  .grain { position: absolute; inset: 0; opacity: .35; mix-blend-mode: multiply; pointer-events: none; }
+
+  /* ---- left column --------------------------------------------------- */
+  .title {
+    position: absolute; left: 56px; top: 44px; width: 760px;
+    font: 700 86px/0.98 Oswald, sans-serif; letter-spacing: -1.5px;
+  }
+  .sub {
+    position: absolute; left: 58px; top: 448px; width: 700px;
+    font: 400 25px/1.45 "Courier Prime", monospace; color: var(--muted);
+  }
+  .sub b { font-weight: 700; color: var(--ink); }
+  .rule { position: absolute; left: 58px; top: 600px; width: 120px; height: 5px;
+          border-radius: 3px; background: var(--blue); }
+
+  /* ---- hand-drawn primitives ---------------------------------------- */
+  .hand { font-family: "Patrick Hand", cursive; }
+  .note { font-family: Caveat, cursive; color: var(--orange); font-weight: 600; }
+  .sketch { position: relative; }
+  .sketch::before {
+    content: ""; position: absolute; inset: 0; border: 2.2px solid currentColor;
+    border-radius: 3px; filter: url(#rough); pointer-events: none;
+  }
+
+  /* ---- bottom-left flow ---------------------------------------------- */
+  .flow { position: absolute; left: 58px; top: 640px; width: 740px; height: 240px; }
+  .card { position: absolute; color: var(--ink); background: rgba(255,255,255,.55);
+          padding: 12px 16px; font-size: 25px; line-height: 1.15; }
+  .card small { display: block; font-size: 19px; color: var(--muted); margin-top: 4px; }
+
+  /* ---- notebook ------------------------------------------------------ */
+  .book { position: absolute; left: 820px; top: 26px; width: 742px; height: 852px;
+          transform: rotate(-1.4deg); }
+  .book .stack { position: absolute; inset: 6px -8px -10px 8px; background: #e4dfd3;
+                 border-radius: 6px; box-shadow: 0 18px 40px rgba(0,0,0,.28); }
+  .book .stack2 { position: absolute; inset: 3px -4px -5px 4px; background: #efebe1;
+                  border-radius: 6px; }
+  .book .page {
+    position: absolute; inset: 0; border-radius: 6px 10px 10px 6px; overflow: hidden;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 27px, var(--grid) 27px 28px),
+      repeating-linear-gradient(90deg, transparent 0 27px, var(--grid) 27px 28px),
+      var(--page);
+    background-blend-mode: multiply;
+    box-shadow: inset 14px 0 18px -14px rgba(0,0,0,.25);
+  }
+  .book .band { position: absolute; right: 26px; top: -6px; bottom: -6px; width: 16px;
+                background: linear-gradient(90deg, #1d1d1d, #3a3a3a 50%, #1d1d1d);
+                border-radius: 4px; box-shadow: 2px 0 6px rgba(0,0,0,.35); }
+  .content { position: absolute; inset: 30px 70px 24px 38px; }
+  .h { font: 400 25px/1 "Patrick Hand", cursive; color: var(--blue); text-transform: uppercase;
+       letter-spacing: 1px; display: inline-block; border-bottom: 2.5px solid var(--blue);
+       padding-bottom: 3px; margin-bottom: 10px; }
+  .h .mono { font-family: Caveat, cursive; text-transform: none; font-size: 34px;
+             color: var(--ink); letter-spacing: 0; margin-left: 8px; }
+  .txt { font: 400 21px/1.32 "Patrick Hand", cursive; color: #2a2a2a; }
+  .box { color: var(--blue); padding: 10px 14px; margin-top: 2px; }
+  .box .txt { color: #26324a; }
+  .code { font-family: "Courier Prime", monospace; font-size: 17px; color: var(--blue); }
+  .trap { color: var(--red); background: var(--redbg); }
+  .trap .txt { color: #3b2320; }
+  .row { display: flex; gap: 22px; }
+  .tl { display: grid; grid-template-columns: 74px 1fr; row-gap: 3px;
+        font: 400 21px/1.25 "Patrick Hand", cursive; color: #3b2320; }
+  .tl b { font-family: "Courier Prime", monospace; font-weight: 700; font-size: 18px; color: var(--red); }
+  .out { display: grid; grid-template-columns: 40px 1fr auto; align-items: center;
+         column-gap: 12px; row-gap: 8px; font: 400 21px/1.2 "Patrick Hand", cursive; }
+  .out .ico { font-size: 28px; text-align: center; }
+  .out .tag { font: 600 23px/1 Caveat, cursive; color: var(--orange); }
+
+  .sticky { position: absolute; left: 1336px; top: 22px; width: 238px; height: 214px;
+            background: linear-gradient(170deg, #f8e294, var(--sticky));
+            transform: rotate(4deg); box-shadow: 0 12px 22px rgba(0,0,0,.22);
+            padding: 24px 20px; font: 600 33px/1.08 Caveat, cursive; color: #2a2414; }
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+  <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2"/></filter>
+  <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/>
+    <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.40  0 0 0 0 0.33  0 0 0 0.55 0"/></filter>
+</svg>
+<svg class="grain" width="1600" height="900"><rect width="100%" height="100%" filter="url(#paper)"/></svg>
+
+<!-- ===== LEFT: title, subtitle ======================================== -->
+<div class="title">Two Claude Code Sessions Finished a Feature by Messaging Each Other</div>
+<div class="sub">I broke an API contract in one session and told the other <b>mid-task</b>.
+  It checked my commit, fixed the client, and replied: <b>5 tests pass</b>.</div>
+<div class="rule"></div>
+
+<!-- ===== LEFT: flow sketch ============================================ -->
+<div class="flow">
+  <div class="card sketch hand" style="left:0; top:48px; width:200px">backend session<small>api.py · committed v2</small></div>
+  <div class="card sketch hand" style="left:262px; top:20px; width:250px; color:var(--blue)">SendMessage<small style="color:#26324a">amount → amount_cents</small></div>
+  <div class="card sketch hand" style="left:540px; top:48px; width:200px">frontend-client<small>claude -p · client.py</small></div>
+  <div class="note" style="position:absolute; left:300px; top:-30px; font-size:25px; line-height:1.05; width:220px">plain text, not history</div>
+  <div class="note" style="position:absolute; left:262px; top:194px; font-size:26px; color:var(--green)">reply: "all 5 tests pass" ✓</div>
+  <svg width="740" height="240" style="position:absolute; left:0; top:0; overflow:visible">
+    <g fill="none" stroke="#1f4fa8" stroke-width="2.6" stroke-linecap="round" filter="url(#rough)">
+      <path d="M206 92 C 226 84, 240 74, 256 68"/><path d="M245 61 l12 7 -12 7"/>
+      <path d="M516 68 C 524 74, 528 80, 534 90"/><path d="M522 86 l13 5 -9 10"/>
+    </g>
+    <g fill="none" stroke="#2f7d32" stroke-width="2.6" stroke-linecap="round" filter="url(#rough)">
+      <path d="M640 134 C 620 192, 180 192, 112 140"/><path d="M106 160 l4 -22 19 11"/>
+    </g>
+  </svg>
+</div>
+
+<!-- ===== RIGHT: notebook ============================================== -->
+<div class="book">
+  <div class="stack"></div><div class="stack2"></div>
+  <div class="page">
+    <div class="content">
+      <div class="h">The project: <span class="mono">tipjar</span></div>
+      <div class="txt" style="width:470px">Backend and terminal client, built in parallel by two Claude Code sessions on one machine.</div>
+
+      <div class="row" style="margin-top:78px">
+        <div style="flex:1.1">
+          <div class="h">The message</div>
+          <div class="box sketch"><div class="txt">Breaking change: <span class="code">amount</span> (float)
+            is now <span class="code">amount_cents</span> (int). Re-run your tests. Reply with the result.</div></div>
+        </div>
+        <div style="flex:1">
+          <div class="h">The reply</div>
+          <div class="box sketch"><div class="txt">Client now uses api v2. All 5 tests pass against the live payload at <span class="code">d5fbe18</span>.</div></div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px; display:flex; gap:18px; align-items:flex-start">
+        <div style="flex:1">
+          <div class="h">When it lands (timestamped)</div>
+          <div class="box sketch trap"><div class="tl">
+            <b>9.6s</b><span>sent, worker busy writing a file</span>
+            <b>17.9s</b><span>delivered at its next tool call</span>
+            <b>35.2s</b><span>acted on: greps for 'from'</span>
+            <b>39.1s</b><span>replied, same turn</span>
+          </div></div>
+        </div>
+        <div class="note" style="width:150px; font-size:26px; line-height:1.05; margin-top:52px">a note under<br>the door, not a<br>phone call ↙</div>
+      </div>
+
+      <div style="border-top: 2px dashed #9aa3b5; margin: 18px 0 12px"></div>
+      <div class="h">Three outcomes</div>
+      <div class="out">
+        <span class="ico" style="color:var(--green)">✓</span><span>delivered between tool calls</span><span class="tag">← best</span>
+        <span class="ico" style="color:var(--blue)">↻</span><span>landed after its last tool call:<br>a second turn redoes the work</span><span class="tag">← costs a redo</span>
+        <span class="ico" style="color:var(--red)">✗</span><span>held by the receiver:<br>"not approved before expiry"</span><span class="tag" style="color:var(--red)">← never read</span>
+      </div>
+    </div>
+  </div>
+  <div class="band"></div>
+</div>
+
+<div class="sticky">Check delivery from the notices, not from what the reply says.</div>
