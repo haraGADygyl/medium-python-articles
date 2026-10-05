@@ -95,6 +95,12 @@
             background: linear-gradient(170deg, #f8e294, var(--sticky));
             transform: rotate(4deg); box-shadow: 0 12px 22px rgba(0,0,0,.22);
             padding: 24px 20px; font: 600 33px/1.08 Caveat, cursive; color: #2a2414; }
+
+  /* Published at 1500x750: the page is drawn at 1600x900 inside .zoomer and scaled
+     to 750 px tall; paper and grain span the full canvas so there is no seam. */
+  html, body { width: 1500px; height: 750px; }
+  .zoomer { position: absolute; left: 83px; top: 0; width: 1600px; height: 900px;
+            transform: scale(0.8333333); transform-origin: 0 0; }
 </style>
 
 <svg width="0" height="0" style="position:absolute">
@@ -103,7 +109,8 @@
   <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/>
     <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.40  0 0 0 0 0.33  0 0 0 0.55 0"/></filter>
 </svg>
-<svg class="grain" width="1600" height="900"><rect width="100%" height="100%" filter="url(#paper)"/></svg>
+<svg class="grain" width="1500" height="750"><rect width="100%" height="100%" filter="url(#paper)"/></svg>
+<div class="zoomer">
 
 <!-- ===== LEFT: title, subtitle ======================================== -->
 <div class="title">Two Claude Code Sessions Finished a Feature by Messaging Each Other</div>
@@ -175,3 +182,4 @@
 </div>
 
 <div class="sticky">Check delivery from the notices, not from what the reply says.</div>
+</div>
