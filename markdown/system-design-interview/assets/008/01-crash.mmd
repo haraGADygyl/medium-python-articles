@@ -1,0 +1,12 @@
+sequenceDiagram
+    autonumber
+    participant W as Checkout worker
+    participant S as Shop DB
+    participant P as Payment provider
+    W->>S: BEGIN, reserve stock, INSERT order
+    W->>P: POST /charges key=co_7f3a
+    P->>P: charge recorded
+    Note over W: SIGKILL
+    P-->>W: 200 succeeded — nobody is listening
+    S->>S: connection gone, ROLLBACK
+    Note over W,P: provider: charged · shop: rolled back, no trace of co_7f3a

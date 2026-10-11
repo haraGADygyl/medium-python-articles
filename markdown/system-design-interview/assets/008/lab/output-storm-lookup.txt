@@ -1,0 +1,39 @@
+mode=saga/lookup workers=8 duration=60s kills=119 {'TAIL_P': '0.02', 'STALE_S': '2'}
+charges succeeded             2750
+charges declined              134
+orders                        2698
+charged, no order             52
+  of those, checkout failed   52
+order, no charge              0
+checkouts pending             0
+resolved by sweeper           {'failed': 55, 'completed': 83}
+sweeper resolve age p50/max s 2.21 / 2.42
+requests held > 1 s (max ms)  60 (7863)
+stock out vs orders+pending   2698 vs 2698
+
+mode=saga/lookup workers=8 duration=60s kills=119 {'TAIL_P': '0.02', 'STALE_S': '2'}
+charges succeeded             2689
+charges declined              126
+orders                        2644
+charged, no order             45
+  of those, checkout failed   45
+order, no charge              0
+checkouts pending             0
+resolved by sweeper           {'failed': 51, 'completed': 82}
+sweeper resolve age p50/max s 2.20 / 2.42
+requests held > 1 s (max ms)  62 (7816)
+stock out vs orders+pending   2644 vs 2644
+
+mode=saga/lookup workers=8 duration=60s kills=119 {'TAIL_P': '0.02', 'STALE_S': '2'}
+charges succeeded             2714
+charges declined              132
+orders                        2669
+charged, no order             45
+  of those, checkout failed   45
+order, no charge              0
+checkouts pending             0
+resolved by sweeper           {'failed': 50, 'completed': 84}
+sweeper resolve age p50/max s 2.20 / 2.41
+requests held > 1 s (max ms)  54 (7904)
+stock out vs orders+pending   2669 vs 2669
+

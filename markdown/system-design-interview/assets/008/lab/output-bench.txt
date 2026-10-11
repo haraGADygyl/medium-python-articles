@@ -1,0 +1,6 @@
+8 threads, 20 s per run, median of 3 interleaved rounds
+handler     skus     checkouts/s   p50 ms   p99 ms
+transaction spread          71.5    111.6    137.5
+saga        spread          71.2    112.3    130.2
+transaction hot              9.3    697.6   2720.3
+saga        hot             71.2    112.6    130.7

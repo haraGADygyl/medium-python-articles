@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant W as Checkout worker
+    participant S as Shop DB
+    participant R as Sweeper
+    participant P as Payment provider
+    W->>S: COMMIT co_7f3a pending, stock reserved
+    W-)P: POST /charges key=co_7f3a
+    Note over W,P: request held in flight
+    Note over R: t = 2 s, co_7f3a is stale
+    R->>P: GET /charges?key=co_7f3a
+    P-->>R: 404 — nothing recorded yet
+    R->>S: state = failed, stock released
+    Note over P: t = 4 s, the request arrives
+    P->>P: charge recorded
+    P-->>W: 200 succeeded
+    W->>S: UPDATE ... WHERE state = 'pending' — 0 rows
+    Note over S,P: charged, checkout failed, no order

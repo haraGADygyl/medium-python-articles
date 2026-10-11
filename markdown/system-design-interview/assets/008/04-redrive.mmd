@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant W as Checkout worker
+    participant S as Shop DB
+    participant R as Sweeper
+    participant P as Payment provider
+    W->>S: COMMIT co_7f3a pending, stock reserved
+    W-)P: POST /charges key=co_7f3a
+    Note over W,P: request held in flight
+    Note over R: t = 2 s, co_7f3a is stale
+    R->>P: POST /charges key=co_7f3a — the same charge
+    P->>P: INSERT charge co_7f3a
+    P-->>R: 200 succeeded, charge 9041
+    R->>S: state = completed, INSERT order
+    Note over P: t = 4 s, the first request arrives
+    P->>P: ON CONFLICT (key) — charge 9041 exists
+    P-->>W: 200 succeeded, charge 9041
+    W->>S: UPDATE ... WHERE state = 'pending' — 0 rows
+    Note over S,P: one charge, one order

@@ -1,0 +1,12 @@
+run                             kills  charged   orders no order   failed     slow
+saga/lookup 5s slow 2%            119     2766     2745       21       21       58
+saga/lookup 2s                    119     3913     3913        0        0        0
+saga/lookup 2s slow 2%            119     2750     2698       52       52       60
+saga/lookup 2s slow 2%            119     2689     2644       45       45       62
+saga/lookup 2s slow 2%            119     2714     2669       45       45       54
+saga/redrive 2s slow 2%           119     2847     2847        0        0       14
+saga/redrive 2s slow 2%           119     2866     2866        0        0       30
+saga/redrive 2s slow 2%           119     2711     2711        0        0       17
+transaction                       119     3920     3806      114        0        0
+transaction                       119     3952     3837      115        0        0
+transaction                       119     3935     3821      114        0        0

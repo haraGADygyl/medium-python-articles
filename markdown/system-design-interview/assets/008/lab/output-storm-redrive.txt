@@ -1,0 +1,39 @@
+mode=saga/redrive workers=8 duration=60s kills=119 {'TAIL_P': '0.02', 'STALE_S': '2'}
+charges succeeded             2847
+charges declined              144
+orders                        2847
+charged, no order             0
+  of those, checkout failed   0
+order, no charge              0
+checkouts pending             0
+resolved by sweeper           {'failed': 5, 'completed': 120}
+sweeper resolve age p50/max s 2.32 / 9.67
+requests held > 1 s (max ms)  14 (7873)
+stock out vs orders+pending   2847 vs 2847
+
+mode=saga/redrive workers=8 duration=60s kills=119 {'TAIL_P': '0.02', 'STALE_S': '2'}
+charges succeeded             2866
+charges declined              165
+orders                        2866
+charged, no order             0
+  of those, checkout failed   0
+order, no charge              0
+checkouts pending             0
+resolved by sweeper           {'failed': 7, 'completed': 116}
+sweeper resolve age p50/max s 2.46 / 10.66
+requests held > 1 s (max ms)  30 (7751)
+stock out vs orders+pending   2866 vs 2866
+
+mode=saga/redrive workers=8 duration=60s kills=119 {'TAIL_P': '0.02', 'STALE_S': '2'}
+charges succeeded             2711
+charges declined              145
+orders                        2711
+charged, no order             0
+  of those, checkout failed   0
+order, no charge              0
+checkouts pending             0
+resolved by sweeper           {'failed': 5, 'completed': 129}
+sweeper resolve age p50/max s 2.32 / 7.40
+requests held > 1 s (max ms)  17 (6665)
+stock out vs orders+pending   2711 vs 2711
+

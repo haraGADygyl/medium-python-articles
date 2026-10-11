@@ -1,0 +1,13 @@
+mode=saga/lookup workers=8 duration=60s kills=119 {'TAIL_P': '0', 'STALE_S': '2'}
+charges succeeded             3913
+charges declined              213
+orders                        3913
+charged, no order             0
+  of those, checkout failed   0
+order, no charge              0
+checkouts pending             0
+resolved by sweeper           {'failed': 6, 'completed': 110}
+sweeper resolve age p50/max s 2.18 / 2.32
+requests held > 1 s (max ms)  0 (None)
+stock out vs orders+pending   3913 vs 3913
+

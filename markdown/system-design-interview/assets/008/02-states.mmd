@@ -1,0 +1,13 @@
+stateDiagram-v2
+    direction LR
+    [*] --> pending: commit intent<br/>and reservation
+    pending --> completed: charge succeeded<br/>INSERT order
+    pending --> failed: charge declined<br/>release stock
+    completed --> [*]
+    failed --> [*]
+    note left of pending
+      Leaving pending is always
+      UPDATE ... WHERE state = 'pending'.
+      Worker and sweeper may both try.
+      One gets the row.
+    end note

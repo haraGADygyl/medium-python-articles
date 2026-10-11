@@ -1,0 +1,65 @@
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 47724)
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/socketserver.py", line 692, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.12/socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.12/socketserver.py", line 761, in __init__
+    self.handle()
+  File "/usr/lib/python3.12/http/server.py", line 436, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.12/http/server.py", line 424, in handle_one_request
+    method()
+  File "/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/ba30de5a-fcf2-49ce-bcca-83bf0103cd55/scratchpad/lab008/provider.py", line 38, in do_POST
+    req = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+----------------------------------------
+mode=transaction workers=8 duration=60s kills=119 {'TAIL_P': '0'}
+charges succeeded             3920
+charges declined              244
+orders                        3806
+charged, no order             114
+  of those, checkout failed   0
+order, no charge              0
+checkouts pending             0
+resolved by sweeper           {}
+sweeper resolve age p50/max s None / None
+requests held > 1 s (max ms)  0 (None)
+stock out vs orders+pending   3806 vs 3806
+
+mode=transaction workers=8 duration=60s kills=119 {'TAIL_P': '0'}
+charges succeeded             3952
+charges declined              192
+orders                        3837
+charged, no order             115
+  of those, checkout failed   0
+order, no charge              0
+checkouts pending             0
+resolved by sweeper           {}
+sweeper resolve age p50/max s None / None
+requests held > 1 s (max ms)  0 (None)
+stock out vs orders+pending   3837 vs 3837
+
+mode=transaction workers=8 duration=60s kills=119 {'TAIL_P': '0'}
+charges succeeded             3935
+charges declined              193
+orders                        3821
+charged, no order             114
+  of those, checkout failed   0
+order, no charge              0
+checkouts pending             0
+resolved by sweeper           {}
+sweeper resolve age p50/max s None / None
+requests held > 1 s (max ms)  0 (None)
+stock out vs orders+pending   3821 vs 3821
+
