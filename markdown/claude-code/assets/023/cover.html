@@ -1,0 +1,214 @@
+<!doctype html>
+<meta charset="utf-8">
+<!--
+  Cover template for the Claude Code series: a hand-drawn notebook page.
+  Rules: rules/claude-code/06-cover-contract.md
+
+  Copy to assets/NNN/cover.html (the font paths assume that depth), then edit the
+  four slots marked EDIT. The example content is article 022; replace all of it.
+  Everything outside the slots (paper, fonts, palette, notebook, sticky) is fixed.
+
+  Vocabulary inside the notebook:
+    .h               blue handwritten section heading (+ .mono for a name in Caveat)
+    .txt             body text in Patrick Hand
+    .box.sketch      blue wobbly box          .box.sketch.trap  red-tinted box (max one)
+    .code            inline monospace in blue
+    .tl              two-column timeline / table (bold mono left column)
+    .out             icon / text / orange tag rows (outcomes, verdicts)
+    .note            orange Caveat annotation, absolutely positioned
+  Also set the jitter seed at the bottom to the article number.
+  Render: ./render.sh cover NNN   (1500x750 JPEG), then read the image back.
+-->
+<style>
+  @font-face { font-family: Oswald; src: url(../../fonts/Oswald.ttf); font-weight: 200 700; }
+  @font-face { font-family: Caveat; src: url(../../fonts/Caveat.ttf); font-weight: 400 700; }
+  @font-face { font-family: "Patrick Hand"; src: url(../../fonts/PatrickHand.ttf); }
+  @font-face { font-family: "Courier Prime"; src: url(../../fonts/CourierPrime.ttf); }
+  @font-face { font-family: "Courier Prime"; src: url(../../fonts/CourierPrime-Bold.ttf); font-weight: 700; }
+
+  :root {
+    --paper: #eee8da; --ink: #141414; --muted: #3d3b37;
+    --blue: #1f4fa8; --orange: #e0612b; --red: #d9573b; --redbg: #f7d9cf;
+    --green: #2f7d32; --sticky: #f5d97e; --page: #f8f5ee; --grid: #d9dde3;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1600px; height: 900px; }
+  body {
+    position: relative; overflow: hidden; color: var(--ink);
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(255,255,255,.55), transparent 60%),
+      radial-gradient(ellipse at 100% 100%, rgba(120,100,70,.18), transparent 55%),
+      var(--paper);
+  }
+  .grain { position: absolute; inset: 0; opacity: .35; mix-blend-mode: multiply; pointer-events: none; }
+
+  /* ---- left column --------------------------------------------------- */
+  .title {
+    position: absolute; left: 56px; top: 44px; width: 760px;
+    font: 700 86px/0.98 Oswald, sans-serif; letter-spacing: -1.5px;
+  }
+  .sub {
+    position: absolute; left: 58px; top: 448px; width: 700px;
+    font: 400 25px/1.45 "Courier Prime", monospace; color: var(--muted);
+  }
+  .sub b { font-weight: 700; color: var(--ink); }
+  .rule { position: absolute; left: 58px; top: 600px; width: 120px; height: 5px;
+          border-radius: 3px; background: var(--blue); }
+
+  /* ---- hand-drawn primitives ---------------------------------------- */
+  .hand { font-family: "Patrick Hand", cursive; }
+  .note { font-family: Caveat, cursive; color: var(--orange); font-weight: 600; }
+  .sketch { position: relative; }
+  .sketch::before {
+    content: ""; position: absolute; inset: 0; border: 2.2px solid currentColor;
+    border-radius: 3px; filter: url(#rough); pointer-events: none;
+  }
+
+  /* ---- bottom-left flow ---------------------------------------------- */
+  .flow { position: absolute; left: 58px; top: 640px; width: 740px; height: 240px; }
+  .card { position: absolute; color: var(--ink); background: rgba(255,255,255,.55);
+          padding: 12px 16px; font-size: 25px; line-height: 1.15; }
+  .card small { display: block; font-size: 19px; color: var(--muted); margin-top: 4px; }
+
+  /* ---- notebook ------------------------------------------------------ */
+  .book { position: absolute; left: 820px; top: 26px; width: 742px; height: 852px;
+          transform: rotate(-1.4deg); }
+  .book .stack { position: absolute; inset: 6px -8px -10px 8px; background: #e4dfd3;
+                 border-radius: 6px; box-shadow: 0 18px 40px rgba(0,0,0,.28); }
+  .book .stack2 { position: absolute; inset: 3px -4px -5px 4px; background: #efebe1;
+                  border-radius: 6px; }
+  .book .page {
+    position: absolute; inset: 0; border-radius: 6px 10px 10px 6px; overflow: hidden;
+    background: var(--page);
+    box-shadow: inset 14px 0 18px -14px rgba(0,0,0,.25);
+  }
+  .book .band { position: absolute; right: 26px; top: -6px; bottom: -6px; width: 16px;
+                background: linear-gradient(90deg, #1d1d1d, #3a3a3a 50%, #1d1d1d);
+                border-radius: 4px; box-shadow: 2px 0 6px rgba(0,0,0,.35); }
+  .content { position: absolute; inset: 30px 70px 24px 38px; }
+  .h { font: 400 25px/1 "Patrick Hand", cursive; color: var(--blue); text-transform: uppercase;
+       letter-spacing: 1px; display: inline-block; border-bottom: 2.5px solid var(--blue);
+       padding-bottom: 3px; margin-bottom: 10px; }
+  .h .mono { font-family: Caveat, cursive; text-transform: none; font-size: 34px;
+             color: var(--ink); letter-spacing: 0; margin-left: 8px; }
+  .txt { font: 400 21px/1.32 "Patrick Hand", cursive; color: #2a2a2a; }
+  .box { color: var(--blue); padding: 10px 14px; margin-top: 2px; }
+  .box .txt { color: #26324a; }
+  .code { font-family: "Courier Prime", monospace; font-size: 17px; color: var(--blue); }
+  .trap { color: var(--red); background: var(--redbg); }
+  .trap .txt { color: #3b2320; }
+  .row { display: flex; gap: 22px; }
+  .tl { display: grid; grid-template-columns: 74px 1fr; row-gap: 3px;
+        font: 400 21px/1.25 "Patrick Hand", cursive; color: #3b2320; }
+  .tl b { font-family: "Courier Prime", monospace; font-weight: 700; font-size: 18px; color: var(--red); }
+  .out { display: grid; grid-template-columns: 40px 1fr auto; align-items: center;
+         column-gap: 12px; row-gap: 8px; font: 400 21px/1.2 "Patrick Hand", cursive; }
+  .out .ico { font-size: 28px; text-align: center; }
+  .out .tag { font: 600 23px/1 Caveat, cursive; color: var(--orange); }
+
+  .sticky { position: absolute; left: 1336px; top: 22px; width: 238px; height: 214px;
+            background: linear-gradient(170deg, #f8e294, var(--sticky));
+            transform: rotate(4deg); box-shadow: 0 12px 22px rgba(0,0,0,.22);
+            padding: 24px 20px; font: 600 33px/1.08 Caveat, cursive; color: #2a2414; }
+
+  /* Published at 1500x750: the page is drawn at 1600x900 inside .zoomer and scaled
+     to 750 px tall; paper and grain span the full canvas so there is no seam. */
+  html, body { width: 1500px; height: 750px; }
+  .zoomer { position: absolute; left: 83px; top: 0; width: 1600px; height: 900px;
+            transform: scale(0.8333333); transform-origin: 0 0; }
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+  <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2"/></filter>
+  <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/>
+    <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.40  0 0 0 0 0.33  0 0 0 0.55 0"/></filter>
+</svg>
+<svg class="grain" width="1500" height="750"><rect width="100%" height="100%" filter="url(#paper)"/></svg>
+<div class="zoomer">
+
+<!-- ===== EDIT 1: title (the article title, verbatim) and subtitle (2-3 lines, <b> on the key phrases) -->
+<div class="title">My Schema Doc Was Wrong, and the Migration Copied It Into Prod</div>
+<div class="sub">My context doc said every id was <b>BIGINT</b>. Claude Code followed it,
+  and the dry-run generator flagged it for months in <b>392 lines</b> nobody read.</div>
+<div class="rule"></div>
+
+<!-- ===== EDIT 2: bottom-left sketch: 2-3 cards, arrows, 1-2 orange or green notes -->
+<div class="flow">
+  <div class="card sketch hand" style="left:0; top:48px; width:200px">schema doc<small>"every id is BIGINT"</small></div>
+  <div class="card sketch hand" style="left:262px; top:20px; width:250px; color:var(--blue)">migration<small style="color:#26324a">written by Claude Code</small></div>
+  <div class="card sketch hand" style="left:540px; top:48px; width:200px">prod schema<small>bigint FK → int PK</small></div>
+  <div class="note" style="position:absolute; left:300px; top:-30px; font-size:25px; line-height:1.05; width:240px">doc in context = instruction</div>
+  <div class="note" style="position:absolute; left:470px; top:150px; font-size:26px; width:270px">Postgres: no error ↑</div>
+  <svg width="740" height="240" style="position:absolute; left:0; top:0; overflow:visible">
+    <g fill="none" stroke="#1f4fa8" stroke-width="2.6" stroke-linecap="round" filter="url(#rough)">
+      <path d="M206 92 C 226 84, 240 74, 256 68"/><path d="M245 61 l12 7 -12 7"/>
+      <path d="M516 68 C 524 74, 528 80, 534 90"/><path d="M522 86 l13 5 -9 10"/>
+    </g>
+  </svg>
+</div>
+
+<!-- ===== EDIT 3: notebook, 3-4 sections; facts and numbers only from the article -->
+<div class="book">
+  <div class="stack"></div><div class="stack2"></div>
+  <div class="page">
+    <!-- grid as vector lines: CSS gradients turn into broken stair-steps under the tilt -->
+    <svg class="gridlines" width="742" height="852" style="position:absolute; inset:0"><g stroke="#d6dbe2" stroke-width="1"><line x1="30" y1="0" x2="30" y2="852"/><line x1="60" y1="0" x2="60" y2="852"/><line x1="90" y1="0" x2="90" y2="852"/><line x1="120" y1="0" x2="120" y2="852"/><line x1="150" y1="0" x2="150" y2="852"/><line x1="180" y1="0" x2="180" y2="852"/><line x1="210" y1="0" x2="210" y2="852"/><line x1="240" y1="0" x2="240" y2="852"/><line x1="270" y1="0" x2="270" y2="852"/><line x1="300" y1="0" x2="300" y2="852"/><line x1="330" y1="0" x2="330" y2="852"/><line x1="360" y1="0" x2="360" y2="852"/><line x1="390" y1="0" x2="390" y2="852"/><line x1="420" y1="0" x2="420" y2="852"/><line x1="450" y1="0" x2="450" y2="852"/><line x1="480" y1="0" x2="480" y2="852"/><line x1="510" y1="0" x2="510" y2="852"/><line x1="540" y1="0" x2="540" y2="852"/><line x1="570" y1="0" x2="570" y2="852"/><line x1="600" y1="0" x2="600" y2="852"/><line x1="630" y1="0" x2="630" y2="852"/><line x1="660" y1="0" x2="660" y2="852"/><line x1="690" y1="0" x2="690" y2="852"/><line x1="720" y1="0" x2="720" y2="852"/><line x1="0" y1="30" x2="742" y2="30"/><line x1="0" y1="60" x2="742" y2="60"/><line x1="0" y1="90" x2="742" y2="90"/><line x1="0" y1="120" x2="742" y2="120"/><line x1="0" y1="150" x2="742" y2="150"/><line x1="0" y1="180" x2="742" y2="180"/><line x1="0" y1="210" x2="742" y2="210"/><line x1="0" y1="240" x2="742" y2="240"/><line x1="0" y1="270" x2="742" y2="270"/><line x1="0" y1="300" x2="742" y2="300"/><line x1="0" y1="330" x2="742" y2="330"/><line x1="0" y1="360" x2="742" y2="360"/><line x1="0" y1="390" x2="742" y2="390"/><line x1="0" y1="420" x2="742" y2="420"/><line x1="0" y1="450" x2="742" y2="450"/><line x1="0" y1="480" x2="742" y2="480"/><line x1="0" y1="510" x2="742" y2="510"/><line x1="0" y1="540" x2="742" y2="540"/><line x1="0" y1="570" x2="742" y2="570"/><line x1="0" y1="600" x2="742" y2="600"/><line x1="0" y1="630" x2="742" y2="630"/><line x1="0" y1="660" x2="742" y2="660"/><line x1="0" y1="690" x2="742" y2="690"/><line x1="0" y1="720" x2="742" y2="720"/><line x1="0" y1="750" x2="742" y2="750"/><line x1="0" y1="780" x2="742" y2="780"/><line x1="0" y1="810" x2="742" y2="810"/><line x1="0" y1="840" x2="742" y2="840"/></g></svg>
+    <div class="content">
+      <div class="h">The project: <span class="mono">a mobile app's REST API</span></div>
+      <div class="txt" style="width:470px">TypeORM + Postgres. A session-start command loads the context docs into every Claude Code session.</div>
+      <div class="txt" style="width:470px; margin-top:6px">• <span class="code">schema doc</span>: idealised SQL, every id BIGINT<br>• payout tables: migrations by Claude Code</div>
+
+      <div class="row" style="margin-top:22px">
+        <div style="flex:1">
+          <div class="h">The fix</div>
+          <div class="box sketch"><div class="txt"><span class="code">type: "bigint"</span> on every id and FK. Claude Code said done. The diff said no.</div></div>
+        </div>
+        <div style="flex:1.1">
+          <div class="h">TypeORM's source</div>
+          <div class="box sketch"><div class="txt">"we override user defined column type": a join column takes the referenced key's type.</div></div>
+        </div>
+      </div>
+
+      <div style="margin-top:26px; display:flex; gap:18px; align-items:flex-start">
+        <div style="flex:1">
+          <div class="h">Dry run, <span class="code" style="text-transform:none">--dr</span>, real repo</div>
+          <div class="box sketch trap"><div class="tl">
+            <b>392</b><span>statements before the fix</span>
+            <b>14</b><span>DROP + ADD on 7 id / FK columns</span>
+            <b>360</b><span>after <span class="code" style="color:#3b2320">type: "bigint"</span></span>
+            <b>3</b><span>FK columns still dropped</span>
+          </div></div>
+        </div>
+        <div class="note" style="width:150px; font-size:26px; line-height:1.05; margin-top:52px">the generator<br>knew all<br>along ↙</div>
+      </div>
+
+      <div style="border-top: 2px dashed #9aa3b5; margin: 28px 0 16px"></div>
+      <div class="h">Three ways out</div>
+      <div class="out">
+        <span class="ico" style="color:var(--green)">✓</span><span>narrow the 3 FKs to integer:<br>forward-only, values fit</span><span class="tag">← chosen</span>
+        <span class="ico" style="color:var(--blue)">↻</span><span>widen the users and ledger keys:<br>dozens of FKs follow</span><span class="tag">← heavy</span>
+        <span class="ico" style="color:var(--red)">✗</span><span>drop the ORM relations:<br>touches the money code</span><span class="tag" style="color:var(--red)">← wrong layer</span>
+      </div>
+    </div>
+  </div>
+  <div class="band"></div>
+</div>
+
+<!-- ===== EDIT 4: sticky note, the one-line lesson, about 12 words ===== -->
+<div class="sticky">A doc the agent reads is code. Check it against the database.</div>
+</div>
+<script>
+  (function () {
+    let seed = 23;   // EDIT: the article number, so each cover's jitter is stable
+    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const targets = '.content .h, .content .txt, .tl > span, .tl > b, .out > span, .note, .card, .sticky';
+    document.querySelectorAll(targets).forEach(el => {
+      const deg = (rand() - 0.5) * 1.2;              // within +/-0.6 degrees
+      const dy = (rand() - 0.5) * 2;                 // within +/-1 px
+      const base = getComputedStyle(el).transform;
+      const keep = base && base !== 'none' ? base + ' ' : '';
+      el.style.transform = keep + `translateY(${dy.toFixed(2)}px) rotate(${deg.toFixed(2)}deg)`;
+    });
+  })();
+</script>

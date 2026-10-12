@@ -1,0 +1,13 @@
+ERROR:  column "member_id" of relation "cashout_accounts" contains null values
+  id  | member_id | account_id | debit_entry_id | amount_cents | status  
+------+-----------+------------+----------------+--------------+---------
+ 9001 |         5 |         41 |              1 |         2500 | paid
+ 9002 |         3 |         77 |              2 |          900 | pending
+(2 rows)
+
+ id | member_id | iban_last4 
+----+-----------+------------
+ 41 |         5 | 0042
+ 77 |         3 | 1180
+(2 rows)
+

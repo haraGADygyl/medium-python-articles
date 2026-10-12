@@ -1,0 +1,10 @@
+services:
+  db:
+    image: postgres:17
+    container_name: doc-drift-lab-db
+    environment:
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: lab
+      POSTGRES_DB: cashouts
+    ports:
+      - "55432:5432"

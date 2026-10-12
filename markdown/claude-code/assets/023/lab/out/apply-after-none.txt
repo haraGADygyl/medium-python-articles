@@ -1,0 +1,13 @@
+4 statements failed
+  id  | account_id | amount_cents | status  | debit_entry_id 
+------+------------+--------------+---------+----------------
+ 9001 |         41 |         2500 | paid    |               
+ 9002 |         77 |          900 | pending |               
+(2 rows)
+
+ id | iban_last4 
+----+------------
+ 41 | 0042
+ 77 | 1180
+(2 rows)
+
