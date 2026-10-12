@@ -66,7 +66,18 @@ ALTER TABLE "cashouts" DROP COLUMN "debit_entry_id"
 
 TypeORM expresses a type change as `DROP COLUMN` plus `ADD COLUMN`. Whoever generated a migration for some unrelated change would have picked these lines up with it.
 
-The trap was set but never went off. The project runs migrations in one transaction, so on a table with rows the first `ADD ... NOT NULL` fails and everything rolls back: the deploy breaks and no data is lost. Run the same SQL by hand, statement by statement, and this is what's left:
+The trap was set but never went off. The project runs migrations in one transaction, so on a table with rows the first `ADD ... NOT NULL` fails and everything rolls back: the deploy breaks and no data is lost.
+
+Before, the table held cashouts 9001 and 9002, each with a member, an account and a ledger entry:
+
+```text
+  id  | member_id | account_id | debit_entry_id | amount_cents | status
+------+-----------+------------+----------------+--------------+---------
+ 9001 |         5 |         41 |              1 |         2500 | paid
+ 9002 |         3 |         77 |              2 |          900 | pending
+```
+
+Run the same SQL by hand, statement by statement, and this is what's left:
 
 ```text
  amount_cents | status  | id | debit_entry_id
@@ -75,7 +86,7 @@ The trap was set but never went off. The project runs migrations in one transact
           900 | pending |  2 |
 ```
 
-Cashout 9001 is now cashout 1, `member_id` and `account_id` are gone, and the ledger link is NULL.
+The re-added `id` column numbered the rows again, so cashout 9001 is now cashout 1. `member_id` and `account_id` were dropped, and their re-add failed on `NOT NULL`, so nothing records who owns a cashout. The ledger link came back NULL.
 
 The rest of the 392 lines looked like noise: constraint names, a partial unique index and a CHECK constraint the ORM can't model. Running them loses no rows, but it does drop that index and that constraint without re-creating them.
 
