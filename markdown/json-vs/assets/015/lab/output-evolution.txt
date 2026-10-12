@@ -1,0 +1,22 @@
+v1 body: 24 bytes, 82 80 80 80 80 80 80 20 00 00 00 00 00 00 0c 40 00 00 00 00 00 00 28 40
+   (an 8-byte zigzag varint, then two raw doubles: no names, no tags, no lengths)
+
+1. reader adds a field with a default: filled in
+   v1 bytes, v2 reader: {'observation_id': 9007199254740993, 'wave_height_m': 3.5, 'water_temp_c': 12.0, 'buoy_id': 'unknown'}
+
+2. reader adds a field without a default: refused, loudly
+   v1 bytes, v2 reader: SchemaResolutionError: No default value for field buoy_id in buoy.v1.Reading
+
+3. rename with an alias: resolved by the old name
+   v1 bytes, v2 reader: {'observation_id': 9007199254740993, 'significant_wave_height_m': 3.5, 'water_temp_c': 12.0}
+
+4. rename without an alias, new field nullable: no error, the value is gone
+   v1 bytes, v2 reader: {'observation_id': 9007199254740993, 'water_temp_c': 12.0, 'significant_wave_height_m': None}
+
+5. the wrong writer's schema: nothing in the bytes can catch it
+   decoded with v1 itself:       {'observation_id': 9007199254740993, 'wave_height_m': 3.5, 'water_temp_c': 12.0}
+   decoded with fields reordered: {'observation_id': 9007199254740993, 'water_temp_c': 3.5, 'wave_height_m': 12.0}
+
+6. why a registry: Confluent framing puts the writer's schema id in every message
+   framed: 00 00 00 00 29 | 82 80 80 80 80 80 80 20 00 00 00 00 00 00 0c 40 00 00 00 00 00 00 28 40  (29 bytes)
+   magic=0, schema id=41; consumer on v2 reads: {'observation_id': 9007199254740993, 'wave_height_m': 3.5, 'water_temp_c': 12.0, 'buoy_id': 'unknown'}

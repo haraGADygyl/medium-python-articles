@@ -1,0 +1,31 @@
+{
+  "type": "record",
+  "name": "Observation",
+  "namespace": "buoy.v1",
+  "fields": [
+    {"name": "observation_id", "type": "long"},
+    {"name": "buoy_id", "type": "string"},
+    {"name": "recorded_at",
+     "type": {"type": "long", "logicalType": "timestamp-millis"}},
+    {"name": "position", "type": {
+      "type": "record", "name": "Position",
+      "fields": [
+        {"name": "lat", "type": "double"},
+        {"name": "lon", "type": "double"}
+      ]}},
+    {"name": "wave_height_m", "type": ["null", "double"], "default": null},
+    {"name": "water_temp_c", "type": ["null", "double"], "default": null},
+    {"name": "wind_gust_ms", "type": ["null", "double"], "default": null},
+    {"name": "battery_v", "type": ["null", "double"], "default": null},
+    {"name": "qc_passed", "type": "boolean"},
+    {"name": "notes", "type": ["null", "string"], "default": null},
+    {"name": "sensors", "type": {"type": "array", "items": {
+      "type": "record", "name": "Sensor",
+      "fields": [
+        {"name": "tag", "type": "string"},
+        {"name": "status", "type": {"type": "enum", "name": "SensorStatus",
+                                    "symbols": ["ok", "degraded", "offline"]}},
+        {"name": "samples", "type": "int"}
+      ]}}}
+  ]
+}

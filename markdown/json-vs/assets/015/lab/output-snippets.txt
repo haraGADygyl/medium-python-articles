@@ -1,0 +1,4 @@
+427 121
+82 80 80 80 80 80 80 20 0a 4e 45 2d 30 38 80 90
+buoy.v1.Observation 3.5
+"recorded_at": 1770768000000, "position": {"lat": 57.21621, "lon": -2.37579}, "wave_height_m": {"double": 3.5}, "water_temp_c": {"double": 12.0}, "wind_gust_ms": {"double": 10.7}, "battery_v": {"double": 13.12}, 

@@ -1,0 +1,35 @@
+50000 buoy records, best of 5, fastavro 1.13.1
+
+format                           bytes     gzip -9     zstd -3
+JSON                        20,790,509   1,872,392   2,344,331
+MessagePack                 17,264,785   2,447,545   2,381,288
+Avro file, codec null        6,016,941   2,172,548   2,170,498
+Avro file, codec deflate     2,442,343
+Avro file, codec snappy      3,197,985
+Avro file, codec zstandard   2,487,428
+  Avro (null) vs JSON: raw 71.1% smaller, gzip 16.0% bigger, zstd 7.4% smaller
+  Avro codec deflate vs gzipped JSON: 30.4% bigger
+  Avro codec snappy vs gzipped JSON: 70.8% bigger
+  Avro codec zstandard vs gzipped JSON: 32.8% bigger
+  file header (magic, schema, sync marker), written once: 1136 bytes
+
+codecs compress each block on its own: block size against file size
+block size      blocks  deflate -9  zstandard -3
+16,000             375   2,442,343     2,487,428
+64,000              94   2,258,024     2,358,152
+1,000,000            7   2,175,724     2,195,075
+64,000,000           1   2,170,466     2,157,362
+
+one record on its own
+  JSON                                427 bytes raw   288 gzipped
+  Avro body, no schema                121 bytes raw   123 gzipped
+  Avro body + 5-byte registry prefix  126 bytes raw
+  Avro container file, one record    1276 bytes raw   530 gzipped
+
+time, ms, dicts -> bytes -> dicts          JSON       Avro
+  encode                                  210.6      764.1   (of which ISO string -> datetime 25.2)
+  decode                                  258.4      626.2
+  encode, compressed (gzip -6 / zstd)     407.2      770.6
+  decode, compressed (gzip -6 / zstd)     303.8      629.9
+
+every codec round-trips the original records: True
