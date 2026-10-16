@@ -1,0 +1,10 @@
+8100 users connected across 4 gateways, ping every 5 s
+idle 60 s: 239 writes = 4.0/s  (exists 240, set 239, smembers 60)
+1000 logouts + 1000 logins: 5000 writes = 5.0 per logout-login pair (lease renewals excluded: 2)
+read 50 users, gateway (HMGET + MGET): p50 452 us  p99 585 us
+read 50 users, window (ZMSCORE): p50 344 us  p99 505 us
+logout of 50: 50 offline, p50 2.3 ms, max 3.3 ms
+vanish of 50: 50 offline, p50 12.4 s, min 10.1 s, max 15.0 s
+gateway gw4 frozen with 2000 users; sample of 200: 200 seen offline, first at 2.16 s, all by 2.16 s; 200 back online, offline for p50 13.5 s, max 14.8 s
+  writes in the 30 s after the freeze: 10090 (lease renewals 89)
+  1792114653.838 janitor cleared gw4: 2000 users

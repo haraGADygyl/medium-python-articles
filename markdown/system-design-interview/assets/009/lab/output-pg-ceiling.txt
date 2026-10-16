@@ -1,0 +1,18 @@
+round 1  no_index     17758 updates/s   0.901 ms avg
+round 1  index        18782 updates/s   0.852 ms avg
+round 2  no_index     18107 updates/s   0.884 ms avg
+round 2  index        18685 updates/s   0.856 ms avg
+round 3  no_index     19029 updates/s   0.841 ms avg
+round 3  index        18854 updates/s   0.849 ms avg
+-- wait events, no_index (samples of active heartbeat backends)
+   4919 LWLock:WALWrite
+    384 CPU
+    378 IO:WalSync
+    236 Client:ClientRead
+      9 Timeout:SpinDelay
+-- wait events, index (samples of active heartbeat backends)
+   4886 LWLock:WALWrite
+    461 CPU
+    381 IO:WalSync
+    158 Client:ClientRead
+     12 LWLock:BufferContent

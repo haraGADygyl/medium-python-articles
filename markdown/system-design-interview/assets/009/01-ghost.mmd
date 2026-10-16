@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    participant T as Tutor's laptop
+    participant R as Redis
+    participant S as Search page
+    T->>R: ZADD at t = 0 s
+    T->>R: ZADD at t = 30 s
+    Note over T: lid closed<br/>at t = 41 s
+    S->>R: ZMSCORE at t = 100 s
+    R-->>S: beat 70 s old, window 90 s
+    Note over S: green dot
+    S-)T: lesson request, nobody there
+    Note over R: window runs out<br/>at t = 120 s
+    S->>R: ZMSCORE at t = 125 s
+    R-->>S: offline, 84 s after leaving

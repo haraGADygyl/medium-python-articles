@@ -1,0 +1,9 @@
+stateDiagram-v2
+    direction LR
+    [*] --> Online: connect<br/>HSET + SADD
+    Online --> Missed: ping unanswered
+    Missed --> Online: PONG
+    Missed --> Offline: second miss<br/>10.1–15.0 s after vanishing
+    Online --> Offline: socket closed<br/>2.3 ms
+    Online --> Offline: gateway lease expired<br/>2.16 s, all its users at once
+    Offline --> Online: reconnect to any gateway

@@ -1,0 +1,41 @@
+
+== no_index: rate 10000/s, 16 clients, 60 s
+number of transactions actually processed: 277122
+latency average = 12707.908 ms
+latency stddev = 9605.997 ms
+rate limit schedule lag: avg 12704.455 (max 32360.082) ms
+tps = 4618.835101 (without initial connection time)
+updates 277122  hot 264246  hot% 95.4  wal bytes/update 301
+heap MB 79 -> 80  indexes MB 21 -> 21
+-- online count, 20 runs while 10000/s heartbeats continue
+latency average = 37.075 ms
+  Buffers: shared hit=10285
+        Buffers: shared hit=10285
+              Buffers: shared hit=10285
+              ->  Parallel Seq Scan on accounts (actual time=0.013..32.441 rows=58802 loops=3)
+                    Buffers: shared hit=10285
+  Buffers: shared hit=66
+-- unthrottled ceiling, 16 clients, 30 s
+latency average = 5.280 ms
+tps = 3030.022110 (without initial connection time)
+
+== index: rate 10000/s, 16 clients, 60 s
+number of transactions actually processed: 248716
+latency average = 13239.534 ms
+latency stddev = 10948.018 ms
+rate limit schedule lag: avg 13235.684 (max 35208.282) ms
+tps = 4143.618680 (without initial connection time)
+updates 248716  hot 0  hot% 0.0  wal bytes/update 448
+heap MB 79 -> 80  indexes MB 28 -> 33
+-- online count, 20 runs while 10000/s heartbeats continue
+latency average = 39.767 ms
+  Buffers: shared hit=165442
+  ->  Index Only Scan using accounts_last_seen on accounts (actual time=0.044..69.527 rows=162412 loops=1)
+        Heap Fetches: 164809
+        Buffers: shared hit=165442
+  Buffers: shared hit=87
+Execution Time: 76.810 ms
+-- unthrottled ceiling, 16 clients, 30 s
+latency average = 4.904 ms
+tps = 3262.497602 (without initial connection time)
+ 04:12:44 up 1 day, 14:20,  1 user,  load average: 2.26, 2.51, 2.83

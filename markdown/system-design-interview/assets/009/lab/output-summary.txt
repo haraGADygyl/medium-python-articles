@@ -1,0 +1,15 @@
+config     round   HOT updates   WAL bytes/heartbeat   indexes MB   autovacuums
+no index       1         98.6%                   206     21 -> 21            0
+no index       2         97.5%                   228     21 -> 21            0
+index          1          0.0%                   361     28 -> 44            3
+index          2          0.0%                   367     28 -> 42            2
+
+online count during 10,000 heartbeats/s, 20 runs each
+no index   Parallel Seq Scan                                        37.1 ms average
+index      Index Only Scan, Heap Fetches: 164809 of 162412 rows     39.8 ms average
+
+window   flaps per user-hour   shown online after leaving (p50 / max)
+36 s                    7.57          20.2 s / 44.5 s
+60 s                    0.85          44.1 s / 68.4 s
+90 s                    0.02          73.8 s / 98.2 s
+120 s                   0.00        103.7 s / 128.0 s

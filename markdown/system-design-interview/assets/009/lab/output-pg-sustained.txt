@@ -1,0 +1,68 @@
+== round 1 no_index
+progress: 15.0 s, 9987.8 tps, lat 0.868 ms stddev 0.418, 0 failed, lag 0.118 ms
+progress: 30.0 s, 10024.3 tps, lat 0.872 ms stddev 0.426, 0 failed, lag 0.121 ms
+progress: 45.0 s, 10005.3 tps, lat 0.869 ms stddev 0.425, 0 failed, lag 0.121 ms
+progress: 60.0 s, 10003.4 tps, lat 0.868 ms stddev 0.425, 0 failed, lag 0.119 ms
+progress: 75.0 s, 10009.6 tps, lat 0.922 ms stddev 0.594, 0 failed, lag 0.153 ms
+progress: 90.0 s, 9996.7 tps, lat 0.894 ms stddev 0.442, 0 failed, lag 0.128 ms
+progress: 105.0 s, 9975.6 tps, lat 0.876 ms stddev 0.439, 0 failed, lag 0.123 ms
+progress: 120.0 s, 10026.8 tps, lat 0.873 ms stddev 0.445, 0 failed, lag 0.124 ms
+progress: 135.0 s, 9795.2 tps, lat 8.416 ms stddev 40.910, 0 failed, lag 7.592 ms
+progress: 150.0 s, 4408.7 tps, lat 4095.807 ms stddev 2491.736, 0 failed, lag 4092.191 ms
+progress: 165.0 s, 3912.4 tps, lat 13169.174 ms stddev 2371.140, 0 failed, lag 13165.094 ms
+progress: 180.0 s, 3956.3 tps, lat 21848.936 ms stddev 2396.401, 0 failed, lag 21844.907 ms
+latency average = 1529.861 ms
+rate limit schedule lag: avg 1528.722 (max 26925.147) ms
+tps = 8508.056310 (without initial connection time)
+updates 1531547  hot% 98.6  wal bytes/update 206  wal MB 301  heap MB 81  indexes MB 21  autovacuums 0
+== round 1 index
+progress: 15.0 s, 7475.9 tps, lat 2998.284 ms stddev 1050.035, 0 failed, lag 2996.157 ms
+progress: 30.0 s, 4590.5 tps, lat 7345.155 ms stddev 2589.240, 0 failed, lag 7341.681 ms
+progress: 45.0 s, 4139.4 tps, lat 16556.344 ms stddev 2510.067, 0 failed, lag 16552.490 ms
+progress: 60.0 s, 3806.5 tps, lat 25163.181 ms stddev 2620.582, 0 failed, lag 25158.989 ms
+progress: 75.0 s, 3859.7 tps, lat 34067.762 ms stddev 2639.683, 0 failed, lag 34063.628 ms
+progress: 90.0 s, 4108.7 tps, lat 43407.688 ms stddev 2623.869, 0 failed, lag 43403.806 ms
+progress: 105.0 s, 3249.9 tps, lat 52309.761 ms stddev 3124.385, 0 failed, lag 52304.851 ms
+progress: 120.0 s, 3988.9 tps, lat 62779.868 ms stddev 2718.808, 0 failed, lag 62775.869 ms
+progress: 135.0 s, 3700.9 tps, lat 71628.539 ms stddev 2912.818, 0 failed, lag 71624.228 ms
+progress: 150.0 s, 4158.8 tps, lat 81129.233 ms stddev 2567.517, 0 failed, lag 81125.398 ms
+progress: 165.0 s, 3643.9 tps, lat 90616.504 ms stddev 2965.948, 0 failed, lag 90612.127 ms
+progress: 180.0 s, 3958.4 tps, lat 99460.641 ms stddev 2284.693, 0 failed, lag 99456.620 ms
+latency average = 44930.954 ms
+rate limit schedule lag: avg 44927.178 (max 104128.020) ms
+tps = 4223.511543 (without initial connection time)
+updates 760239  hot% 0.0  wal bytes/update 361  wal MB 262  heap MB 81  indexes MB 44  autovacuums 3
+== round 2 no_index
+progress: 15.0 s, 7798.4 tps, lat 3418.237 ms stddev 1264.902, 0 failed, lag 3416.197 ms
+progress: 30.0 s, 4910.9 tps, lat 6268.932 ms stddev 2290.797, 0 failed, lag 6265.685 ms
+progress: 45.0 s, 4280.5 tps, lat 15257.815 ms stddev 2470.384, 0 failed, lag 15254.096 ms
+progress: 60.0 s, 3721.3 tps, lat 24959.700 ms stddev 2561.023, 0 failed, lag 24955.404 ms
+progress: 75.0 s, 3720.3 tps, lat 34417.803 ms stddev 2727.743, 0 failed, lag 34413.513 ms
+progress: 90.0 s, 4117.6 tps, lat 42782.529 ms stddev 2611.789, 0 failed, lag 42778.655 ms
+progress: 105.0 s, 3377.1 tps, lat 52823.674 ms stddev 2809.390, 0 failed, lag 52818.949 ms
+progress: 120.0 s, 3874.9 tps, lat 61471.859 ms stddev 2834.047, 0 failed, lag 61467.741 ms
+progress: 135.0 s, 3803.3 tps, lat 71293.618 ms stddev 2773.460, 0 failed, lag 71289.422 ms
+progress: 150.0 s, 4097.9 tps, lat 80032.128 ms stddev 2660.197, 0 failed, lag 80028.238 ms
+progress: 165.0 s, 3411.5 tps, lat 90130.280 ms stddev 2952.167, 0 failed, lag 90125.597 ms
+progress: 180.0 s, 4072.4 tps, lat 98601.160 ms stddev 2609.977, 0 failed, lag 98597.242 ms
+latency average = 43852.414 ms
+rate limit schedule lag: avg 43848.675 (max 103441.644) ms
+tps = 4265.685855 (without initial connection time)
+updates 767810  hot% 97.5  wal bytes/update 228  wal MB 167  heap MB 81  indexes MB 21  autovacuums 0
+== round 2 index
+progress: 15.0 s, 4229.3 tps, lat 4368.737 ms stddev 2455.684, 0 failed, lag 4364.970 ms
+progress: 30.0 s, 3899.3 tps, lat 12913.181 ms stddev 2782.118, 0 failed, lag 12909.090 ms
+progress: 45.0 s, 4083.9 tps, lat 22428.481 ms stddev 2672.249, 0 failed, lag 22424.575 ms
+progress: 60.0 s, 3984.4 tps, lat 30964.966 ms stddev 2502.818, 0 failed, lag 30960.968 ms
+progress: 75.0 s, 3988.1 tps, lat 40577.443 ms stddev 2600.100, 0 failed, lag 40573.439 ms
+progress: 90.0 s, 3470.1 tps, lat 49095.634 ms stddev 2568.129, 0 failed, lag 49091.036 ms
+progress: 105.0 s, 3625.3 tps, lat 60278.897 ms stddev 2520.444, 0 failed, lag 60274.497 ms
+progress: 120.0 s, 3100.6 tps, lat 69036.087 ms stddev 2288.786, 0 failed, lag 69030.944 ms
+progress: 135.0 s, 2758.1 tps, lat 80707.124 ms stddev 3551.669, 0 failed, lag 80701.330 ms
+progress: 150.0 s, 3754.5 tps, lat 90191.024 ms stddev 3002.444, 0 failed, lag 90186.775 ms
+progress: 165.0 s, 2337.3 tps, lat 100189.476 ms stddev 3407.923, 0 failed, lag 100182.643 ms
+progress: 180.0 s, 3469.3 tps, lat 110320.809 ms stddev 3070.455, 0 failed, lag 110316.209 ms
+latency average = 52148.937 ms
+rate limit schedule lag: avg 52144.454 (max 116154.686) ms
+tps = 3558.470064 (without initial connection time)
+updates 640517  hot% 0.0  wal bytes/update 367  wal MB 224  heap MB 80  indexes MB 42  autovacuums 2

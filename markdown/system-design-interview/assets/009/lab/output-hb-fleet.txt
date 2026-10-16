@@ -1,0 +1,1 @@
+window design, 8100 connected users, 60 s: 16194 ZADD = 269.9 writes/s

@@ -1,0 +1,4 @@
+window 1.2x =   36 s   flaps/user-hour  7.57   ghost p50  20.2 s  p95  35.4 s  max  44.5 s  (n=194)   zadd/s real   61.4  per user 0.0307
+window 2.0x =   60 s   flaps/user-hour  0.85   ghost p50  44.1 s  p95  59.5 s  max  68.4 s  (n=199)   zadd/s real   61.3  per user 0.0307
+window 3.0x =   90 s   flaps/user-hour  0.02   ghost p50  73.8 s  p95  88.8 s  max  98.2 s  (n=200)   zadd/s real   61.3  per user 0.0307
+window 4.0x =  120 s   flaps/user-hour  0.00   ghost p50 103.7 s  p95 119.4 s  max 128.0 s  (n=200)   zadd/s real   61.3  per user 0.0307
