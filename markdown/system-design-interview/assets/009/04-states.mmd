@@ -1,9 +1,19 @@
-stateDiagram-v2
-    direction LR
-    [*] --> Online: connect<br/>HSET + SADD
-    Online --> Missed: ping unanswered
-    Missed --> Online: PONG
-    Missed --> Offline: second miss<br/>10.1–15.0 s after vanishing
-    Online --> Offline: socket closed<br/>2.3 ms
-    Online --> Offline: gateway lease expired<br/>2.16 s, all its users at once
-    Offline --> Online: reconnect to any gateway
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "16px", "edgeLabelBackground": "#ffffff", "lineColor": "#8a919c", "primaryTextColor": "#1f2937", "primaryColor": "#ffffff", "primaryBorderColor": "#8a919c"}, "flowchart": {"curve": "basis", "wrappingWidth": 400, "rankSpacing": 55, "nodeSpacing": 40}}}%%
+flowchart TB
+    start@{ shape: sm-circ }
+    start -- "connect<br/>HSET + SADD" --> online(["Online"])
+    online -- "ping unanswered" --> missed(["Missed one ping"])
+    missed -- "PONG" --> online
+    missed -- "second miss<br/>10.1–15.0 s after vanishing" --> offline(["Offline"])
+    online -- "socket closed<br/>2.3 ms" --> offline
+    online -- "gateway lease expired<br/>2.16 s, all its users at once" --> offline
+    offline -. "reconnect to any gateway" .-> online
+    classDef dot fill:#4b5563,stroke:#4b5563
+    classDef up fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef warn fill:#fff3cd,stroke:#a07a10,stroke-width:2px,color:#4d3a05
+    classDef down fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    class start dot
+    class online up
+    class missed warn
+    class offline down
+    style start fill:#4b5563,stroke:#4b5563
