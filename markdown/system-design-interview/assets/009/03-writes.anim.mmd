@@ -1,4 +1,3 @@
-%%{init: {"flowchart": {"rankSpacing": 50, "nodeSpacing": 30}}}%%
 flowchart TB
     subgraph HBD ["heartbeats: every pulse is a write&nbsp;&nbsp;"]
         direction LR
@@ -14,5 +13,7 @@ flowchart TB
     h1@{ animate: true }
     p1@{ animate: true }
     p2@{ animate: true }
-    style R1 fill:#f8d7da,stroke:#721c24
-    style R2 fill:#d4edda,stroke:#155724
+    classDef ok fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    class R1 bad
+    class R2 ok

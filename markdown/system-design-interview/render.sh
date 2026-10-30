@@ -3,6 +3,9 @@
 #
 #   ./render.sh cover 000            assets/000/cover.html  -> cover.png (1500x750)
 #   ./render.sh diagrams 000         every assets/000/*.mmd -> matching .png
+#
+# Every diagram, PNG or GIF, is drawn with tools/mermaid-theme.json (the house
+# style) and at 2x pixel density, so all images in an article match.
 #   ./render.sh all 000              both
 #   ./render.sh gif 004 01-loop      assets/004/01-loop.gif, animated
 #
@@ -37,7 +40,7 @@ diagrams() {
     [[ -f "${src%.mmd}.gif" ]] && continue    # published as a GIF, no PNG
     found=1
     npx -y @mermaid-js/mermaid-cli -i "$src" -o "${src%.mmd}.png" \
-      -b white -p "$PCONF" >/dev/null 2>&1
+      -b white -s 2 -c tools/mermaid-theme.json -p "$PCONF" >/dev/null 2>&1
     echo "diagram -> ${src%.mmd}.png"
   done
   [[ $found -eq 1 ]] || echo "no .mmd files in $dir"

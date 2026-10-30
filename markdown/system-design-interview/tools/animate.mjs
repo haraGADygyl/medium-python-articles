@@ -29,8 +29,10 @@ const work = mkdtempSync(join(tmpdir(), "mmd-gif-"));
 const svgPath = join(work, "diagram.svg");
 const puppeteerConfig = join(work, "pconf.json");
 writeFileSync(puppeteerConfig, JSON.stringify({ args: ["--no-sandbox"] }));
+// The house style: the same theme render.sh uses for PNGs.
+const theme = resolve(new URL(".", import.meta.url).pathname, "mermaid-theme.json");
 execFileSync("npx", ["-y", "@mermaid-js/mermaid-cli", "-i", input, "-o", svgPath,
-  "-b", "white", "-p", puppeteerConfig], { stdio: "ignore" });
+  "-b", "white", "-c", theme, "-p", puppeteerConfig], { stdio: "ignore" });
 
 const browser = await puppeteer.launch({
   executablePath: CHROME,
