@@ -1,0 +1,111 @@
+<!doctype html>
+<meta charset="utf-8">
+<!--
+  Cover template for the Linux series.
+
+  Everything outside the BODY SLOT is fixed: eyebrow, palette, rule, kicker,
+  prompt cursor and footer positions are what make the covers read as a set in
+  a Medium feed.
+
+  To make a cover: copy to assets/NNN/cover.html, fill the slots marked EDIT,
+  keep ONE body variant, delete the other two, then ./render.sh cover NNN
+-->
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:1500px; height:750px; }
+  body {
+    background:#130f16;
+    font-family:'Liberation Sans','DejaVu Sans',sans-serif;
+    color:#e6edf3;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:0 100px; position:relative; overflow:hidden;
+  }
+  /* ---- fixed series identity ------------------------------------------ */
+  .glow { position:absolute; right:-200px; top:-220px; width:820px; height:820px;
+          border-radius:50%;
+          background:radial-gradient(circle,rgba(236,108,200,.15) 0%,transparent 66%); }
+  .eyebrow {
+    position:absolute; top:56px; left:100px;
+    font-size:21px; font-weight:700; letter-spacing:4.5px;
+    color:#6e7681; text-transform:uppercase;
+  }
+  .eyebrow .prompt { font-family:'DejaVu Sans Mono','Liberation Mono',monospace;
+                     letter-spacing:0; margin-right:14px; color:#7d8590; }
+  .eyebrow b { color:#ec6cc8; font-weight:700; }
+  .rule { height:2px; background:#2a2330; margin-bottom:34px; }
+  .kicker { font-size:46px; font-weight:700; letter-spacing:-.8px; line-height:1.14; }
+  .kicker em { color:#ec6cc8; font-style:normal; }
+  /* the block cursor that closes every kicker: the series' terminal mark */
+  .kicker::after { content:''; display:inline-block; width:24px; height:44px;
+                   margin-left:14px; vertical-align:-6px; background:#3a3140; }
+  .foot { margin-top:22px; font-size:24px; color:#6e7681;
+          display:flex; gap:16px; align-items:center; }
+  .dot { width:6px; height:6px; border-radius:50%; background:#3a3140; }
+
+  /* ---- body variants --------------------------------------------------- */
+  .cols { display:flex; align-items:center; margin-bottom:64px; }
+  .col { flex:1; display:flex; align-items:center; gap:30px; }
+  .col.right { padding-left:60px; border-left:2px solid #2a2330; }
+  .num { font-family:'DejaVu Sans Mono','Liberation Mono',monospace;
+         font-size:170px; line-height:.86; letter-spacing:-6px; font-weight:700; }
+  .num.muted  { color:#7d8590; }
+  .num.accent { color:#ec6cc8; text-shadow:0 0 60px rgba(236,108,200,.38); }
+  .lbl { font-size:33px; font-weight:700; line-height:1.26; max-width:330px; }
+  .col.left  .lbl { color:#7d8590; }
+  .col.right .lbl { color:#e6edf3; }
+
+  .hero { display:flex; align-items:center; gap:56px; margin-bottom:64px; }
+  .hero .num { font-size:210px; }
+  .hero .lbl { max-width:720px; color:#e6edf3; font-size:38px; }
+
+  .cmd { font-family:'DejaVu Sans Mono','Liberation Mono',monospace;
+         font-weight:700; font-size:112px; letter-spacing:-3px;
+         margin-bottom:64px; white-space:nowrap; }
+  .cmd .ps { color:#7d8590; margin-right:36px; }
+  .cmd .c  { color:#ec6cc8; text-shadow:0 0 60px rgba(236,108,200,.30); }
+</style>
+
+<div class="glow"></div>
+<!-- EDIT 1: the article's subject and the series number (file number + 1) -->
+<div class="eyebrow"><span class="prompt">~$</span>Linux &nbsp;·&nbsp; Firefox memory &nbsp;·&nbsp; <b>No.&nbsp;01</b></div>
+
+<!-- ============ BODY SLOT — keep exactly one of the three ============== -->
+
+<!-- VARIANT A: before/after pair. The default: most articles in this series
+     change a number on a real machine. Muted = before, accent = after.
+     The sample numbers are placeholders: every number on a cover comes from
+     the article's lab. -->
+<div class="cols">
+  <div class="col left">
+    <div class="num muted">24G</div>
+    <div class="lbl">RAM in use<br>before</div>
+  </div>
+  <div class="col right">
+    <div class="num accent">9G</div>
+    <div class="lbl">after unloading,<br>no tab closed</div>
+  </div>
+</div>
+
+<!-- VARIANT B: single hero stat.
+<div class="hero">
+  <div class="num accent">5%</div>
+  <div class="lbl">of RAM left before Firefox<br>unloads anything on Linux</div>
+</div>
+-->
+
+<!-- VARIANT C: the command in large type, when there is no number to lead with.
+     Keep it short enough for one line at 112px (about 18 characters).
+<div class="cmd"><span class="ps">$</span><span class="c">about:unloads</span></div>
+-->
+
+<!-- ==================================================================== -->
+
+<div class="rule"></div>
+<!-- EDIT 2: the kicker. One line, states the claim. The cursor is automatic. -->
+<div class="kicker">Firefox can give the memory back</div>
+<!-- EDIT 3: the footer. Software and version, the machine, the series claim. -->
+<div class="foot">
+  <span>Firefox 157</span><span class="dot"></span>
+  <span>Ubuntu 24.04 · 31 GB RAM</span><span class="dot"></span>
+  <span>measured on a real desktop</span>
+</div>
