@@ -3,8 +3,10 @@ flowchart TD
     O1 --> O2["the top moved between pages,<br/>so the count means something else"]
     O2 --> O3["36 duplicates, 312 missed"]
     K["Cursor paging<br/>ZREVRANGEBYSCORE (last_score -inf"] --> K1["asks for a position<br/>in score order"]
-    K1 --> K2["200 players share each score,<br/>so members already returned at<br/>last_score are carried and skipped"]
+    K1 --> K2["200 players share each score,<br/>so members already returned<br/>at last_score are carried<br/>and skipped"]
     K2 --> K3["0 duplicates, 18 missed"]
     K3 --> K4["exact needs a snapshot:<br/>ZRANGESTORE top 10000<br/>6.0 ms, 991 KiB"]
-    style O3 fill:#f8d7da,stroke:#721c24
-    style K3 fill:#d4edda,stroke:#155724
+    classDef ok fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    class K3 ok
+    class O3 bad

@@ -11,9 +11,9 @@ sequenceDiagram
     B->>R: SET lock NX PX 2000
     B->>R: INCR fence:S2A-0007
     R-->>B: 8
-    B->>DB: UPSERT ... WHERE fence_token < 8
+    B->>DB: UPSERT ... WHERE<br/>fence_token < 8
     DB-->>B: 1 row — accepted
     Note over A: A resumes with token 7
-    A->>DB: UPSERT ... WHERE fence_token < 7
+    A->>DB: UPSERT ... WHERE<br/>fence_token < 7
     DB-->>A: 0 rows — refused
-    Note over A: A learns it lost the lock<br/>from the resource, not from Redis
+    Note over A: A learns it lost the lock<br/>from the resource,<br/>not from Redis

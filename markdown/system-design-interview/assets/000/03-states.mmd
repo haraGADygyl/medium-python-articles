@@ -1,13 +1,17 @@
-stateDiagram-v2
-    direction TB
-    [*] --> pending
-    pending --> charged
-    pending --> failed
-    charged --> [*]
-    failed --> [*]
-    note right of pending
-        A worker that dies after the
-        provider call leaves the row
-        here — money moved, status
-        still says pending.
-    end note
+flowchart TB
+    start@{ shape: sm-circ }
+    stop@{ shape: fr-circ }
+    start --> pending(["pending"])
+    pending --> charged(["charged"])
+    pending --> failed(["failed"])
+    charged --> stop
+    failed --> stop
+    pending -.- n1["A worker that dies after the<br/>provider call leaves the row<br/>here — money moved, status<br/>still says pending."]
+    classDef ok fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef warn fill:#fff3cd,stroke:#a07a10,stroke-width:2px,color:#4d3a05
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    classDef note fill:#fff8e1,stroke:#d9b44a,color:#4d3a05
+    class charged ok
+    class pending warn
+    class failed bad
+    class n1 note

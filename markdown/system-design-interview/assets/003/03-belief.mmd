@@ -1,18 +1,17 @@
-stateDiagram-v2
-    [*] --> Acquired: SET NX succeeds
-    Acquired --> Working: render tiles
-    Working --> Released: finish before the TTL
-    Working --> Zombie: TTL expires first
-    Zombie --> Released: write, then DEL
-    note right of Zombie
-      The process cannot tell it is here.
-      Every local variable still says
-      "I own lock:S2A-0007".
-      Only the resource knows.
-    end note
-    note right of Released
-      Under fencing the write from
-      Zombie is refused here, and
-      the process finds out.
-    end note
-    Released --> [*]
+flowchart TB
+    start@{ shape: sm-circ }
+    stop@{ shape: fr-circ }
+    start -- "SET NX succeeds" --> acquired(["Acquired"])
+    acquired -- "render tiles" --> working(["Working"])
+    working -- "finish before the TTL" --> released(["Released"])
+    working -- "TTL expires first" --> zombie(["Zombie"])
+    zombie -- "write, then DEL" --> released
+    released --> stop
+    zombie -.- n1["The process cannot tell it is here.<br/>Every local variable still says<br/>&quot;I own lock:S2A-0007&quot;.<br/>Only the resource knows."]
+    released -.- n2["Under fencing the write from<br/>Zombie is refused here, and<br/>the process finds out."]
+    classDef ok fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    classDef note fill:#fff8e1,stroke:#d9b44a,color:#4d3a05
+    class released ok
+    class zombie bad
+    class n1,n2 note

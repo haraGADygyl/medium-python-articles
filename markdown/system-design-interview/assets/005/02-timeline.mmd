@@ -1,12 +1,13 @@
 gantt
     title What the API sees, same 12 s reader, two DDL strategies
-    dateFormat  X
-    axisFormat  %Ss
+    dateFormat HH:mm:ss
+    axisFormat %-S s
+    tickInterval 2second
     section Bare ALTER
-    reader holds AccessShare        :done, r1, 4, 16
-    ALTER waits for the lock        :crit, a1, 5, 16
-    API blocked, 14 queries served  :crit, b1, 5, 16
+    reader holds AccessShare        :done, r1, 00:00:04, 00:00:16
+    ALTER waits for the lock        :crit, a1, 00:00:05, 00:00:16
+    API blocked, 14 queries served  :crit, b1, 00:00:05, 00:00:16
     section With lock_timeout
-    reader holds AccessShare        :done, r2, 4, 16
-    16 attempts, each gives up      :active, a2, 5, 16
-    API serving, 5965 queries       :done, b2, 5, 16
+    reader holds AccessShare        :done, r2, 00:00:04, 00:00:16
+    16 attempts, each gives up      :active, a2, 00:00:05, 00:00:16
+    API serving, 5965 queries       :done, b2, 00:00:05, 00:00:16

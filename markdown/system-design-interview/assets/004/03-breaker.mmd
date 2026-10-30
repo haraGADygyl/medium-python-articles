@@ -1,21 +1,17 @@
-stateDiagram-v2
-    [*] --> Closed
-    Closed --> Open: more than 50% of the<br/>last 40 outcomes failed
-    Open --> HalfOpen: cool-off elapsed
-    HalfOpen --> Closed: probe succeeded
-    HalfOpen --> Open: probe failed,<br/>double the cool-off
-    note left of Open
-        While open, every caller is refused
-        without a network call.
-        Cool-off is the whole design.
-        Fixed 1 s: recovers the instant the
-        dependency does, at a 2360 rps peak.
-        Doubling to 16 s: 371 rps offered,
-        but recovery is noticed 7 s late.
-    end note
-    note right of HalfOpen
-        Single-flight guard: one probe in
-        flight, everyone else still refused.
-        8 probes across the run instead
-        of 1101.
-    end note
+flowchart TB
+    start@{ shape: sm-circ }
+    start --> closed(["Closed"])
+    closed -- "more than 50% of the<br/>last 40 outcomes failed" --> open(["Open"])
+    open -- "cool-off elapsed" --> half(["HalfOpen"])
+    half -- "probe succeeded" --> closed
+    half -- "probe failed,<br/>double the cool-off" --> open
+    n1["While open, every caller is refused<br/>without a network call.<br/>Cool-off is the whole design.<br/>Fixed 1 s: recovers the instant the<br/>dependency does, at a 2360 rps peak.<br/>Doubling to 16 s: 371 rps offered,<br/>but recovery is noticed 7 s late."] -.- open
+    half -.- n2["Single-flight guard: one probe in flight,<br/>everyone else still refused.<br/>8 probes across the run instead of 1101."]
+    classDef ok fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef warn fill:#fff3cd,stroke:#a07a10,stroke-width:2px,color:#4d3a05
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    classDef note fill:#fff8e1,stroke:#d9b44a,color:#4d3a05
+    class closed ok
+    class half warn
+    class open bad
+    class n1,n2 note

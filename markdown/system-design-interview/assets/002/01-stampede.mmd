@@ -6,6 +6,6 @@ sequenceDiagram
     W->>R: GET dashboard:trending
     R-->>W: (nil) x25
     W->>DB: 25 identical 265 ms aggregates
-    Note over DB: contending for the same buffers
+    Note over DB: contending for<br/>the same buffers
     DB-->>W: after 5,046 ms
     W->>R: SET (25 times, same value)

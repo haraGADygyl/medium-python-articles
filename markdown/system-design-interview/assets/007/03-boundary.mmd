@@ -12,5 +12,7 @@ flowchart TB
         W3 --> W4["0 lost<br/>of 83,886"]
     end
     N ~~~ W
-    style N4 fill:#f8d7da,stroke:#721c24
-    style W4 fill:#d4edda,stroke:#155724
+    classDef ok fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    class W4 ok
+    class N4 bad

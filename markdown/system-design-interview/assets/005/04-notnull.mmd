@@ -8,6 +8,7 @@ flowchart TD
     S3 --> S4["ShareUpdateExclusive, 1.81 s<br/>1383 queries served, p99 0.9 ms"]
     S4 --> S5["ALTER COLUMN ... SET NOT NULL"]
     S5 --> S6["0.00 s — reuses the validated constraint"]
-    style D3 fill:#f8d7da,stroke:#721c24
-    style S4 fill:#d4edda,stroke:#155724
-    style S6 fill:#d4edda,stroke:#155724
+    classDef ok fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    class S4,S6 ok
+    class D3 bad

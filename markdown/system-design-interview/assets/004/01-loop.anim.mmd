@@ -13,7 +13,7 @@ flowchart TB
     loop2@{ animate: true }
     loop3@{ animate: true }
     loop4@{ animate: true }
-    style A fill:#fff3cd,stroke:#856404
-    style E fill:#f8d7da,stroke:#721c24
-    style F fill:#f8d7da,stroke:#721c24
-    style LOOP fill:#fafafa,stroke:#bbb,stroke-dasharray:0
+    classDef warn fill:#fff3cd,stroke:#a07a10,stroke-width:2px,color:#4d3a05
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    class A warn
+    class E,F bad

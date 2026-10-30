@@ -43,6 +43,34 @@ await page.setContent(`<!doctype html><html><body style="margin:0;background:#ff
   ${readFileSync(svgPath, "utf8")}</body></html>`);
 const box = await page.evaluate(() => {
   const svg = document.querySelector("svg");
+  // Mermaid sizes note and actor boxes from a text measurement that can come out
+  // narrower than the rendered text, so text touches or crosses the border.
+  // Widen any box whose text doesn't leave at least PAD on each side.
+  const PAD = 14;
+  for (const group of svg.querySelectorAll("g")) {
+    const rect = group.querySelector(":scope > rect.note, :scope > rect.actor");
+    const texts = [...group.querySelectorAll(":scope > text.noteText, :scope > text.actor")];
+    if (!rect || !texts.length) continue;
+    const left = Math.min(...texts.map((t) => t.getBBox().x)) - PAD;
+    const right = Math.max(...texts.map((t) => t.getBBox().x + t.getBBox().width)) + PAD;
+    const x = Number(rect.getAttribute("x"));
+    const width = Number(rect.getAttribute("width"));
+    if (left < x || right > x + width) {
+      const newX = Math.min(x, left);
+      rect.setAttribute("x", newX);
+      rect.setAttribute("width", Math.max(x + width, right) - newX);
+    }
+  }
+  // A widened box can reach past the edge: grow the viewBox to fit everything.
+  {
+    const [vx, vy, vw, vh] = svg.getAttribute("viewBox").split(/[ ,]+/).map(Number);
+    const b = svg.getBBox();
+    const nx = Math.min(vx, b.x - 8);
+    const ny = Math.min(vy, b.y - 8);
+    const nr = Math.max(vx + vw, b.x + b.width + 8);
+    const nb = Math.max(vy + vh, b.y + b.height + 8);
+    svg.setAttribute("viewBox", `${nx} ${ny} ${nr - nx} ${nb - ny}`);
+  }
   // Mermaid emits width="100%"; pin the SVG to its own viewBox size instead,
   // or it stretches to whatever width the page happens to have.
   const [, , vbWidth, vbHeight] = svg.getAttribute("viewBox").split(/[ ,]+/)
@@ -92,6 +120,58 @@ if (box.kind && box.kind.startsWith("flowchart")) {
     await shoot(1 / ANT_FPS);
   }
 } else if (box.kind === "sequence") {
+  // A lifeline that passes under a message label runs straight through its
+  // text. Put a white box behind every label; it is revealed with the label.
+  // A step-number badge can land on a label, mostly on self-messages, where the
+  // label sits right beside the lifeline. Nudge any label a badge touches to the
+  // right of the badge.
+  await page.evaluate(() => {
+    const badges = [...document.querySelectorAll("text.sequenceNumber")]
+      .map((n) => n.getBBox())
+      .map((b) => ({ left: b.x - 10, right: b.x + b.width + 10,
+                     top: b.y - 6, bottom: b.y + b.height + 6 }));
+    for (const text of document.querySelectorAll("text.messageText")) {
+      const b = text.getBBox();
+      for (const c of badges) {
+        const overlaps = b.x < c.right && b.x + b.width > c.left &&
+                         b.y < c.bottom && b.y + b.height > c.top;
+        if (overlaps) {
+          const dx = c.right + 6 - b.x;
+          text.setAttribute("x", Number(text.getAttribute("x")) + dx);
+          for (const span of text.querySelectorAll("tspan[x]")) {
+            span.setAttribute("x", Number(span.getAttribute("x")) + dx);
+          }
+          break;
+        }
+      }
+    }
+  });
+  // All backings go in before the first label, so the backing of a label's
+  // second line can't cover the descenders of its first line.
+  await page.evaluate(() => {
+    const texts = [...document.querySelectorAll("text.messageText")];
+    if (!texts.length) return;
+    const anchor = texts[0];
+    const bands = [...document.querySelectorAll("rect.rect")].map((r) => {
+      const b = r.getBBox();
+      return { x: b.x, y: b.y, width: b.width, height: b.height,
+               fill: r.getAttribute("fill") || getComputedStyle(r).fill };
+    });
+    for (const text of texts) {
+      const b = text.getBBox();
+      const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      bg.setAttribute("class", "messageBg");
+      bg.setAttribute("x", b.x - 6);
+      bg.setAttribute("y", b.y - 1);
+      bg.setAttribute("width", b.width + 12);
+      bg.setAttribute("height", b.height + 2);
+      // Inside a highlight band, match the band instead of punching a white hole.
+      const band = bands.find((r) => b.x >= r.x - 1 && b.y >= r.y - 1 &&
+        b.x + b.width <= r.x + r.width + 1 && b.y + b.height <= r.y + r.height + 1);
+      bg.setAttribute("fill", band ? band.fill : "#ffffff");
+      anchor.parentNode.insertBefore(bg, anchor);
+    }
+  });
   const steps = await page.evaluate(() => {
     const top = (el) => el.getBoundingClientRect().top;
     const lines = [...document.querySelectorAll(
@@ -116,7 +196,7 @@ if (box.kind && box.kind.startsWith("flowchart")) {
     // sits in, which Mermaid draws as a zero-length, unclassed <line> whose
     // only job is to carry the sequencenumber marker.
     document.querySelectorAll(
-      ".messageText, .noteText, .sequenceNumber, " +
+      ".messageText, .messageBg, .noteText, .sequenceNumber, " +
       "line[marker-start*='sequencenumber']").forEach(attach);
     // A `rect` highlight block belongs with the first step drawn inside it, so
     // it appears together with its contents rather than as an empty band.

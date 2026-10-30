@@ -4,14 +4,14 @@ sequenceDiagram
     participant R as Redis
     participant B as Worker B
     participant C as Worker C
-    A->>R: SET lock NX PX 2000 (value A)
+    A->>R: SET lock NX PX 2000<br/>(value A)
     Note over A: FROZEN past the TTL
     R-->>R: key expires
-    B->>R: SET lock NX PX 2000 (value B)
+    B->>R: SET lock NX PX 2000<br/>(value B)
     R-->>B: OK — B is the owner
-    Note over A: A resumes, finishes, releases
+    Note over A: A resumes,<br/>finishes, releases
     A->>R: DEL lock
-    Note over R: A just deleted B's lock
-    C->>R: SET lock NX PX 2000 (value C)
+    Note over R: A just deleted<br/>B's lock
+    C->>R: SET lock NX PX 2000<br/>(value C)
     R-->>C: OK
-    Note over B,C: B and C now both hold "the" lock,<br/>and B was never touched by the bug
+    Note over B,C: B and C now both<br/>hold "the" lock,<br/>and B was never<br/>touched by the bug

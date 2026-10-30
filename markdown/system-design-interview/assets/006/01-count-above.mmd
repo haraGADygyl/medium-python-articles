@@ -7,5 +7,7 @@ flowchart TD
     B --> B1["skiplist keeps a rank count<br/>on every forward pointer"]
     B1 --> B2["about 26 nodes touched<br/>log2(50M) levels"]
     B2 --> B3["p50 0.11 ms, p99 10.5 ms"]
-    style A3 fill:#f8d7da,stroke:#721c24
-    style B3 fill:#d4edda,stroke:#155724
+    classDef ok fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    class B3 ok
+    class A3 bad

@@ -44,7 +44,24 @@
     "critBorderColor": "#a33a43",
     "todayLineColor": "#ffffff"
   },
-  "flowchart": { "curve": "basis", "wrappingWidth": 400, "padding": 14 },
-  "sequence": { "actorMargin": 70, "boxMargin": 12, "noteMargin": 12, "mirrorActors": true },
-  "gantt": { "fontSize": 14, "sectionFontSize": 15, "barHeight": 26, "barGap": 6, "leftPadding": 150 }
+  "flowchart": {
+    "curve": "basis",
+    "wrappingWidth": 400,
+    "padding": 14
+  },
+  "sequence": {
+    "actorMargin": 30,
+    "boxMargin": 12,
+    "noteMargin": 16,
+    "mirrorActors": true,
+    "width": 120
+  },
+  "gantt": {
+    "fontSize": 14,
+    "sectionFontSize": 15,
+    "barHeight": 26,
+    "barGap": 6,
+    "leftPadding": 150
+  },
+  "themeCSS": ".tick text { font-size: 14px !important; fill: #4b5563 !important; } .grid .tick line { stroke: #d9dce1 !important; } .grid path { stroke-width: 0 !important; }"
 }

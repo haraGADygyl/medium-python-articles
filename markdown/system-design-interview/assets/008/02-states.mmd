@@ -1,13 +1,17 @@
-stateDiagram-v2
-    direction LR
-    [*] --> pending: commit intent<br/>and reservation
-    pending --> completed: charge succeeded<br/>INSERT order
-    pending --> failed: charge declined<br/>release stock
-    completed --> [*]
-    failed --> [*]
-    note left of pending
-      Leaving pending is always
-      UPDATE ... WHERE state = 'pending'.
-      Worker and sweeper may both try.
-      One gets the row.
-    end note
+flowchart TB
+    start@{ shape: sm-circ }
+    stop@{ shape: fr-circ }
+    start -- "commit intent<br/>and reservation" --> pending(["pending"])
+    pending -- "charge succeeded<br/>INSERT order" --> completed(["completed"])
+    pending -- "charge declined<br/>release stock" --> failed(["failed"])
+    completed --> stop
+    failed --> stop
+    n1["Leaving pending is always<br/>UPDATE ... WHERE state = 'pending'.<br/>Worker and sweeper may both try.<br/>One gets the row."] -.- pending
+    classDef ok fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef warn fill:#fff3cd,stroke:#a07a10,stroke-width:2px,color:#4d3a05
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    classDef note fill:#fff8e1,stroke:#d9b44a,color:#4d3a05
+    class completed ok
+    class pending warn
+    class failed bad
+    class n1 note

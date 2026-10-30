@@ -4,7 +4,7 @@ flowchart TB
         C1["8,100 phones<br/>and laptops"] h1@-- "ZADD every 30 s&nbsp;<br/>269.9 writes/s&nbsp;" --> R1[("Redis<br/>presence:online")]
     end
     subgraph GWD ["gateways: the pings stay at the edge&nbsp;&nbsp;"]
-        direction LR
+        direction TB
         C2["8,100 phones<br/>and laptops"] p1@-- "PONG&nbsp;" --> G["4 gateways<br/>missed-ping<br/>counters"]
         G p2@-- "PING every 5 s&nbsp;<br/>≈1,600 a second&nbsp;" --> C2
         G -- "4.0 writes/s idle&nbsp;<br/>5 per logout + login&nbsp;" --> R2[("Redis<br/>user → gateway<br/>leases")]

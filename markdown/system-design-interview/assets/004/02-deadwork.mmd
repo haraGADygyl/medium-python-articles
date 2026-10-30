@@ -9,7 +9,7 @@ sequenceDiagram
     C->>Q: attempt 2 at 400 ms
     C--xC: timeout at 700 ms
     C->>Q: attempt 3 at 900 ms
-    Q->>W: attempt 1 reaches a slot at 2.4 s
+    Q->>W: attempt 1 reaches<br/>a slot at 2.4 s
     W-->>C: 200 OK for a request<br/>abandoned 2.1 s ago
     Note over C: caller failed the job<br/>at 1.5 s and moved on
     Note over Q,W: 1 job, 5 attempts,<br/>5 slots of work, 0 delivered
