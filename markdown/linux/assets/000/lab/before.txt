@@ -1,0 +1,54 @@
+=== snapshot 2026-10-31T16:42:14+02:00
+
+=== machine
+Ubuntu 24.04.5 LTS
+kernel  7.0.0-38-generic
+uptime  up 2 weeks, 21 hours, 59 minutes
+firefox 157.0-1 (snap, rev 8995)
+
+=== free -m
+               total        used        free      shared  buff/cache   available
+Mem:           32009       19352        1121         207        8537       12656
+Swap:           8191        7157        1034
+
+=== /proc/meminfo (selected)
+MemTotal:       32778040 kB
+MemAvailable:   12960616 kB
+SwapTotal:       8388604 kB
+SwapFree:        1059572 kB
+
+=== /proc/pressure/memory
+some avg10=0.00 avg60=0.00 avg300=0.00 total=48754342
+full avg10=0.00 avg60=0.00 avg300=0.00 total=45410090
+
+=== firefox processes (kB; PSS splits shared pages, RSS counts them in every process)
+PID             PSS        RSS       SWAP  NAME
+3306432     2729207    2876184     434988  firefox
+1988514     2527371    2648032       3640  Isolated Web Co
+4052351     1254016    1371556     435184  Isolated Web Co
+204162      1174483    1291048     408504  Isolated Web Co
+3307041      800783     887896     155760  WebExtensions
+3409200      776146     866320     185704  Isolated Web Co
+3307952      754989     851040     238400  Isolated Web Co
+132707       457685     573464     208812  Isolated Web Co
+375426       433276     521308      78144  Isolated Web Co
+3308079      422012     486872     169556  Isolated Web Co
+204387       417359     524052     173504  Isolated Web Co
+3307899      402434     503408     344672  Isolated Web Co
+206486       377177     487540     110616  Isolated Web Co
+3307735      351359     440356      44716  Isolated Web Co
+3940415      328654     412160     122088  Isolated Web Co
+...
+
+=== watched processes (kB)
+PID             PSS       SWAP
+1988514     2527371       3640
+1989323       45746       3852
+1989465       56440       3848
+1989615       94951       3688
+
+=== firefox totals
+processes  43
+PSS        15113 MiB
+RSS (sum)  18731 MiB
+swap       3658 MiB
