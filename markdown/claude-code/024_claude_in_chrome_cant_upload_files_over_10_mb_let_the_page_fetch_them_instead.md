@@ -21,9 +21,10 @@ Here is the recipe, the real code, and the two places where it trips you up.
 Claude in Chrome's `file_upload` tool sends the file's bytes through the extension in a single message. Images for a Medium post fit easily. A rendered lesson doesn't: the 8-minute 1080p video was 59 MB, and the tool refused it:
 
 ```text
-Cannot upload ".../out/video.mp4": total upload size would exceed 10 MB. file_upload sends
-file contents over the browser bridge in a single message; use a smaller file, or split across
-multiple file_upload calls if the page accepts files one at a time.
+Cannot upload ".../out/video.mp4": total upload size would exceed 10
+MB. file_upload sends file contents over the browser bridge in a
+single message; use a smaller file, or split across multiple
+file_upload calls if the page accepts files one at a time.
 ```
 
 Splitting doesn't help, because YouTube takes one file. Squeezing eight minutes of 1080p into 10 MB would ruin it. The file had to reach the page some other way.
@@ -152,23 +153,28 @@ When the upload finished, Claude stopped the server and ran `delete window.pendi
 You don't need to paste code into your session or explain the trick to Claude. Change the file and the site in the first lines, then paste this into Claude Code with Claude in Chrome connected:
 
 ```text
-I need to upload ~/Videos/conference-talk.mp4 to https://studio.youtube.com, and it is too big
-for Claude in Chrome's file_upload tool (10 MB limit). Do it like this:
+I need to upload ~/Videos/conference-talk.mp4 to
+https://studio.youtube.com, and it is too big for Claude in Chrome's
+file_upload tool (10 MB limit). Do it like this:
 
-1. Write a Python standard-library server that serves only the folder holding the file, bound
-   to 127.0.0.1 on port 8765. Every response sends Access-Control-Allow-Origin set to the site
-   above and Access-Control-Allow-Private-Network: true, and OPTIONS requests get a 204. Start
-   it in the background and check the header with curl.
-2. Open the site in a new tab and open its upload dialog. Never click the button that opens
-   the system file picker.
-3. With the JavaScript tool, fetch the file from http://127.0.0.1:8765/ in the page, wrap the
-   blob in a File with the right name and type, and compare its size with the file on disk.
-   If the fetch hangs or fails, Chrome is asking me to allow local access: tell me, wait until
-   I click Allow, then fetch again.
-4. Put the File into the dialog's input[type=file] with a DataTransfer and dispatch a bubbling
-   change event. Confirm with a screenshot that the upload started; don't trust the tool's
-   return value.
-5. When the upload is done, stop the server and delete the page's copy of the file.
+1. Write a Python standard-library server that serves only the folder
+   holding the file, bound to 127.0.0.1 on port 8765. Every response
+   sends Access-Control-Allow-Origin set to the site above and
+   Access-Control-Allow-Private-Network: true, and OPTIONS requests
+   get a 204. Start it in the background and check the header with
+   curl.
+2. Open the site in a new tab and open its upload dialog. Never click
+   the button that opens the system file picker.
+3. With the JavaScript tool, fetch the file from
+   http://127.0.0.1:8765/ in the page, wrap the blob in a File with
+   the right name and type, and compare its size with the file on
+   disk. If the fetch hangs or fails, Chrome is asking me to allow
+   local access: tell me, wait until I click Allow, then fetch again.
+4. Put the File into the dialog's input[type=file] with a DataTransfer
+   and dispatch a bubbling change event. Confirm with a screenshot
+   that the upload started; don't trust the tool's return value.
+5. When the upload is done, stop the server and delete the page's copy
+   of the file.
 
 Stop and tell me if the site refuses the fetch or ignores the file.
 ```
