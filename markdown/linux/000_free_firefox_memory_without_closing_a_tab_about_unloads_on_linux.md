@@ -27,9 +27,9 @@ free -m
 `free` reports in MiB. `used` is memory taken by processes, and `available` is what the kernel can hand out without swapping:
 
 ```
-               total        used        free      shared  buff/cache   available
-Mem:           32009       19352        1121         207        8537       12656
-Swap:           8191        7157        1034
+       total   used   free  shared  buff/cache  available
+Mem:   32009  19352   1121     207        8537      12656
+Swap:   8191   7157   1034
 ```
 
 Next, Firefox's share. Every tab, extension and helper runs in its own process, so you need a total. Adding up each process's resident size (**RSS**) overcounts, because pages shared between processes, like the libraries every content process loads, get counted once per process. **PSS** (proportional set size) splits each shared page among the processes using it, so the sum is honest. The kernel exposes it in `/proc/<pid>/smaps_rollup`:
@@ -37,7 +37,8 @@ Next, Firefox's share. Every tab, extension and helper runs in its own process, 
 ```bash
 for pid in $(pgrep -f '/firefox( |$)'); do
     grep '^Pss:' /proc/$pid/smaps_rollup
-done | awk '{s+=$2; n++} END {printf "%d processes, %.0f MiB\n", n, s/1024}'
+done | awk '{s+=$2; n++}
+    END {printf "%d processes, %.0f MiB\n", n, s/1024}'
 ```
 
 The loop finds every process started from a Firefox binary, reads its PSS in kB and sums it. On my machine, PSS came to 15,113 MiB, while the RSS sum claimed 18,731 MiB, overstating it by more than 3.5 GiB.
@@ -52,11 +53,16 @@ There are two ways to unload a tab by hand.
 
 **Right-click → Unload Tab.** Since Firefox 140 (June 2025), the tab context menu has an **Unload Tab** item. Select several tabs with Ctrl+click and it unloads all of them at once. This is the precise option: you pick the tab.
 
-**about:unloads.** This page, in Firefox since 2021, shows the tabs in the order Firefox would unload them itself. Here is Stripe's row, copied from the page:
+**about:unloads.** This page, in Firefox since 2021, shows the tabs in the order Firefox would unload them itself. Here is Stripe's row from the page, turned on its side to fit:
 
 ```
-Priority  Host                  Last Accessed           Weight  Sort Weight  Memory       Processes
-2         dashboard.stripe.com  10/31/2026, 4:31:12 PM  0       12           2,644.641 MB 1988514 1989323 1989465 1989615
+Priority       2
+Host           dashboard.stripe.com
+Last Accessed  10/31/2026, 4:31:12 PM
+Weight         0
+Sort Weight    12
+Memory         2,644.641 MB
+Processes      1988514 1989323 1989465 1989615
 ```
 
 Priority 1 is unloaded first. A `-` means the tab can't be unloaded at all. **Weight** is the base penalty (pinned tabs get more, so they go later) and **Sort Weight** adds memory and process counts on top. **Processes** lists the process IDs the tab uses, and Stripe used four. The **Unload** button at the top always unloads the row ranked first, which was YouTube, so I used the right-click menu on the Stripe tab instead.
@@ -87,8 +93,9 @@ PID             PSS       SWAP
 1989465      exited          -
 1989615      exited          -
 ...
-Mem:           32009       16835        3878         206        8539       15174
-Swap:           8191        7155        1036
+       total   used   free  shared  buff/cache  available
+Mem:   32009  16835   3878     206        8539      15174
+Swap:   8191   7155   1036
 ```
 
 | | Before | After |
