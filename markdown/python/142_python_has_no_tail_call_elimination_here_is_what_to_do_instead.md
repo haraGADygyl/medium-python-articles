@@ -29,13 +29,16 @@ def unquoted(text: str, pos: int, fields: list[str],
         return fields
 
     char = text[pos]
+
     if char == ",":
         fields.append("".join(buf))
         return unquoted(text, pos + 1, fields, [])
+
     if char == '"' and not buf:
         return quoted(text, pos + 1, fields, buf)
 
     buf.append(char)
+
     return unquoted(text, pos + 1, fields, buf)
 
 
@@ -44,10 +47,12 @@ def quoted(text: str, pos: int, fields: list[str],
     """Read characters inside quotes, commas included."""
     if pos == len(text):
         raise ValueError("unterminated quote")
+
     if text[pos] == '"':
         return after_quote(text, pos + 1, fields, buf)
 
     buf.append(text[pos])
+
     return quoted(text, pos + 1, fields, buf)
 
 
@@ -57,6 +62,7 @@ def after_quote(text: str, pos: int, fields: list[str],
     if pos < len(text) and text[pos] == '"':
         buf.append('"')
         return quoted(text, pos + 1, fields, buf)
+
     return unquoted(text, pos, fields, buf)
 
 
@@ -120,8 +126,10 @@ class Bounce:
 def trampoline[R](step: Callable[..., Bounce | R], *args: Any) -> R:
     """Run steps in a loop until one returns a real result."""
     result = step(*args)
+
     while isinstance(result, Bounce):
         result = result.step(*result.args)
+
     return result
 ```
 
@@ -139,13 +147,16 @@ def t_unquoted(text: str, pos: int, fields: list[str],
         return fields
 
     char = text[pos]
+
     if char == ",":
         fields.append("".join(buf))
         return Bounce(t_unquoted, (text, pos + 1, fields, []))
+
     if char == '"' and not buf:
         return Bounce(t_quoted, (text, pos + 1, fields, buf))
 
     buf.append(char)
+
     return Bounce(t_unquoted, (text, pos + 1, fields, buf))
 
 
@@ -154,10 +165,12 @@ def t_quoted(text: str, pos: int, fields: list[str],
     """Read characters inside quotes, commas included."""
     if pos == len(text):
         raise ValueError("unterminated quote")
+
     if text[pos] == '"':
         return Bounce(t_after_quote, (text, pos + 1, fields, buf))
 
     buf.append(text[pos])
+
     return Bounce(t_quoted, (text, pos + 1, fields, buf))
 
 
@@ -167,6 +180,7 @@ def t_after_quote(text: str, pos: int, fields: list[str],
     if pos < len(text) and text[pos] == '"':
         buf.append('"')
         return Bounce(t_quoted, (text, pos + 1, fields, buf))
+
     return Bounce(t_unquoted, (text, pos, fields, buf))
 
 
@@ -208,6 +222,7 @@ def naive_trampoline(result: Any) -> Any:
     """Keep calling while the result is callable."""
     while callable(result):
         result = result()
+
     return result
 
 
@@ -219,8 +234,10 @@ def render_landing() -> str:
 def resolve(route: str) -> Any:
     """Follow route aliases until one names a handler."""
     aliases = {"/home": "/index", "/index": "/landing"}
+
     if route in aliases:
         return lambda: resolve(aliases[route])
+
     return render_landing
 
 
@@ -250,8 +267,10 @@ class Comment:
 def render(comment: Comment, depth: int = 0) -> list[str]:
     """Indent each reply one level deeper than its parent."""
     lines = [f"{'  ' * depth}{comment.author}"]
+
     for reply in comment.replies:
         lines.extend(render(reply, depth + 1))
+
     return lines
 
 
@@ -285,6 +304,7 @@ def render_flat(root: Comment) -> list[str]:
     while pending:
         comment, depth = pending.pop()
         lines.append(f"{'  ' * depth}{comment.author}")
+
         for reply in reversed(comment.replies):
             pending.append((reply, depth + 1))
 
