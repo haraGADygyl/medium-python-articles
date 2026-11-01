@@ -27,12 +27,14 @@ def unquoted(text: str, pos: int, fields: list[str],
     if pos == len(text):
         fields.append("".join(buf))
         return fields
+
     char = text[pos]
     if char == ",":
         fields.append("".join(buf))
         return unquoted(text, pos + 1, fields, [])
     if char == '"' and not buf:
         return quoted(text, pos + 1, fields, buf)
+
     buf.append(char)
     return unquoted(text, pos + 1, fields, buf)
 
@@ -44,6 +46,7 @@ def quoted(text: str, pos: int, fields: list[str],
         raise ValueError("unterminated quote")
     if text[pos] == '"':
         return after_quote(text, pos + 1, fields, buf)
+
     buf.append(text[pos])
     return quoted(text, pos + 1, fields, buf)
 
@@ -134,12 +137,14 @@ def t_unquoted(text: str, pos: int, fields: list[str],
     if pos == len(text):
         fields.append("".join(buf))
         return fields
+
     char = text[pos]
     if char == ",":
         fields.append("".join(buf))
         return Bounce(t_unquoted, (text, pos + 1, fields, []))
     if char == '"' and not buf:
         return Bounce(t_quoted, (text, pos + 1, fields, buf))
+
     buf.append(char)
     return Bounce(t_unquoted, (text, pos + 1, fields, buf))
 
@@ -151,6 +156,7 @@ def t_quoted(text: str, pos: int, fields: list[str],
         raise ValueError("unterminated quote")
     if text[pos] == '"':
         return Bounce(t_after_quote, (text, pos + 1, fields, buf))
+
     buf.append(text[pos])
     return Bounce(t_quoted, (text, pos + 1, fields, buf))
 
@@ -252,10 +258,12 @@ def render(comment: Comment, depth: int = 0) -> list[str]:
 def flame_war(rounds: int) -> Comment:
     """Two users replying to each other, rounds levels deep."""
     root = current = Comment("ivo")
+
     for turn in range(1, rounds):
         reply = Comment("kai" if turn % 2 else "ivo")
         current.replies.append(reply)
         current = reply
+
     return root
 
 
@@ -273,11 +281,13 @@ def render_flat(root: Comment) -> list[str]:
     """Same output as render(), with a list standing in for the stack."""
     lines: list[str] = []
     pending: list[tuple[Comment, int]] = [(root, 0)]
+
     while pending:
         comment, depth = pending.pop()
         lines.append(f"{'  ' * depth}{comment.author}")
         for reply in reversed(comment.replies):
             pending.append((reply, depth + 1))
+
     return lines
 
 
