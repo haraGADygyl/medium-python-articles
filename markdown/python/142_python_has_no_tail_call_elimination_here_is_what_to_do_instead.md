@@ -190,6 +190,7 @@ def split_line_flat(text: str) -> list[str]:
 
 
 huge_line = ",".join(["sensor"] * 200_000)
+
 print(len(huge_line))                   # 1399999
 print(len(split_line_flat(huge_line)))  # 200000
 ```
@@ -202,9 +203,12 @@ The cost is one `Bounce` allocation and one extra trip through the loop per step
 from timeit import timeit
 
 sample = ",".join(["sensor"] * 120)
+
 print(split_line(sample) == split_line_flat(sample))  # True
+
 print(timeit(lambda: split_line(sample), number=2000) / 2000)
 # about 245 microseconds
+
 print(timeit(lambda: split_line_flat(sample), number=2000) / 2000)
 # about 315 microseconds
 ```
@@ -313,6 +317,7 @@ def render_flat(root: Comment) -> list[str]:
 
 thread = Comment("noor", [Comment("ivo", [Comment("noor")]),
                           Comment("kai")])
+
 print(render_flat(thread) == render(thread))  # True
 print(len(render_flat(flame_war(100_000))))   # 100000
 ```
@@ -329,6 +334,7 @@ Each tuple on `pending` holds what a frame would have held: which comment to vis
 import sys
 
 sys.setrecursionlimit(50_000)
+
 print(len(render(flame_war(20_000))))  # 20000
 ```
 
@@ -342,6 +348,7 @@ import threading
 
 sys.setrecursionlimit(20_000)
 deep_thread = flame_war(1_000)
+
 print(len(repr(deep_thread)))  # 33000
 
 threading.stack_size(512 * 1024)
