@@ -1,0 +1,71 @@
+=== no extended statistics
+                                                                             QUERY PLAN                                                                              
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=38544.37..38544.40 rows=1 width=40) (actual time=943.845..946.815 rows=44.00 loops=1)
+   Group Key: (date_trunc('week'::text, s.started_at))
+   Buffers: shared hit=116141
+   ->  Sort  (cost=38544.37..38544.38 rows=1 width=19) (actual time=943.786..944.462 rows=12938.00 loops=1)
+         Sort Key: (date_trunc('week'::text, s.started_at))
+         Sort Method: quicksort  Memory: 890kB
+         Buffers: shared hit=116141
+         ->  Nested Loop  (cost=181.53..38544.36 rows=1 width=19) (actual time=2.942..940.086 rows=12938.00 loops=1)
+               Join Filter: (s.started_at <@ t.valid_during)
+               Rows Removed by Join Filter: 142318
+               Buffers: shared hit=116138
+               ->  Bitmap Heap Scan on charge_session s  (cost=181.53..38523.97 rows=1 width=22) (actual time=2.872..54.965 rows=12938.00 loops=1)
+                     Recheck Cond: ((city = 'Atlanta'::text) AND (vehicle_model = 'Leaf'::text))
+                     Filter: ((state = 'GA'::text) AND (connector = 'CHAdeMO'::text) AND (vehicle_make = 'Nissan'::text))
+                     Rows Removed by Filter: 411
+                     Heap Blocks: exact=12620
+                     Buffers: shared hit=12634
+                     ->  Bitmap Index Scan on charge_session_city_model_idx  (cost=0.00..181.53 rows=13309 width=0) (actual time=1.469..1.470 rows=13349.00 loops=1)
+                           Index Cond: ((city = 'Atlanta'::text) AND (vehicle_model = 'Leaf'::text))
+                           Index Searches: 1
+                           Buffers: shared hit=14
+               ->  Seq Scan on tariff_rate t  (cost=0.00..20.24 rows=12 width=36) (actual time=0.054..0.066 rows=12.00 loops=12938)
+                     Filter: ((state = 'GA'::text) AND (connector = 'CHAdeMO'::text))
+                     Rows Removed by Filter: 804
+                     Buffers: shared hit=103504
+ Planning:
+   Buffers: shared hit=291
+ Planning Time: 0.652 ms
+ Execution Time: 947.097 ms
+(29 rows)
+
+=== with extended statistics
+                                                                             QUERY PLAN                                                                              
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=41343.99..41348.34 rows=158 width=40) (actual time=86.991..92.495 rows=44.00 loops=1)
+   Group Key: (date_trunc('week'::text, s.started_at))
+   Buffers: shared hit=12645
+   ->  Sort  (cost=41343.99..41344.39 rows=158 width=19) (actual time=86.898..88.196 rows=12938.00 loops=1)
+         Sort Key: (date_trunc('week'::text, s.started_at))
+         Sort Method: quicksort  Memory: 890kB
+         Buffers: shared hit=12645
+         ->  Nested Loop  (cost=186.67..41338.22 rows=158 width=19) (actual time=3.019..83.915 rows=12938.00 loops=1)
+               Join Filter: (s.started_at <@ t.valid_during)
+               Rows Removed by Join Filter: 142318
+               Buffers: shared hit=12642
+               ->  Bitmap Heap Scan on charge_session s  (cost=186.67..38952.36 rows=13140 width=22) (actual time=2.939..50.247 rows=12938.00 loops=1)
+                     Recheck Cond: ((city = 'Atlanta'::text) AND (vehicle_model = 'Leaf'::text))
+                     Filter: ((state = 'GA'::text) AND (connector = 'CHAdeMO'::text) AND (vehicle_make = 'Nissan'::text))
+                     Rows Removed by Filter: 411
+                     Heap Blocks: exact=12620
+                     Buffers: shared hit=12634
+                     ->  Bitmap Index Scan on charge_session_city_model_idx  (cost=0.00..183.38 rows=13495 width=0) (actual time=1.544..1.544 rows=13349.00 loops=1)
+                           Index Cond: ((city = 'Atlanta'::text) AND (vehicle_model = 'Leaf'::text))
+                           Index Searches: 1
+                           Buffers: shared hit=14
+               ->  Materialize  (cost=0.00..20.30 rows=12 width=36) (actual time=0.000..0.001 rows=12.00 loops=12938)
+                     Storage: Memory  Maximum Storage: 17kB
+                     Buffers: shared hit=8
+                     ->  Seq Scan on tariff_rate t  (cost=0.00..20.24 rows=12 width=36) (actual time=0.062..0.073 rows=12.00 loops=1)
+                           Filter: ((state = 'GA'::text) AND (connector = 'CHAdeMO'::text))
+                           Rows Removed by Filter: 804
+                           Buffers: shared hit=8
+ Planning:
+   Buffers: shared hit=304
+ Planning Time: 0.721 ms
+ Execution Time: 92.884 ms
+(32 rows)
+
