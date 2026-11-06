@@ -83,7 +83,7 @@ Three of the five filters are redundant: Atlanta implies Georgia, Leaf implies N
          Buffers: shared hit=103504
 ```
 
-The index scan estimate of 13,309 is close to the real 13,349, because city and model really are independent in this data. Then the three remaining filters divide that by about thirteen thousand, and the scan ends at `rows=1`. For one outer row, a nested loop that scans `tariff_rate` once is the cheapest plan available, and caching the inner side would be wasted work. So the planner did neither. The inner seq scan ran 12,938 times, read 103,504 buffers out of a total of 116,138, and took 885 of the 940 milliseconds.
+The index scan estimate of 13,309 is close to the real 13,349, because city and model really are independent in this data. Then the three remaining filters divide that by about thirteen thousand, and the scan ends at `rows=1`. For one outer row, a nested loop that scans `tariff_rate` once is the cheapest plan available, and caching the inner side would be wasted work, so the planner did not cache it. The inner seq scan ran 12,938 times, read 103,504 buffers out of a total of 116,138, and took 885 of the 940 milliseconds.
 
 ---
 
