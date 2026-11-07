@@ -1,0 +1,30 @@
+per minute: CMS width 2000 depth 7 = 112 KB, candidates 200 = 35 KB (MEMORY USAGE); 60 minutes: used_memory +5.5 MB
+run 1: merge 60 sketches + score 1054 candidates in 10.2 ms; PING worst 4.3 ms
+run 2: merge 60 sketches + score 1054 candidates in 11.0 ms; PING worst 5.1 ms
+run 3: merge 60 sketches + score 1054 candidates in 10.4 ms; PING worst 4.2 ms
+
+N = 18,000,000, error bound = 0.001 x N = 18,000 (with probability 0.99)
+rank  sketch says           exact top 10          over
+   1  tag0000000 1,112,371   tag0000000 1,108,476   +3,895
+   2  tag0000001   599,814   tag0000001   595,845   +3,969
+   3  tag0000002   373,249   tag0000002   369,257   +3,992
+   4  tag0000004   246,146   tag0000004   241,124   +5,022
+   5  tag0000003   219,676   tag0000003   215,470   +4,206
+   6  tag0000005   192,886   tag0000005   188,316   +4,570
+   7  tag0000007   147,512   tag0000007   143,733   +3,779
+   8  tag0000006   143,377   tag0000006   138,902   +4,475
+   9  tag0000008   127,102   tag0000008   123,239   +3,863
+  10  tag0000009   113,684   tag0000009   109,569   +4,115
+exact #11: tag0000010 96,445  (gap #10 -> #11 = 13,124)
+same 10 tags: True; same order: True
+
+exact rank band   true count (median)   overestimate (median / max)   relative (median)
+      1-10                  201,893          4,053 /    5,022              2.3%
+     91-100                  11,049          4,432 /    5,575             38.6%
+    991-1,000                 1,097          4,117 /    5,195            376.0%
+  9,991-10,000                  107          4,086 /    4,352           3818.7%
+ 99,991-100,000                  11          4,232 /    5,336          38477.3%
+
+2,000 tags never used this hour: estimate median 4,160, max 8,750
+top_tags: [('tag0000000', 1112371), ('tag0000001', 599814), ('tag0000002', 373249)]
+record_batch: estimate after 3 + 2 = [5] candidates [('tagother', 1.0), ('tagprobe', 5.0)]

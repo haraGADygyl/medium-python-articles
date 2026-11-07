@@ -1,0 +1,19 @@
+ingest: 300000 ZINCRBY in 2.33 s = 128,573/s, one client, pipelined
+60 minute buckets: 7,191,508 members, 119,858 per minute, bucket 0 = 10.9 MB, used_memory +680 MB
+run 1: ZUNIONSTORE 60 keys -> 2,883,233 members in 8969 ms; PING worst 8968 ms, 1 pings over 100 ms
+run 2: ZUNIONSTORE 60 keys -> 2,883,233 members in 8880 ms; PING worst 8880 ms, 1 pings over 100 ms
+run 3: ZUNIONSTORE 60 keys -> 2,883,233 members in 8830 ms; PING worst 8829 ms, 1 pings over 100 ms
+hour set: 270 MB; total used_memory 963 MB
+tags used once this hour: 1,872,836 of 2,883,233 (65%)
+   1 tag0000000 1,108,476
+   2 tag0000001   595,845
+   3 tag0000002   369,257
+   4 tag0000004   241,124
+   5 tag0000003   215,470
+   6 tag0000005   188,316
+   7 tag0000007   143,733
+   8 tag0000006   138,902
+   9 tag0000008   123,239
+  10 tag0000009   109,569
+trending_now: 8969 ms, top 3 [('tag0000000', 1108476.0), ('tag0000001', 595845.0), ('tag0000002', 369257.0)]
+record: trend:min:10000 tagprobe = 2.0, ttl 3900 s

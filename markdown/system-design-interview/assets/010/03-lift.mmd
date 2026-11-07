@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph W50 ["sketch, 50,000 wide&nbsp;&nbsp;"]
+        direction TB
+        C1["baseline read as<br/>97 an hour"] --> C2["lift 60.9"] --> C3["trending<br/>30 of 30 pass"]
+    end
+    subgraph W2 ["sketch, 2,000 wide&nbsp;&nbsp;"]
+        direction TB
+        B1["baseline read as<br/>4,260 an hour"] --> B2["lift 2.4"] --> B3["not trending<br/>0 of 30 pass"]
+    end
+    subgraph EX ["exact counts&nbsp;&nbsp;"]
+        direction TB
+        A1["baseline: 3 uses<br/>in 24 hours"] --> A2["lift 571"] --> A3["trending<br/>30 of 30 pass"]
+    end
+    T["30 brand-new tags, 1,154 to 10,049 uses this hour<br/>rule: ≥ 500 uses and lift ≥ 5 · medians shown"] --> EX & W2 & W50
+    classDef ok fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    class A3,C3 ok
+    class B1,B3 bad

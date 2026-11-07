@@ -1,0 +1,13 @@
+run 1: merge 12 + 24 sketches, score 1,206 candidates: 78 ms, PING worst 44.6 ms
+run 2: merge 12 + 24 sketches, score 1,206 candidates: 78 ms, PING worst 44.7 ms
+run 3: merge 12 + 24 sketches, score 1,206 candidates: 79 ms, PING worst 45.2 ms
+memory: 36 sketches, MEMORY USAGE says 2.80 MB each, candidate lists 1.09 MB, used_memory 63 MB
+panel: 30 tags pass, 30 of them new, 0 not; exact rule passes 30 (30 new)
+missed by the panel: 0 []
+  tag5808951: sketch 10,144 uses, lift 97.8  |  true 10,049 uses, baseline 2, lift 998
+  tag6855625: sketch 7,959 uses, lift 85.0  |  true 7,869 uses, baseline 2, lift 781
+  tag5309321: sketch 9,945 uses, lift 84.7  |  true 9,844 uses, baseline 7, lift 957
+  tag8429233: sketch 7,830 uses, lift 82.5  |  true 7,736 uses, baseline 2, lift 768
+  tag9560545: sketch 8,391 uses, lift 77.8  |  true 8,317 uses, baseline 2, lift 826
+trending_panel: 30 tags, 30 new, top 3 [('tag5808951', 97.8), ('tag6855625', 85.0), ('tag5309321', 84.7)]
+is_trending(5000, 72): (True, 385.38461538461536)  is_trending(9138, 102240): (False, 2.1423887587822015)

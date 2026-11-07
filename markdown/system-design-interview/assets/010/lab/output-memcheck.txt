@@ -1,0 +1,5 @@
+width 2,000 x depth 7: MEMORY USAGE 112,040 B, used_memory per sketch 57,522 B (4.1 B per counter)
+width 10,000 x depth 7: MEMORY USAGE 560,040 B, used_memory per sketch 327,788 B (4.7 B per counter)
+width 20,000 x depth 7: MEMORY USAGE 1,120,040 B, used_memory per sketch 655,430 B (4.7 B per counter)
+width 50,000 x depth 7: MEMORY USAGE 2,800,040 B, used_memory per sketch 1,573,005 B (4.5 B per counter)
+width 100,000 x depth 7: MEMORY USAGE 5,600,040 B, used_memory per sketch 3,145,781 B (4.5 B per counter)

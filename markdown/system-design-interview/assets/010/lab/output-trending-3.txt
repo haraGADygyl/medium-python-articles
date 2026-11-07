@@ -1,0 +1,15 @@
+seed 3: 2,868,868 tags seen this hour; popular top 10 has 0 new tags; exact lift top 10 has 10 new tags, lifts [953, 918, 889, 856, 826, 807, 774, 704, 703, 696]
+merged 60 minute sketches == one hour sketch on 9,563 tags: True
+exact rule (>= 500 uses, lift >= 5.0): 30 tags pass, 30 of them new
+top 10 by lift  | rule: >= 500 uses and lift >= 5
+width  KB/sketch  noise floor  ghosts  evergreens  new  =exact | pass  new  evergreen  ghost  | new tag shown/true lift (median)  new tag baseline read (per h, median)
+ 2,000       112        4,130       0           0   10      9 |    0    0          0      0 |    2.2 / 510                      4,092
+        tags reading >= 500 uses: 2,868,868 (truly: 2,147)
+10,000       560          651       0           0   10      9 |   25   25          0      0 |    8.5 / 510                        668
+        tags reading >= 500 uses: 2,834,889 (truly: 2,147)
+20,000     1,120          289       0           0   10      9 |   30   30          0      0 |   16.2 / 510                        294
+        tags reading >= 500 uses: 7,520 (truly: 2,147)
+50,000     2,800           95       0           0   10      9 |   30   30          0      0 |   44.0 / 510                        105
+        tags reading >= 500 uses: 2,674 (truly: 2,147)
+100,000     5,600           39       0           0   10      9 |   30   30          0      0 |  100.6 / 510                         41
+        tags reading >= 500 uses: 2,331 (truly: 2,147)

@@ -1,0 +1,15 @@
+%%{init: {"flowchart": {"rankSpacing": 34, "nodeSpacing": 30}}}%%
+flowchart TB
+    E["5,000 tag uses a second<br/>CMS.INCRBY into the open bucket"] --> LOOP
+    subgraph LOOP ["the bucket ring, one step every five minutes"]
+        direction LR
+        A["open bucket<br/>sketch + top 1,000"] r1@--> B["one of 12 in<br/>the hour window"]
+        B r2@--> C["oldest: merged into<br/>this hour's baseline<br/>sketch"]
+        C r3@--> D["reset to zero,<br/>reopened"]
+        D r4@--> A
+    end
+    LOOP --> P["24 hourly baseline sketches,<br/>oldest dropped every hour"]
+    r1@{ animate: true }
+    r2@{ animate: true }
+    r3@{ animate: true }
+    r4@{ animate: true }

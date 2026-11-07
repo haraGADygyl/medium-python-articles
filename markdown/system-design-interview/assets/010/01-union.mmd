@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant I as Ingest worker
+    participant P as Trending panel
+    participant R as Redis
+    participant O as Any other client
+    I->>R: ZINCRBY trend:min:59
+    P->>R: ZUNIONSTORE<br/>60 minute keys
+    rect rgb(253,236,238)
+    Note over R: merging 7,191,508<br/>members, one thread
+    O->>R: PING
+    I->>R: ZINCRBY trend:min:59
+    Note over O,I: both wait in<br/>the queue
+    end
+    R-->>P: 2,883,233 members<br/>after 8,969 ms
+    R-->>O: PONG after 8,968 ms
+    R-->>I: OK, 9 s late

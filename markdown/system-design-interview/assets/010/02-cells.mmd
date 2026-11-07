@@ -1,0 +1,14 @@
+flowchart TB
+    T["a tag never used<br/>this hour"] --> H{{"7 hash functions,<br/>one counter per row"}}
+    H --> R1["row 1: one of 2,000 counters<br/>≈1,440 other tags in it"]
+    H --> R2["row 2: one of 2,000 counters<br/>≈1,440 other tags in it"]
+    H --> R7["… row 7: one of 2,000 counters<br/>≈1,440 other tags in it"]
+    R1 --> M["CMS.QUERY returns<br/>the smallest of the 7"]
+    R2 --> M
+    R7 --> M
+    M --> A["4,160 uses<br/>median over 2,000<br/>never-used tags"]
+    R1 -.- n1["18,000,000 uses ÷ 2,000<br/>= 9,000 per counter<br/>on average"]
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    classDef note fill:#fff8e1,stroke:#d9b44a,color:#4d3a05
+    class A bad
+    class n1 note

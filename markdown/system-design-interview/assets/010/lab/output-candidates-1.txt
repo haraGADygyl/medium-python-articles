@@ -1,0 +1,4 @@
+seed 1: 30 new tags, hour counts [1154, 1356, 1840, 2483, 2503, 2614, 2720, 2885, 3241, 3449, 3953, 4105, 4389, 4577, 5637, 6032, 6637, 6973, 7021, 7087, 7094, 7497, 7736, 7869, 8036, 8317, 8353, 8370, 9844, 10049]
+width   2,000: per-minute noise floor 42; top 200/min keeps 30 of 30 new tags (smallest kept 1154); top 1000/min keeps 30 of 30 new tags (smallest kept 1154)
+width  20,000: per-minute noise floor 1; top 200/min keeps 28 of 30 new tags (smallest kept 1840); top 1000/min keeps 30 of 30 new tags (smallest kept 1154)
+width 100,000: per-minute noise floor 0; top 200/min keeps 28 of 30 new tags (smallest kept 1840); top 1000/min keeps 30 of 30 new tags (smallest kept 1154)
