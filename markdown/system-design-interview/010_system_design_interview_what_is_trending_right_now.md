@@ -1,6 +1,6 @@
 # System Design Interview: What Is Trending Right Now, and How Sure Are You?
 
-#### Exact counts froze Redis for 9 seconds, and the sketch that replaced them showed an empty trending panel while 30 brand-new tags took off
+#### Counting every tag froze Redis for nine seconds. The faster, approximate fix showed an empty trending panel while 30 new tags took off
 
 **By Tihomir Manushev**
 
@@ -10,7 +10,7 @@
 
 A discovery team at a recipe-sharing app, hiring a senior backend engineer. The interviewer is Thiago.
 
-The standard answer is to count every tag in a sliding window and sort. That's right, and the long tail makes it expensive: most tags are used once, and every one of them gets a counter. The standard fix is a count-min sketch, which is small and fast, and whose error is the same size for every tag, so the small counts that decide what's trending are the ones it gets wrong.
+The question sounds easy: what's trending? The usual answer is to count every tag over the last hour and sort. That works until you notice most tags are used once, and you pay to count every one of them. The usual fix is a count-min sketch, a small structure that counts approximately. Its mistakes are about the same size for every tag, though, and trending depends on exactly the small counts it gets wrong.
 
 Everything below ran on Redis 8.4 in Docker, with Python 3.12.3, redis-py 5.2 and NumPy 1.26, on a Ryzen 5 3600 with 32 GB and an NVMe drive. The traffic is synthetic: 10 million tags with Zipf popularity, 5,000 tag uses a second, and 30 brand-new tags that take off during the hour.
 
@@ -18,9 +18,9 @@ Everything below ran on Redis 8.4 in Docker, with Python 3.12.3, redis-py 5.2 an
 
 ### The question
 
-**Thiago:** Every recipe carries hashtags, and the home screen shows what's trending: ten tags, refreshed every few seconds. We see about 5,000 tag uses a second. How do you build it?
+**Thiago:** Every recipe has hashtags, and the home screen shows what's trending: ten tags, refreshed every few seconds. We get about 5,000 tag uses a second. How would you build it?
 
-**Tihomir:** Count each tag over the last hour and show the ten biggest. One sorted set per minute, one `ZINCRBY` per use, and the panel unions the last 60 minutes.
+**Tihomir:** I'd start simple: count every tag over the last hour and show the top ten. In Redis that's one sorted set per minute, and each use adds one to that tag's score. When the panel refreshes, it adds up the last 60 minutes.
 
 ```python
 import redis
@@ -44,17 +44,17 @@ def trending_now(now: float) -> list[tuple[str, float]]:
     return r.zrevrange("trend:hour", 0, 9, withscores=True)
 ```
 
-**Thiago:** Writes?
+**Thiago:** 5,000 writes a second. Is that a problem?
 
-**Tihomir:** 5,000 a second, and they're cheap. One pipelined client did 128,573 `ZINCRBY`s a second.
+**Tihomir:** Not really. One client sending them in batches managed about 128,000 a second.
 
 ---
 
 ### The first trap
 
-**Thiago:** And the read?
+**Thiago:** And reading it back? You're adding up 60 sets every few seconds.
 
-**Tihomir:** I loaded one hour: 18 million uses across 2.9 million distinct tags. Then I ran the union three times while another client sent a `PING` every millisecond.
+**Tihomir:** That's the part I was worried about, so I measured it. I loaded a full hour, 18 million uses spread over 2.9 million different tags, and ran the union three times. Meanwhile a second client pinged Redis every millisecond, to see whether anyone else could get through.
 
 ```
 60 minute buckets: 7,191,508 members, 119,858 per minute, bucket 0 = 10.9 MB, used_memory +680 MB
@@ -65,21 +65,31 @@ hour set: 270 MB; total used_memory 963 MB
 tags used once this hour: 1,872,836 of 2,883,233 (65%)
 ```
 
-**Tihomir:** The union takes nine seconds, and Redis runs commands on one thread, so the `PING` waited for all of it. So did every other client, the ingest workers included. And 65% of what it merged were tags used once, which will never be on the panel.
+**Thiago:** Nine seconds?
+
+**Tihomir:** Nine seconds, and that's not even the worst part. Redis runs one command at a time, so for those nine seconds nobody else got an answer. Not the ping, not the workers trying to record new tags, nobody.
 
 ![The union holds Redis's only thread, so every other command waits behind it](assets/010/01-union.gif)
 
-**Thiago:** Keep the hour set up to date instead of rebuilding it.
+**Thiago:** What's in those 2.9 million tags?
 
-**Tihomir:** That fixes the read, and I haven't measured it. It doesn't fix the memory: the 60 buckets are still 680 MB, and the hour set adds 270 MB, almost all of it the long tail. A panel per country or per language multiplies that.
+**Tihomir:** Mostly noise, honestly. 65% were used once in the whole hour. They'll never get near the top ten, but each one takes memory, and the union walks through every one of them.
+
+**Thiago:** Then keep a running total for the hour instead of rebuilding it every time.
+
+**Tihomir:** That would fix the read, though I didn't measure it. It doesn't fix the memory: the minute sets alone are 680 MB, and the hour total adds another 270. If product wants a panel per country, multiply that.
 
 ---
 
 ### Count less exactly
 
-**Thiago:** So?
+**Thiago:** So what would you do instead?
 
-**Tihomir:** A count-min sketch per minute. It's a grid of counters, here 7 rows of 2,000, and each tag hashes to one counter in each row. A read returns the smallest of its seven, so the answer can be too high but never too low. Redis has it built in, and `CMS.INCRBY` returns the new estimates, which gives me a 200-tag candidate list per minute for free.
+**Tihomir:** Stop counting exactly. A count-min sketch is a small grid of counters, here 7 rows of 2,000. Every tag lands on one counter in each row, and lots of tags share each counter.
+
+**Thiago:** Then the counts are wrong.
+
+**Tihomir:** They can be too high, but never too low. To read a tag, you take the smallest of its seven counters, the one that's shared with the least traffic. Redis has this built in, and it hands back the new estimate every time you add to it, so I can keep a short list of each minute's 200 biggest tags almost for free.
 
 ```python
 ERROR, PROB, KEEP = 0.001, 0.01, 200
@@ -114,9 +124,9 @@ def top_tags(minute: int) -> list[tuple[str, int]]:
     return sorted(zip(names, counts), key=lambda x: -x[1])[:10]
 ```
 
-**Thiago:** Numbers.
+**Thiago:** How big did you make it?
 
-**Tihomir:** `ERROR` 0.001 means the overestimate stays under 0.1% of all uses, with 99% probability. That's what gives 2,000 by 7.
+**Tihomir:** I asked Redis for 0.1% error, 99% of the time, and that's what gave 2,000 by 7. Then I ran the same hour through it.
 
 ```
 per minute: CMS width 2000 depth 7 = 112 KB, candidates 200 = 35 KB (MEMORY USAGE); 60 minutes: used_memory +5.5 MB
@@ -126,15 +136,15 @@ run 3: merge 60 sketches + score 1054 candidates in 10.4 ms; PING worst 4.2 ms
 same 10 tags: True; same order: True
 ```
 
-**Tihomir:** 5.5 MB instead of 950, and 10 ms instead of nine seconds. Same ten tags, same order. One surprise: `MEMORY USAGE` reports 8 bytes per sketch counter, but Redis allocates 4, so I counted memory from `used_memory`.
+**Tihomir:** 5.5 MB instead of 950, and about 10 milliseconds instead of nine seconds. Same ten tags, in the same order. One surprise: `MEMORY USAGE` claims 8 bytes per counter when Redis really uses 4, so I measured from Redis's own total.
 
 ---
 
 ### How sure are you?
 
-**Thiago:** How sure are you?
+**Thiago:** You said the counts run high. How high?
 
-**Tihomir:** The guarantee is 18,000, which is 0.1% of 18 million. What I measured is about 4,000 on every tag, wherever it sits in the ranking.
+**Tihomir:** The guarantee says at most 18,000, which is 0.1% of 18 million. In practice it was about 4,000. The odd part is that it was about 4,000 for every tag, whether it ranked first or ten-thousandth.
 
 ```
 exact rank band   true count (median)   overestimate (median / max)   relative (median)
@@ -146,7 +156,13 @@ exact rank band   true count (median)   overestimate (median / max)   relative (
 2,000 tags never used this hour: estimate median 4,160, max 8,750
 ```
 
-**Tihomir:** The error is additive. At the top it's 2.3%, and the gap between tenth and eleventh was 13,124, so the order held. At rank 10,000 it's 38 times the real count, and a tag nobody used this hour reads 4,160, because every counter it lands in is shared with about 1,440 other tags.
+**Thiago:** 4,000 on a million doesn't matter.
+
+**Tihomir:** Right, at the top it's 2.3%, and tenth and eleventh place were 13,000 apart, so nothing swapped. Further down, the same 4,000 is everything. A tag used 107 times reads as about 4,200, and a tag nobody used at all reads as 4,160.
+
+**Thiago:** Nobody used it, and it has 4,160 uses?
+
+**Tihomir:** It borrows them. Each of its counters is shared with about 1,440 other tags, and even the smallest of its seven still holds a few thousand of their uses.
 
 ![Why a tag nobody used reads 4,160](assets/010/02-cells.png)
 
@@ -156,7 +172,11 @@ exact rank band   true count (median)   overestimate (median / max)   relative (
 
 **Thiago:** Your top tag is tag0000000. It was top yesterday too.
 
-**Tihomir:** And every hour before that. I counted what's popular, not what's trending, and of the 30 tags that were brand new this hour, the popular top ten held none. Trending means a tag is used far more than usual, so I compare this hour with its average hour over the previous day.
+**Tihomir:** And the day before, probably. Okay, fair: I built "most popular", not "trending".
+
+**Thiago:** What's the difference?
+
+**Tihomir:** Trending means a tag is used far more than it usually is. Of the 30 brand-new tags that took off this hour, not one made the popular top ten. So I'd compare each tag's hour with its average hour over the past day, and call it trending at 500 uses and five times its usual rate.
 
 ```python
 MIN_USES, MIN_LIFT, SMOOTH = 500, 5.0, 10
@@ -169,9 +189,9 @@ def is_trending(this_hour: int, last_24h: int) -> tuple[bool, float]:
     return this_hour >= MIN_USES and lift >= MIN_LIFT, lift
 ```
 
-**Thiago:** From the same sketches?
+**Thiago:** And yesterday's numbers come from the same kind of sketch?
 
-**Tihomir:** That's where it breaks. I scored every tag seen in the hour, which is the best case any candidate list can give, against a 24-hour baseline sketch of the same size. With exact counts, all 30 new tags pass and nothing else does. Here's the sketch, over three different hours of traffic.
+**Tihomir:** That was the plan, so I tried it. I scored every tag seen in the hour, which is the best case, and checked the result against exact counts. Exact counting finds all 30 new tags and nothing else.
 
 ```
 exact rule (>= 500 uses, lift >= 5.0): 30 tags pass, 30 of them new
@@ -182,21 +202,27 @@ exact rule (>= 500 uses, lift >= 5.0): 30 tags pass, 30 of them new
         tags reading >= 500 uses: 2,883,233 (truly: 2,179)
 ```
 
-**Tihomir:** The panel was empty. A typical new tag was used three times in the previous 24 hours, and the sketch read its baseline as 4,260 an hour, about 102,000 for the day. So its lift came out at 2.4 instead of 571. The 500-use minimum filtered nothing either, because all 2.9 million tags read above it.
+**Thiago:** Zero.
+
+**Tihomir:** Zero. The panel was empty, and I didn't believe it at first. A typical new tag had been used three times in the past day, but the sketch said 4,260 an hour, roughly 102,000 for the day. So instead of growing 571 times, it looked like it had grown 2.4 times, nowhere near five.
+
+**Thiago:** And the 500-use minimum?
+
+**Tihomir:** Useless. Every one of the 2.9 million tags read above 500, because the borrowed uses alone are over 4,000.
 
 ![The same 30 new tags through the same rule: exact counts, the narrow sketch, a wide one](assets/010/03-lift.png)
 
-**Thiago:** And the ranking?
+**Thiago:** Did it at least rank them right?
 
-**Tihomir:** It survived. Sorted by lift, the top ten were new tags at every width, because the same noise sits in both sketches and mostly cancels in the ratio. What doesn't survive is any rule with a number in it.
+**Tihomir:** Surprisingly, yes. Sorted by growth, the top ten were still new tags, because the same borrowed uses show up in both sketches and mostly cancel out. It's the thresholds that break, and a trending rule is mostly thresholds.
 
 ---
 
 ### Size it for the smallest number
 
-**Thiago:** Fix it.
+**Thiago:** So make it bigger.
 
-**Tihomir:** Size the sketch from the smallest count the rule reads, not from the total. The rule asks whether a tag with 500 uses and no history has a lift of 5, which only works while the noise floor stays under about 115. So I swept the width.
+**Tihomir:** Sure, but bigger by how much? I'd sized it against the total, 0.1% of everything, when what matters is the smallest number the rule reads. A new tag with 500 uses and no history only passes if the borrowed uses stay under about 115, so I tried a few widths.
 
 ```
 rule: >= 500 uses, lift >= 5; 30 new tags; seeds 1 / 2 / 3
@@ -208,11 +234,11 @@ rule: >= 500 uses, lift >= 5; 30 new tags; seeds 1 / 2 / 3
 100,000     3,146   40 / 40 / 39           30 / 30 / 30     0 / 0 / 0         114.8 / 92.6 / 100.6
 ```
 
-**Tihomir:** At 50,000 wide the floor is 96, all 30 new tags pass in all three hours, and nothing passes that shouldn't. The lift it shows is still 44 to 61 instead of about 500, so the panel can say "new" but not "up 500 times".
+**Tihomir:** At 50,000 wide, the borrowed uses drop to 96. All 30 new tags pass in all three test hours, and nothing passes that shouldn't. It still shows them growing 44 to 61 times instead of about 500, so the panel can say "new", but I wouldn't print the number.
 
-**Thiago:** Sixty of those?
+**Thiago:** Sixty sketches that size add up.
 
-**Tihomir:** That would be 94 MB. I use twelve five-minute buckets for the hour and 24 hourly sketches for the baseline, so the window slides in five-minute steps, which is fine for a panel. Each bucket keeps its 1,000 biggest estimates as candidates.
+**Tihomir:** About 94 MB, yes. So I use bigger buckets: twelve five-minute sketches for the hour and 24 hourly ones for the past day. The window moves in five-minute steps, which nobody will notice on a panel, and each bucket keeps its 1,000 biggest tags as candidates.
 
 ```python
 WIDTH, DEPTH = 50_000, 7
@@ -247,7 +273,7 @@ def trending_panel(bucket: int, hour: int) -> list[tuple[str, float]]:
 
 ![Each bucket's life: open, in the hour window, folded into the baseline, reset](assets/010/04-rotation.gif)
 
-**Thiago:** Numbers.
+**Thiago:** Does it actually find them?
 
 ```
 run 1: merge 12 + 24 sketches, score 1,206 candidates: 78 ms, PING worst 44.6 ms
@@ -260,34 +286,38 @@ missed by the panel: 0 []
   tag6855625: sketch 7,959 uses, lift 85.0  |  true 7,869 uses, baseline 2, lift 781
 ```
 
-**Tihomir:** The panel shows the same 30 tags as exact counting, with nothing missed and nothing extra, and the other two hours matched as well. The new tags' candidate lists caught every one of them, so discovery was never the problem. All of it fits in 63 MB.
+**Tihomir:** It shows the same 30 tags as exact counting, with nothing missed and nothing extra, and the other two test hours matched too. The candidate lists caught every new tag, so finding them was never the problem. The whole thing fits in 63 MB.
 
 ---
 
 ### What it costs
 
-**Thiago:** What does it cost?
+**Thiago:** What's the catch?
 
-**Tihomir:** First, memory: 63 MB against 5.5 MB for the sketch that showed nothing, and against 950 MB for one exact hour. I didn't load an exact 24-hour baseline, so I won't put a number on it, but it would be 24 hours of long tail. Second, the read holds Redis for about 45 ms, because merging 36 sketches of 350,000 counters runs on the same single thread. That's fine every few seconds, and it's not something to run on every page view, so the panel result gets cached.
+**Tihomir:** Memory, first. 63 MB is a lot more than the 5.5 MB sketch, but that one showed nothing, and a single exact hour was 950 MB. I didn't build an exact version of the past day, so I can't give you that number.
 
-**Thiago:** Anything else?
+**Thiago:** And speed?
 
-**Tihomir:** The floor grows with traffic. It comes from the uses that share each counter, so twice the traffic at the same width means roughly twice the floor, and the width has to follow. I checked that against widths, not against other traffic levels. I also haven't measured coordinated accounts pushing a tag, more than one Redis node, or a real tag distribution: mine is synthetic Zipf, and a heavier tail would raise the floor.
+**Tihomir:** A refresh takes about 80 milliseconds, and for about 45 of them Redis is busy merging sketches and can't answer anyone else. That's fine every few seconds, but not on every page view, so the result gets cached.
+
+**Thiago:** What happens when traffic doubles?
+
+**Tihomir:** The borrowed uses roughly double too, because they come from everyone else sharing your counters, so the sketch has to grow with traffic. I tested that by changing the width, not the traffic, so treat it as an estimate. I also haven't tested bots pushing a tag, more than one Redis server, or real hashtags, which may have a heavier tail than my synthetic ones and more borrowed uses.
 
 ---
 
 ### Conclusion
 
-**Thiago:** Summary.
+**Thiago:** If you had to sum it up?
 
-**Tihomir:** Four lines.
+**Tihomir:** Four things.
 
-**Exact counts pay for the long tail.** 65% of the 2.9 million tags were used once, the hour cost 950 MB, and the union held Redis for nine seconds.
+**Counting everything exactly means paying for the long tail.** 65% of the tags were used once, the hour took 950 MB, and adding it up froze Redis for nine seconds.
 
-**A count-min sketch adds the same error to every tag.** About 4,000 here: 2.3% on the top ten, 38 times the real count at rank 10,000, and 4,160 for a tag nobody used.
+**A count-min sketch adds about the same amount to every count.** About 4,000 here: nothing for the top ten, 38 times the real count at rank 10,000, and 4,160 for a tag nobody used.
 
-**Trending is a ratio, and its denominator is the smallest number in the system.** Sized at 0.1%, the sketch read a new tag's baseline as 4,260 an hour, and the panel stayed empty while 30 new tags took off.
+**Trending divides by small numbers, which is exactly where that error lives.** At 0.1%, the sketch thought new tags were used 4,260 times an hour, and the panel stayed empty while 30 of them took off.
 
-**Size the sketch for the smallest count the rule reads.** At 50,000 wide the floor fell to 96, all 30 passed, nothing else did, and it took 63 MB and 79 ms.
+**Size the sketch for the smallest count your rule reads.** At 50,000 wide, all 30 showed up, nothing else did, and it cost 63 MB and 79 ms a refresh.
 
-The standard answer asks how many times each tag was used, and it treats the sketch's error bound as a property of the sketch. The bound is a fraction of the total, so the question to ask is which count you'll divide by, and whether the error is smaller than that.
+The usual answer treats a sketch's error as a small percentage, and for big counts it is. But it's a percentage of the total, not of each tag. Before you trust a sketch, find the smallest number you'll divide by, and check that the error is smaller.
