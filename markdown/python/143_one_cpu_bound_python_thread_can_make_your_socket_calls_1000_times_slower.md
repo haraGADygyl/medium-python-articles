@@ -1,4 +1,4 @@
-# One CPU-Bound Thread Can Make Your Socket Calls 1,000 Times Slower
+# One CPU-Bound Python Thread Can Make Your Socket Calls 1,000 Times Slower
 
 #### The GIL's 5-millisecond switch interval is not a time slice. It is how long a waiting thread must sit before it may ask for the lock, and a thread waking from I/O pays that wait every time
 
