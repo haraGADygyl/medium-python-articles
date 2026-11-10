@@ -1,0 +1,27 @@
+50000 buoy records, best of up to 5; tomli_w 1.2.0, tomli 2.5.0, tomlkit 0.15.2, rtoml 0.14.0
+notes is null in 47485 records (95.0%): TOML has no null, so those keys are dropped
+
+format                   bytes     gzip -9     zstd -3     lines
+JSON                20,790,509   1,872,392   2,344,331         0
+TOML, tomli_w       22,822,671   1,915,002   2,422,612   952,455
+TOML, rtoml         23,971,845   1,942,828   2,469,918 1,452,219
+TOML, tomlkit       23,971,845   1,942,828   2,469,918 1,452,219
+  TOML, tomli_w vs JSON: raw 9.8% bigger, gzip 2.3% bigger, zstd 3.3% bigger
+  TOML, rtoml vs JSON: raw 15.3% bigger, gzip 3.8% bigger, zstd 5.4% bigger
+  TOML, tomlkit vs JSON: raw 15.3% bigger, gzip 3.8% bigger, zstd 5.4% bigger
+
+write, ms                           ms  vs json  runs
+json.dumps                       210.7       1x     5
+tomli_w dumps                   2140.7      10x     5
+rtoml dumps                      222.2       1x     5
+tomlkit dumps                  48490.4     230x     1
+
+read, ms                            ms  vs json  runs
+json.loads                       334.9       1x     5
+tomllib.loads (stdlib)          6649.1      20x     5
+tomli.loads                     3743.1      11x     5
+rtoml.loads                      765.2       2x     5
+tomlkit.parse                  54218.6     162x     1
+
+not included above: shaping rows for TOML 43.4 ms, restoring them 118.7 ms
+every TOML writer round-trips the records, nulls restored by schema: True

@@ -1,0 +1,18 @@
+                       bytes  lines  comments
+original                 664     24         5
+tomllib + tomli_w        458     26         0
+tomlkit                  664     24         5
+
+tomlkit changed 1 line(s): ['wave_height_m = 7.0   # page the duty officer above this']
+
+tomli_w output, first 10 lines:
+fleet = "north-east"
+share_with = [
+    "GB",
+    "NO",
+    "DK",
+]
+upload_window = 22:30:00
+firmware = "1.10"
+archive_mode = 416
+compress = true

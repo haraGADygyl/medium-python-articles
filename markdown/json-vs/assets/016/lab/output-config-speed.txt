@@ -1,0 +1,2 @@
+tomllib.loads(fleet.toml)          114.5 µs per parse, best of 5 x 2000
+json.loads(output-fleet.json)        4.3 µs per parse, best of 5 x 2000

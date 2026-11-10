@@ -1,0 +1,92 @@
+notes in the JSON record: None
+
+the record as it is, with its null
+  tomli_w  TypeError: Object of type 'NoneType' is not TOML serializable
+  tomlkit  ConvertError: Unable to convert an object of <class 'NoneType'> to a TOML item
+  rtoml    writes 'notes = "null"', read back as 'null'
+
+--- shaped for TOML (notes dropped, datetime native), written by tomli_w
+[[observation]]
+observation_id = 9007199254740993
+buoy_id = "NE-08"
+recorded_at = 2026-02-11 00:00:00+00:00
+wave_height_m = 3.5
+water_temp_c = 12.0
+wind_gust_ms = 10.7
+battery_v = 13.12
+qc_passed = true
+sensors = [
+    { tag = "accelerometer", status = "offline", samples = 1933 },
+    { tag = "thermistor", status = "degraded", samples = 1866 },
+    { tag = "anemometer", status = "degraded", samples = 318 },
+]
+
+[observation.position]
+lat = 57.21621
+lon = -2.37579
+
+--- shaped for TOML (notes dropped, datetime native), written by tomlkit
+[[observation]]
+observation_id = 9007199254740993
+buoy_id = "NE-08"
+recorded_at = 2026-02-11T00:00:00Z
+wave_height_m = 3.5
+water_temp_c = 12.0
+wind_gust_ms = 10.7
+battery_v = 13.12
+qc_passed = true
+
+[[observation.sensors]]
+tag = "accelerometer"
+status = "offline"
+samples = 1933
+
+[[observation.sensors]]
+tag = "thermistor"
+status = "degraded"
+samples = 1866
+
+[[observation.sensors]]
+tag = "anemometer"
+status = "degraded"
+samples = 318
+
+[observation.position]
+lat = 57.21621
+lon = -2.37579
+
+--- shaped for TOML (notes dropped, datetime native), written by rtoml (none_value=None)
+[[observation]]
+observation_id = 9007199254740993
+buoy_id = "NE-08"
+recorded_at = 2026-02-11T00:00:00Z
+wave_height_m = 3.5
+water_temp_c = 12.0
+wind_gust_ms = 10.7
+battery_v = 13.12
+qc_passed = true
+
+[[observation.sensors]]
+tag = "accelerometer"
+status = "offline"
+samples = 1933
+
+[[observation.sensors]]
+tag = "thermistor"
+status = "degraded"
+samples = 1866
+
+[[observation.sensors]]
+tag = "anemometer"
+status = "degraded"
+samples = 318
+
+[observation.position]
+lat = 57.21621
+lon = -2.37579
+
+JSON, compact                 427 bytes
+JSON, indent 2                592 bytes
+TOML, tomli_w                 467 bytes, 18 lines, 'observation' x3, round trip equal: True
+TOML, tomlkit                 490 bytes, 28 lines, 'observation' x6, round trip equal: True
+TOML, rtoml (none_value=None)  490 bytes, 28 lines, 'observation' x6, round trip equal: True

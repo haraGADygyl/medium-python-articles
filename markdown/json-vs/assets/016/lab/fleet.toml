@@ -1,0 +1,24 @@
+# Export settings for the north-east harbour buoys.
+fleet = "north-east"
+share_with = ["GB", "NO", "DK"]  # met offices that receive the feed
+upload_window = 22:30:00         # UTC, after the evening poll
+firmware = "1.10"
+archive_mode = 0o640
+compress = true
+station_code = "07031"
+commissioned = 2026-02-11
+# No contact yet. TOML has no null, so the key is left out.
+
+[thresholds]
+wave_height_m = 6.5   # page the duty officer above this
+battery_v = 11.8
+
+[[recipient]]
+office = "NO"
+endpoint = "sftp://feeds.example.no/buoys"
+since = 2026-03-01T06:00:00Z
+
+[[recipient]]
+office = "DK"
+endpoint = "sftp://feeds.example.dk/buoys"
+since = 2026-04-15T08:00:00+02:00

@@ -1,0 +1,12 @@
+written                     tomllib, Python 3.12 (TOML 1.0)         tomli 2.5.0 (TOML 1.1)
+fleet = north-east          refused: Invalid value                  refused: Invalid value
+share_with = [GB, NO, DK]   refused: Invalid value                  refused: Invalid value
+upload_window = 22:30       refused: Expected newline or end ...    datetime.time(22, 30)
+firmware = 1.10             1.1                                     1.1
+archive_mode = 0640         refused: Expected newline or end ...    refused: Expected newline or end ...
+compress = on               refused: Invalid value                  refused: Invalid value
+station_code = 07031        refused: Expected newline or end ...    refused: Expected newline or end ...
+commissioned = 2026-02-11   datetime.date(2026, 2, 11)              datetime.date(2026, 2, 11)
+contact = null              refused: Invalid value                  refused: Invalid value
+
+tomllib refused 7 of 9

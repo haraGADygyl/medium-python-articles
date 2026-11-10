@@ -1,0 +1,30 @@
+{
+  "fleet": "north-east",
+  "share_with": [
+    "GB",
+    "NO",
+    "DK"
+  ],
+  "upload_window": "22:30:00",
+  "firmware": "1.10",
+  "archive_mode": 416,
+  "compress": true,
+  "station_code": "07031",
+  "commissioned": "2026-02-11",
+  "thresholds": {
+    "wave_height_m": 6.5,
+    "battery_v": 11.8
+  },
+  "recipient": [
+    {
+      "office": "NO",
+      "endpoint": "sftp://feeds.example.no/buoys",
+      "since": "2026-03-01T06:00:00+00:00"
+    },
+    {
+      "office": "DK",
+      "endpoint": "sftp://feeds.example.dk/buoys",
+      "since": "2026-04-15T08:00:00+02:00"
+    }
+  ]
+}
