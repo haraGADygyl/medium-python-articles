@@ -1,6 +1,6 @@
 # System Design Interview: Your Cache Expires and the Database Falls Over. What Happened?
 
-#### A 265 ms query took 5,046 ms the instant the cache went cold — and the obvious fix trades an outage for a latency cliff
+#### A 265 ms query took 5,046 ms the moment its cache key expired. The obvious fix swaps that outage for a smaller wait that never goes away
 
 **By Tihomir Manushev**
 
@@ -10,7 +10,7 @@
 
 A platform team at a job board, hiring a senior engineer. The interviewer is Haruki.
 
-Adding a cache is the answer to almost every "make it faster" question, and it is usually right. What the answer omits is what happens in the one second after the key expires, which is the second that pages you.
+Ask how to make a slow page faster, and almost everyone says: add a cache. That's usually right. What the answer leaves out is the second after the cached copy expires, when every request finds it gone at once, and that's the second that pages you.
 
 Everything below ran on PostgreSQL 17.6 and Redis 7, against three million job postings, with fifty concurrent readers on a Ryzen 5 3600.
 
@@ -18,11 +18,13 @@ Everything below ran on PostgreSQL 17.6 and Redis 7, against three million job p
 
 ### The question
 
-**Haruki:** Your trending-roles dashboard runs an aggregate over every posting from the last thirty days. It takes 265 milliseconds and it is on the home page. What do you do?
+**Haruki:** Your trending-roles dashboard adds up every job posting from the last thirty days. That query takes 265 milliseconds, and it's on the home page. What do you do?
 
-**Tihomir:** Cache it. The data is minutes-stale by nature — nobody needs a hiring dashboard accurate to the second — so cache-aside with a short TTL. Read the key, and on a miss compute it and write it back.
+**Tihomir:** Cache it. Nobody needs a hiring dashboard that's accurate to the second, so a copy that's a few seconds old is fine.
 
-The pieces every version below shares:
+**Haruki:** How does the copy get there?
+
+**Tihomir:** The simplest way, cache-aside: read the key from Redis, and if it's missing, run the query and write the result back. I'd give it a short TTL, a time-to-live, so Redis deletes it after five seconds and the next reader builds a fresh one. Here's the setup every version shares.
 
 ```python
 import json
@@ -65,7 +67,7 @@ def query_origin() -> str:
         conn.close()
 ```
 
-The naive reader:
+**Tihomir:** And the simple reader on top of it.
 
 ```python
 def naive_reader():
@@ -77,9 +79,9 @@ def naive_reader():
     return value
 ```
 
-**Haruki:** Fifty workers, five-second TTL, twenty seconds of traffic. What do the numbers look like?
+**Haruki:** Fifty workers hitting that for twenty seconds. What do you expect?
 
-**Tihomir:** Around fifty thousand requests served, nearly all from Redis at well under a millisecond, and four origin queries — one per expiry.
+**Tihomir:** Around fifty thousand requests, nearly all served from Redis in well under a millisecond. And four database queries, one each time the key expires.
 
 **Haruki:** Run it.
 
@@ -87,7 +89,7 @@ def naive_reader():
 
 ### The first trap
 
-**Tihomir:** A hundred origin queries. Twenty-five per expiry, not one.
+**Tihomir:** A hundred database queries. That's twenty-five every time the key expired, not one.
 
 ```
 plain cache-aside, TTL=5s, 50 readers, 20s
@@ -98,28 +100,32 @@ plain cache-aside, TTL=5s, 50 readers, 20s
   non-hit p50 / p99:      5079 ms / 5466 ms
 ```
 
-**Haruki:** Read me the third line again.
+**Haruki:** Five thousand milliseconds? You said the query takes 265.
 
-**Tihomir:** The origin query took 5,046 milliseconds. On its own it takes 265. Twenty-five copies of the same aggregate ran at once, contending for the same buffers, and each one got nineteen times slower.
+**Tihomir:** It does, when it runs alone. Here twenty-five copies of the same query ran at the same moment, all competing for the same database, and each one came out about nineteen times slower.
 
 ![Every worker misses at the same instant](assets/002/01-stampede.gif)
 
-That is the whole failure. The key expires, every in-flight request misses simultaneously, and they all go to the database with the identical query. Nothing is wrong with any single request. The cache did not fail. It expired, which is its job.
+**Haruki:** Why twenty-five at once?
+
+**Tihomir:** Because they all miss together. The key expires, every request in flight finds it gone, and each one sends the identical query. People call that a cache stampede, and the annoying part is that nothing broke: the cache expired, which is exactly what I told it to do.
 
 **Haruki:** And the users?
 
-**Tihomir:** Twenty-five of them waited five and a half seconds for a home page. Four times a minute, forever.
+**Tihomir:** Twenty-five of them waited about five and a half seconds for a home page. Every time the key expires, for as long as the site is up.
 
-**Haruki:** So raise the TTL. Fewer expiries, fewer stampedes.
+**Haruki:** Then raise the TTL. Fewer expiries, fewer stampedes.
 
-**Tihomir:** That was my instinct too, and it is half right. Same reader, thirty seconds, two TTLs:
+**Tihomir:** That was my first thought too, so I ran the same reader for thirty seconds with two TTLs.
 
 | TTL | origin queries | per expiry | worst reader wait |
 |---|---|---|---|
 | 2 s | 200 | 13.3 | 6,009 ms |
 | 10 s | 100 | 33.3 | 7,781 ms |
 
-The longer TTL halves total origin load, exactly as expected. It also makes each individual stampede two and a half times bigger, because more readers accumulate during the rebuild — and the worst user wait gets *worse*, not better. You are trading frequency for amplitude, and amplitude is what takes the database down.
+**Haruki:** The longer one halved the queries. Isn't that the win?
+
+**Tihomir:** For the database's total load, yes. But each stampede got two and a half times bigger, because more readers pile up while the slow rebuild runs. And the worst wait went from about six seconds to almost eight, so I'd traded a few small stampedes for fewer, bigger ones.
 
 ---
 
@@ -127,7 +133,7 @@ The longer TTL halves total origin load, exactly as expected. It also makes each
 
 **Haruki:** Then only let one of them rebuild.
 
-**Tihomir:** Right — a rebuild lock. `SET NX` decides who computes; everyone else waits for the key to appear.
+**Tihomir:** Right, a rebuild lock. Redis's `SET NX` only writes a key if it doesn't exist yet, so exactly one reader wins and runs the query. Everyone else waits for the new value to show up.
 
 ```python
 def locked_reader():
@@ -153,29 +159,35 @@ rebuild lock, TTL=5s, 50 readers, 20s
   non-hit p50 / p99:      285 ms / 323 ms
 ```
 
-**Haruki:** One per expiry. And the query is fast again.
+**Haruki:** One query per expiry. And it's fast again.
 
-**Tihomir:** 284 ms, which is what it costs when it is not fighting twenty-four copies of itself. Throughput went up too — ninety thousand requests instead of fifty thousand — because readers are no longer stuck for five seconds each.
+**Tihomir:** 284 milliseconds, once it isn't fighting twenty-four copies of itself. And with nobody stuck for five seconds, the same workers served about ninety thousand requests.
 
-**Haruki:** So you are done.
+**Haruki:** So you're done.
 
-**Tihomir:** No. Look at the last line. Every reader who arrives during a rebuild still waits 285 milliseconds, and there are fifty of them, four times a minute. I converted a five-second outage into a recurring latency cliff. Smaller, but still there, and still on a page that is otherwise served in two milliseconds.
+**Tihomir:** No, look at the last line. Anyone who shows up during a rebuild still waits about 285 milliseconds, on a page that's otherwise served in two. I turned a five-second outage into a smaller wait that comes back every time the key expires.
 
 ![One rebuilds; everyone else blocks](assets/002/02-lock.png)
 
-**Haruki:** What else breaks?
+**Haruki:** And if the reader holding the lock dies halfway through?
 
-**Tihomir:** The waiters are trusting a process they cannot see. If the lock holder dies mid-rebuild, nobody rebuilds and nobody is allowed to, until the lock's own TTL expires — so the failure mode of my fix is that the whole fleet blocks on a dead worker. I set that TTL to thirty seconds, which means the worst case is a thirty-second stall on the home page.
+**Tihomir:** Then nobody rebuilds, and nobody's allowed to, until the lock itself expires.
+
+**Haruki:** How long is that?
+
+**Tihomir:** Thirty seconds, the TTL I put on the lock. So the worst case of my fix is the whole fleet stuck for thirty seconds on the home page, waiting on a dead worker.
 
 ---
 
 ### The actual answer
 
-**Haruki:** Fix it properly.
+**Haruki:** So the lock saved the database, not the reader. What saves the reader?
 
-**Tihomir:** The mistake is treating expiry as the moment to rebuild. If the value is allowed to go stale, there is no reason anyone should ever wait for a rebuild — refresh it *before* it expires, in the background, and keep serving the old value while that happens.
+**Tihomir:** Not rebuilding at the moment it expires. The value is allowed to be a few seconds old anyway, so refresh it before the deadline, in the background, and keep serving the old copy while that runs.
 
-The cached entry stops being a bare string. It carries the payload, the moment it stops being fresh, and how long it took to build. Redis's own TTL becomes a backstop rather than the mechanism.
+**Haruki:** How does a reader know the deadline's close?
+
+**Tihomir:** The cached entry carries it. Next to the result it stores the moment it stops being fresh and how long it took to build, and Redis's own expiry stays only as a backstop.
 
 ```python
 FRESH_FOR = 5.0                # after this the value is stale, but still served
@@ -206,7 +218,7 @@ def refresh() -> None:
 
 **Haruki:** And the read path?
 
-**Tihomir:** It never blocks. It reads the entry, decides whether to kick off a refresh in the background, and returns the payload either way.
+**Tihomir:** It never waits. It reads the entry, decides whether to start a refresh in the background, and returns the stored result either way.
 
 ```python
 def swr_reader():
@@ -228,19 +240,25 @@ def swr_reader():
     return entry["payload"]                  # served immediately, fresh or not
 ```
 
-**Haruki:** Explain the logarithm.
+**Haruki:** What's the logarithm doing in there?
 
-**Tihomir:** `head_start` is a duration: how long before the deadline this particular reader is prepared to rebuild. Two things set it. It scales with `build_seconds`, so an expensive value gets refreshed further ahead of time than a cheap one. And `-math.log(random.random())` draws a different random number for every reader on every request, so they each pick a different moment.
+**Tihomir:** `head_start` is how long before the deadline this reader is willing to rebuild. It grows with `build_seconds`, so an expensive value gets refreshed further ahead than a cheap one.
 
-That randomness is the whole trick. Without it, all fifty readers would decide to refresh at the same instant — which is the stampede again, just moved earlier. With it, one reader usually crosses the threshold alone, a second or two before the deadline, and rebuilds while the other forty-nine keep getting served the old value. `refresh()` takes the lock, so if two do volunteer together, the second one returns immediately instead of running the query.
+**Haruki:** And the random number?
 
-**Haruki:** And `EARLY_REFRESH_FACTOR`?
+**Tihomir:** That's the whole trick. Without it, all fifty readers would decide to refresh at the same instant, which is just the stampede moved earlier. `-math.log(random.random())` gives every reader a different head start on every request, so usually one crosses the line alone, a second or two before the deadline.
 
-**Tihomir:** It is beta from XFetch — the algorithm in *Optimal Probabilistic Cache Stampede Prevention*, Vattani, Chierichetti and Lowenstein, VLDB 2015. Their rule is `now - delta * beta * log(rand()) >= expiry`, where `delta` is the last rebuild's duration. My line is the same thing rearranged, with the negated log moved across as a head start.
+**Haruki:** And if two cross it together?
 
-**Haruki:** And turning it?
+**Tihomir:** `refresh()` still takes the lock, so the second one returns without running the query. Everyone else keeps getting the old value in the meantime.
 
-**Tihomir:** Above 1.0, readers volunteer earlier and more often — fewer occasions where anyone finds a genuinely cold key, at the cost of more origin queries. Below 1.0 they hug the deadline, which is cheaper and riskier. The paper argues 1.0 is close to optimal in the general case, and I left it there because I had no measurement of my own that justified moving it.
+**Haruki:** Where does `EARLY_REFRESH_FACTOR` come from?
+
+**Tihomir:** It's beta from XFetch, the algorithm in *Optimal Probabilistic Cache Stampede Prevention* by Vattani, Chierichetti and Lowenstein, VLDB 2015. Their rule is `now - delta * beta * log(rand()) >= expiry`, where `delta` is how long the last rebuild took. My line is the same rule, rearranged into a head start.
+
+**Haruki:** Would you tune it?
+
+**Tihomir:** Higher means earlier refreshes and more queries; lower is cheaper and riskier. The paper argues 1.0 is close to optimal, and I had no measurement of my own to justify moving it.
 
 ![The reader never blocks](assets/002/03-refresh.png)
 
@@ -253,9 +271,9 @@ early refresh + serve stale, 50 readers, 20s
   non-hit p50 / p99:      2 ms / 31 ms
 ```
 
-**Haruki:** Nobody waits.
+**Haruki:** So nobody waits?
 
-**Tihomir:** 31 milliseconds at p99 against 5,466 for the naive version, and that is the cold start at the beginning of the run rather than a stampede. The three together:
+**Tihomir:** Almost nobody. Even among requests that weren't a plain cache hit, 99% finished within 31 milliseconds, against 5,466 for the simple version. And the slow ones are the cold start at the beginning of the run, not a stampede. Here are all three side by side.
 
 | | requests served | origin queries | origin p50 | worst reader wait |
 |---|---|---|---|---|
@@ -267,30 +285,40 @@ early refresh + serve stale, 50 readers, 20s
 
 ### What it costs
 
-**Haruki:** Name what you gave up.
+**Haruki:** Eight queries where the lock ran four. You doubled the database load.
 
-**Tihomir:** Three things. The refresh fires early, so I run eight origin queries where the lock ran four — twice the database load for the same window. That is the price of nobody waiting, and it is cheap here because 283 ms unopposed is nothing.
+**Tihomir:** I did, because the refresh fires early and sometimes twice. That's the price of nobody waiting, and it's cheap here, since each query took about 290 milliseconds without a crowd fighting it.
 
-Second, readers are served stale data. Not much — the refresh starts before the deadline — but "how stale is acceptable" is now a product decision that has to be written down rather than a side effect of the TTL. For a hiring dashboard it is obviously fine. For an account balance it is obviously not.
+**Haruki:** And the readers get old data.
 
-Third, the code got harder. Cache-aside is four lines. This is an envelope format, a background thread, a lock, and a tuning constant whose value I would have to justify to whoever is on call.
+**Tihomir:** A little, since the refresh starts before the deadline. But how old is acceptable is now a product decision someone has to write down, not a side effect of the TTL. For a hiring dashboard it's obviously fine; for an account balance it obviously isn't.
 
-**Haruki:** When would you not do this?
+**Haruki:** And the code?
 
-**Tihomir:** When there is one key. Everything above assumes a hot key that every request touches — a dashboard, a homepage, a config blob. If your cache holds a million user profiles, no single expiry has fifty readers waiting on it, and plain cache-aside is fine. The stampede is a property of *concentration*, not of caching.
+**Tihomir:** It got harder. Cache-aside fits in one small function; this is an entry format, a background thread, a lock, and a tuning constant I'd have to justify to whoever's on call.
 
-And I have not tested this across processes at real scale. One Redis, fifty threads, one machine. The lock is a single `SET NX` with no fencing, so if a refresh hangs past its lock TTL a second one can start — harmless here because the rebuild is idempotent, but I would not reuse this shape for something that writes.
+**Haruki:** When wouldn't you bother?
+
+**Tihomir:** When there's no single hot key, one that every request touches, like this dashboard. If the cache holds a million user profiles, no single expiry has fifty readers waiting on it, and plain cache-aside is fine.
+
+**Haruki:** Would you run it across many servers?
+
+**Tihomir:** Not without testing it, and I haven't. This was one Redis, fifty threads, one machine, and the lock is a single `SET NX` with no fencing, so nothing stops a second refresh if the first hangs past the lock's thirty seconds. That's harmless here because rebuilding twice gives the same result, but I wouldn't reuse this shape for anything that writes.
 
 ---
 
 ### Conclusion
 
-**The cache did not fail — it expired, and expiry is synchronized.** Fifty readers missing at the same instant turned a 265 ms query into a 5,046 ms one, because twenty-five copies of it were fighting for the same buffers.
+**Haruki:** If you had to sum it up?
 
-**A longer TTL makes it worse.** Total origin load halved from TTL 2 s to 10 s, but the per-expiry stampede grew 2.5x and the worst user wait went from 6.0 s to 7.8 s. Frequency down, amplitude up, and amplitude is what breaks things.
+**Tihomir:** Four things.
 
-**A rebuild lock fixes the database and not the user.** One origin query per expiry, but every reader still waits 285 ms — and if the lock holder dies, the fleet blocks until the lock's TTL runs out.
+**The cache didn't fail. It expired, and every reader found it gone at once.** Twenty-five copies of a 265 ms query ran together, and each took 5,046 ms.
 
-**Refresh before expiry and serve stale while you do.** 31 ms worst case instead of 5,466, at the price of twice the origin queries and a stated staleness budget.
+**A longer TTL made it worse.** Going from 2 to 10 seconds halved the total queries, but each stampede grew 2.5 times and the worst wait went from 6.0 to 7.8 seconds.
 
-The question is asked because the naive answer is genuinely correct — a cache *does* fix the 265 ms query, for 99.9% of requests. The interesting engineering is entirely in the other 0.1%, and it only shows up if you measure the moment the key goes away.
+**A rebuild lock protects the database, not the reader.** One query per expiry, but anyone arriving during a rebuild still waits 285 ms, and a dead lock holder can stall everyone for thirty seconds.
+
+**Refresh before it expires, and serve the old copy meanwhile.** The worst wait dropped from 5,466 ms to 31 ms, for twice the queries of the lock and a written-down limit on how stale is too stale.
+
+The question gets asked because the simple answer is genuinely right: a cache does fix the 265 ms query, for almost every request. The trouble is all in the moment the key goes away, and you only see it if you measure that moment.

@@ -1,6 +1,6 @@
 # System Design Interview: Where Does an Account Balance Actually Live?
 
-#### One fee row made 32 clients exactly as fast as one, and the checkpoint that replaced it lost 2,215 entries in 30 seconds without raising an error
+#### One fee account made 32 clients exactly as fast as one. The checkpoint that fixed it lost 2,215 entries in 30 seconds, and nothing complained
 
 **By Tihomir Manushev**
 
@@ -10,7 +10,7 @@
 
 A ledger team at a freelance marketplace, hiring a senior backend engineer. The interviewer is Leilani.
 
-Where a balance lives sounds like a schema question with one answer: a column on the account, updated in the same transaction as the ledger row. That answer is right for a wallet and wrong for the one account every payment touches. The usual way out is to derive the balance from the log and keep a checkpoint so the sum stays short, and that design has a race that loses money without raising an error.
+Where does a balance live? The usual answer is a column on the account, updated in the same transaction that writes the ledger row. That's right for a client's wallet, and wrong for the one account every payment touches. The usual way out is to work the balance out from the log and keep a checkpoint so the sum stays short, and that design has a race that loses money without raising an error.
 
 Everything below ran on PostgreSQL 17.6 in Docker, with Python 3.12 and psycopg 3.2, on a Ryzen 5 3600 with an NVMe drive.
 
@@ -18,9 +18,9 @@ Everything below ran on PostgreSQL 17.6 in Docker, with Python 3.12 and psycopg 
 
 ### The question
 
-**Leilani:** Clients pay freelancers through us, and we keep two percent. Every payment debits a client wallet, credits a freelancer and credits our fee account. Where does each balance live?
+**Leilani:** Clients pay freelancers through us, and we keep two percent. So every payment takes money from a client's wallet, pays the freelancer and pays our fee account. Where does each balance live?
 
-**Tihomir:** In a column on the account row, changed in the same transaction that appends the ledger entries. The debit is conditional, so an overdraft is a zero-row update rather than a check followed by a write. This is the pgbench script I ran it with.
+**Tihomir:** In a column on the account row, changed in the same transaction that adds the ledger entries. The withdrawal has the check built in: it only updates the row if the balance covers it, so an overdraft updates zero rows. Here's the script I ran through pgbench, Postgres's load tester.
 
 ```sql
 \set wallet random(1, 1000000)
@@ -35,9 +35,9 @@ VALUES (:wallet, -:amount), (:merchant, :amount - :amount / 50), (0, :amount / 5
 COMMIT;
 ```
 
-**Leilani:** Why keep a column at all? The log is the truth.
+**Leilani:** Why keep a column at all? The log already has every entry.
 
-**Tihomir:** Because the overdraft rule needs something to lock. I fired eight concurrent 60-cent debits at a wallet holding 100 cents, three times with each design.
+**Tihomir:** Because the no-overdraft rule needs something to lock. I sent eight 60-cent debits at the same moment to a wallet holding 100 cents, three times for each design.
 
 ```
 SUM check, then append  debits accepted 8/8  balance 100 -> -380 cents
@@ -48,19 +48,25 @@ SUM check, then append  debits accepted 8/8  balance 100 -> -380 cents
 conditional UPDATE     debits accepted 1/8  balance 100 -> 40 cents
 ```
 
-**Tihomir:** Check the sum and then append, and all eight see 100 cents and all eight succeed. The conditional `UPDATE` takes the row lock, re-reads the balance once the first debit commits, and refuses the other seven. The column isn't a cache of the log, it's the place where the rule is enforced.
+**Leilani:** Eight out of eight?
+
+**Tihomir:** When each debit sums the log first and then appends, yes. All eight see 100 cents, all eight go through, and the wallet ends at minus 380.
+
+**Leilani:** And the column?
+
+**Tihomir:** One out of eight. The conditional `UPDATE` locks the row, so the other seven wait, and once the first one commits they see 40 cents and update nothing. So the column isn't just a copy of the log, it's the thing the rule locks.
 
 ---
 
 ### The first trap
 
-**Leilani:** The fee account. How many payments touch it?
+**Leilani:** Now the fee account. How many payments touch it?
 
-**Tihomir:** All of them.
+**Tihomir:** All of them. Every payment updates that one row.
 
-**Leilani:** Numbers.
+**Leilani:** So they all queue for it.
 
-**Tihomir:** pgbench, three rounds of 30-second runs with the configurations interleaved, median first and every run after it. `pay_nofee` is the same script without the fee leg, and `pay_hot_append` writes the fee leg as an entry only.
+**Tihomir:** That's what I wanted to see. I ran three rounds of 30-second tests with the setups mixed together, and the table shows the median, then every run. `pay_nofee` is the same payment without the fee, and `pay_hot_append` writes the fee as a new entry only.
 
 ```
 pay_nofee         1 clients     327 tps    3.055 ms avg  fee-row wait      - ms   runs: 320 327 1597 
@@ -73,29 +79,39 @@ pay_hot_append    1 clients     343 tps    2.916 ms avg  fee-row wait      - ms 
 pay_hot_append   32 clients    5382 tps    5.946 ms avg  fee-row wait      - ms   runs: 5363 5382 5974 
 ```
 
-**Tihomir:** Without the fee leg, 32 clients do 5,515 payments a second. With it, they do 325, and a single client alone does 327. Of the 98 ms an average payment took at 32 clients, 94.7 ms was spent waiting on the fee row.
+**Leilani:** 325 a second at 32 clients?
 
-**Leilani:** Why exactly one client's worth?
+**Tihomir:** And 327 with one client on its own. Without the fee row, 32 clients did 5,515. I didn't expect the match to be that close.
 
-**Tihomir:** The row lock is held until `COMMIT` returns, and `COMMIT` waits for its WAL flush. Postgres normally folds many committing transactions into one flush, but the lock means only one fee-crediting transaction is ever at the commit point, so there is nothing to fold. Throughput becomes one over the flush time, however many clients you add.
+**Leilani:** Where does the time go?
+
+**Tihomir:** Waiting for the fee row. An average payment at 32 clients took about 98 ms, and 94.7 of those were spent in that queue.
+
+**Leilani:** But why exactly one client's worth?
+
+**Tihomir:** The lock is held until `COMMIT` returns, and `COMMIT` waits until the write-ahead log, the file every change goes to first, is on disk. Normally Postgres flushes many commits in one go, but with the lock only one fee payment is ever committing, so there's nothing to share. You get one flush per payment, however many clients you add.
 
 ![Every payment queues on one row, and each holds it through its own flush](assets/007/01-hot-row.gif)
 
-**Leilani:** And the large number at the end of some rows?
+**Leilani:** Some rows end in a much bigger number. 1,597?
 
-**Tihomir:** The first round, before the drive slowed down. One client did 1,597 payments a second there, about 0.6 ms each, and then commits settled near 3 ms for the rest of the run. I didn't dig into why, which is why every number I quote is a median.
+**Tihomir:** That's the first round, before the drive slowed down. One client took about 0.6 ms a payment there, and then commits settled near 3 ms for the rest. I didn't dig into why, so every number I quote is a median.
 
 ---
 
 ### Append, don't update
 
-**Leilani:** Fix it.
+**Leilani:** So how do you get the fee row out of the way?
 
-**Tihomir:** Stop updating the fee account. A credit can't be refused, so there is no rule to enforce at write time and nothing that needs the lock. The fee leg becomes one more appended entry, and that runs at 5,382 payments a second, within 3% of having no fee leg at all.
+**Tihomir:** Stop updating it. A credit can never be refused, so there's no rule to check and nothing that needs a lock. The fee becomes one more appended entry.
 
-**Leilani:** And its balance?
+**Leilani:** And that's fast?
 
-**Tihomir:** `SUM` over its entries, which is always right and gets slower forever. I timed it against accounts holding ten thousand to ten million entries.
+**Tihomir:** 5,382 payments a second at 32 clients, within 3% of having no fee at all.
+
+**Leilani:** Then how do you read our balance?
+
+**Tihomir:** `SUM` over its entries. That's always right, and it gets slower forever. I timed it on accounts with ten thousand up to ten million entries.
 
 ```
      entries    p50 ms    p99 ms
@@ -105,11 +121,13 @@ pay_hot_append   32 clients    5382 tps    5.946 ms avg  fee-row wait      - ms 
   10,000,000    834.55    895.48
 ```
 
-**Tihomir:** It's linear: 834.55 ms at ten million. At 5,382 payments a second, the fee account collects ten million entries in 31 minutes.
+**Leilani:** 834 milliseconds at ten million?
 
-**Leilani:** So?
+**Tihomir:** And it grows in a straight line. At 5,382 payments a second, the fee account collects ten million entries in 31 minutes.
 
-**Tihomir:** A checkpoint. Fold everything up to a boundary into a stored balance, then a read adds only the entries after it, and a background process rolls it forward every 50 ms.
+**Leilani:** So you can't sum the whole thing on every read.
+
+**Tihomir:** No, so I'd keep a checkpoint: a stored balance covering every entry up to some point. A read adds only the entries after it, which I'll call the tail, and a background job moves the checkpoint forward every 50 ms.
 
 ```sql
 WITH prev AS (
@@ -130,13 +148,13 @@ FROM prev, fresh
 
 ### The second trap
 
-**Leilani:** What's the boundary?
+**Leilani:** Up to what point?
 
-**Tihomir:** The highest id the checkpoint saw.
+**Tihomir:** The highest entry id the checkpoint has seen.
 
-**Leilani:** Run it.
+**Leilani:** Does that hold up with lots of writers?
 
-**Tihomir:** Thirty-two writers credited the fee account for 30 seconds while the checkpointer ran every 50 ms. Then I compared the checkpointed balance with `SUM` over the whole log.
+**Tihomir:** I tested it. Thirty-two writers credited the fee account for 30 seconds while the checkpoint ran every 50 ms, and then I compared its balance with `SUM` over the whole log.
 
 ```
 mode=naive writers=32 duration=30s checkpoint every 50 ms, 512 checkpoints
@@ -146,25 +164,35 @@ checkpoint + tail    :    97568 entries    4923979 cents
 lost                 :     2215 entries     110139 cents
 ```
 
-**Tihomir:** It lost 2,215 entries out of 99,783, which is 110,139 cents, and nothing raised an error.
+**Leilani:** It lost entries.
 
-**Leilani:** How?
+**Tihomir:** 2,215 out of 99,783, which is 110,139 cents. And nothing raised an error, which is the part that got me.
 
-**Tihomir:** A sequence hands out ids at `INSERT`, but rows become visible at `COMMIT`, and the two happen in different orders. Writer A takes 101 and is still inside its transaction when B takes 102 and commits. The checkpoint sees 102, folds it and records "up to 102". When A commits, 101 sits below the boundary, and no later checkpoint or read ever looks there again.
+**Leilani:** Where did they go?
+
+**Tihomir:** Ids are handed out at `INSERT`, but rows only become visible at `COMMIT`, and those don't happen in the same order. Say writer A takes id 101 and is still inside its transaction when B takes 102 and commits. The checkpoint sees 102, folds it in and records "up to 102".
+
+**Leilani:** And then A commits.
+
+**Tihomir:** And 101 is below the line. No later checkpoint or read ever looks there again.
 
 ![The checkpoint closes over an id that has not committed yet](assets/007/02-lost-entry.gif)
 
 **Leilani:** Wait a second before you checkpoint.
 
-**Tihomir:** That narrows the window without closing it, because any transaction that stays open longer than the delay is lost the same way. I didn't run that variant. The stall test further down holds one transaction open for 30 seconds, and no fixed delay I'd be willing to ship covers that.
+**Tihomir:** That shrinks the window without closing it, because any transaction open longer than the wait is lost the same way. I didn't run that version. The stall test later holds one open for 30 seconds, and I wouldn't ship a delay that covers that.
 
 ---
 
 ### Closing the window
 
-**Leilani:** Then what's the boundary?
+**Leilani:** Then where do you draw the line?
 
-**Tihomir:** "Finished", not "numbered". Postgres already tracks that: `pg_snapshot_xmin(pg_current_snapshot())` is the oldest transaction still running, so every transaction below it has committed or aborted. Each entry records the transaction that wrote it in an `xid8` column defaulting to `pg_current_xact_id()`, and the checkpoint folds everything below the watermark.
+**Tihomir:** At "finished", not "numbered". Postgres already tracks that: `pg_snapshot_xmin(pg_current_snapshot())` is the oldest transaction still running. I'll call it the watermark, because everything below it has committed or rolled back.
+
+**Leilani:** How does an entry know which transaction wrote it?
+
+**Tihomir:** I gave each entry an `xid8` column, the id of the transaction that wrote it, defaulting to `pg_current_xact_id()`. The checkpoint folds every entry below the watermark.
 
 ```sql
 WITH prev AS (
@@ -184,7 +212,11 @@ SELECT %(acct)s, %(seq)s, prev.balance + fresh.amount, mark.below,
 FROM prev, mark, fresh
 ```
 
-**Tihomir:** It runs in `REPEATABLE READ`, so the watermark and the sum come from the same snapshot. A read adds the entries at or above the stored watermark. Same 30-second run:
+**Leilani:** Couldn't the watermark move between reading it and summing?
+
+**Tihomir:** Not here. The checkpoint runs in `REPEATABLE READ`, so both come from the same snapshot, one frozen view of the data. A read then adds the entries at or above the stored watermark.
+
+**Leilani:** Same 30 seconds, same 32 writers?
 
 ```
 mode=watermark writers=32 duration=30s checkpoint every 50 ms, 479 checkpoints
@@ -198,15 +230,15 @@ lost                 :        0 entries          0 cents
 
 **Leilani:** Zero.
 
-**Tihomir:** Zero out of 83,886. An entry stays in the tail until its transaction has ended, and the checkpoint folds it only after that.
+**Tihomir:** Zero out of 83,886. An entry stays in the tail until its transaction has ended, and only then can the checkpoint fold it.
 
 ---
 
 ### What it costs
 
-**Leilani:** What does it cost?
+**Leilani:** What's the catch?
 
-**Tihomir:** The watermark can't move past a transaction that is still open, so one forgotten session stops the checkpoint for everyone. I opened a transaction that wrote a single row and then sat idle for 30 seconds.
+**Tihomir:** The watermark can't pass a transaction that's still open, so one forgotten session stops the checkpoint for everyone. I opened a transaction, wrote one row, and left it idle for 30 seconds.
 
 ```
   t s  tail entries  read p50 ms
@@ -221,26 +253,36 @@ lost                 :        0 entries          0 cents
    40           141         1.29
 ```
 
-**Tihomir:** The tail the read has to sum grew to 58,322 entries, and the read went from about 2 ms to 36 ms. It recovered within five seconds of the commit. At this rate an hour-long one leaves roughly eight million entries in the tail, and the ten-million `SUM` above took 834 ms. So `idle_in_transaction_session_timeout` and an alert on `age(backend_xid)` are part of this design, not extras.
+**Leilani:** The tail went to 58,000.
 
-**Leilani:** And payouts from the fee account?
+**Tihomir:** And the read went from about 2 ms to 36. Five seconds after the commit, it was back to normal.
 
-**Tihomir:** Credits can only raise that balance, so a payout only has to be serialized against other payouts: an advisory lock on the account, then checkpoint plus tail read under it. I haven't measured that path, and it's the first thing I would load-test before shipping.
+**Leilani:** Thirty seconds is short. What about an hour?
+
+**Tihomir:** At this rate, roughly eight million entries in the tail. That's most of the way back to the 834 ms `SUM` the checkpoint was meant to avoid.
+
+**Leilani:** So how do you stop that?
+
+**Tihomir:** I'd set `idle_in_transaction_session_timeout`, which ends a session left idle inside a transaction, and alert on `age(backend_xid)`, how old the oldest open one is. Those are part of this design, not extras.
+
+**Leilani:** And payouts? We do take money out of the fee account.
+
+**Tihomir:** Credits can only raise that balance, so a payout only has to wait for other payouts. I'd take an advisory lock on the account, a lock Postgres holds by name rather than on a row, then read checkpoint plus tail under it. I haven't measured that path, and it's the first thing I'd load-test before shipping.
 
 ---
 
 ### Conclusion
 
-**Leilani:** Summary.
+**Leilani:** Okay. Give me the short version.
 
-**Tihomir:** Four lines.
+**Tihomir:** Four things.
 
-**The balance column is where the overdraft rule lives.** One of eight concurrent debits got through, against eight of eight when the rule reads a `SUM`.
+**The balance column is where the overdraft rule lives.** One of eight debits sent at once got through, against eight of eight when the check read a `SUM`.
 
-**One row in every transaction caps the system at one client.** 32 clients managed 325 payments a second, one client 327, and the same load without the fee row 5,515.
+**One row in every payment makes 32 clients as fast as one.** 32 clients managed 325 payments a second, one client 327, and the same load without the fee row 5,515.
 
-**A checkpoint boundary has to mean finished, not numbered.** `max(id)` lost 2,215 entries in 30 seconds. The `xid8` watermark lost none.
+**A checkpoint has to stop at "finished", not at "numbered".** The highest id lost 2,215 entries in 30 seconds. The transaction watermark lost none.
 
-**The watermark stops behind any open transaction.** Thirty idle seconds grew the tail to 58,322 entries.
+**The watermark can't move past an open transaction.** Thirty idle seconds grew the tail to 58,322 entries.
 
-The standard answer puts every balance in the same place. In this design they live in two. Wallets keep a column because they need a lock to refuse a debit. The fee account keeps a log because it never refuses anything and can't afford a lock. The real question isn't where the balance lives, it's which accounts are allowed to say no.
+The standard answer puts every balance in the same place. Here they live in two. Wallets keep a column, because they need a lock to refuse a debit. The fee account keeps a log, because it never refuses anything and can't afford the lock. So before deciding where a balance lives, ask which accounts are allowed to say no.

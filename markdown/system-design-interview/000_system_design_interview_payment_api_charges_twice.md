@@ -1,6 +1,6 @@
 # System Design Interview: How Do You Make Sure a Payment API Never Charges a Customer Twice?
 
-#### Every answer to this question stops one layer too early. Here is the layer underneath, with the numbers from actually running it.
+#### Most answers to this question stop one layer too early. Here's the layer underneath, and what happened when I actually ran it.
 
 **By Tihomir Manushev**
 
@@ -10,21 +10,21 @@
 
 A payments team at a bike-share company, hiring a senior backend engineer. The interviewer is Ratko.
 
-This is the interview question, and the standard answer is "use an idempotency key with a unique constraint." That answer is not wrong. It is also not sufficient, and the gap between those two things is where real money goes missing.
+The usual answer to this one is "use an idempotency key with a unique constraint." The key is an ID for the payment attempt, so the server can tell that a retry is the same attempt. That answer isn't wrong, but it isn't enough, and the gap between the two is where real money goes missing.
 
-Everything below was run against PostgreSQL 17.6 with eight concurrent requests hitting the same key. The numbers are from those runs, not from reasoning about them.
+Everything below ran on PostgreSQL 17.6, with eight concurrent requests hitting the same key. The numbers come from those runs, not from reasoning about them.
 
 ---
 
 ### The question
 
-**Ratko:** A rider taps to pay for a bike rental. The mobile client times out and retries. How do you guarantee they are charged once?
+**Ratko:** A rider taps to pay for a bike rental. The app times out and retries. How do you make sure they're charged once?
 
-**Tihomir:** The client sends an idempotency key with the request — something stable that identifies the attempt rather than the retry, like `RIDE-8842`. The server checks whether it has seen that key, and if it has, it returns the original result instead of charging again.
+**Tihomir:** The app sends an idempotency key with the request. It names the attempt, not the retry, so something like `RIDE-8842` stays the same however many times the app resends. If the server has seen that key before, it returns the first result instead of charging again.
 
-**Ratko:** Show me the handler.
+**Ratko:** And what does the server actually do with the key?
 
-**Tihomir:** The two collaborators it leans on, first — the provider call is an ordinary HTTP request to Stripe or Adyen, and the two helpers just shape a response:
+**Tihomir:** First, the pieces it leans on. The provider call is a normal HTTP request to Stripe or Adyen, and the other two helpers just build a response:
 
 ```python
 def charge_provider(idempotency_key: str) -> str:
@@ -36,7 +36,7 @@ def already_charged() -> str: ...
 def in_flight_or_done() -> str: ...
 ```
 
-And the handler:
+Then the handler: look the key up, and if it's new, charge and save a row.
 
 ```python
 def handle_purchase(conn, KEY: str) -> str:
@@ -55,21 +55,21 @@ def handle_purchase(conn, KEY: str) -> str:
     return "confirmed"
 ```
 
-**Ratko:** Good. Now eight retries arrive at the same moment.
+**Ratko:** Looks reasonable. Now eight retries land at the same moment.
 
 ---
 
 ### The first trap
 
-**Tihomir:** Then every one of them runs the `SELECT` before any of them runs the `INSERT`.
+**Tihomir:** Then all eight run the lookup, the `SELECT`, before any of them gets to the `INSERT`.
 
 ![Two requests both pass the check before either writes](assets/000/01-race.gif)
 
-All eight see no rows, so all eight call the provider.
+None of them finds a row, so all eight call the provider.
 
-**Ratko:** How confident are you?
+**Ratko:** All eight? Not just two?
 
-**Tihomir:** I ran it. Eight threads, released from a barrier so they arrive together:
+**Tihomir:** All eight. I ran it with eight threads held behind a barrier, which is just a starting gate, so they all go at once:
 
 ```
 requests sent:      8
@@ -77,19 +77,19 @@ payment rows:       8
 times money moved:  8
 ```
 
-The rider paid for one ride eight times.
+One ride, paid for eight times.
 
-**Ratko:** So what do you add?
+**Ratko:** Eight rows for one key. How do you stop that?
 
-**Tihomir:** A unique constraint on `idempotency_key`, so the database refuses the duplicate rows.
+**Tihomir:** A unique constraint on `idempotency_key`. Then the database refuses a second row with the same key.
 
 ---
 
 ### The second trap
 
-**Ratko:** Run it again with the constraint.
+**Ratko:** Run it again with the constraint on.
 
-**Tihomir:**
+**Tihomir:** Same eight requests:
 
 ```
   1 x 201 charged
@@ -98,29 +98,29 @@ payment rows:       1
 times money moved:  8
 ```
 
-**Ratko:** One row.
+**Ratko:** One row. So it worked?
 
 **Tihomir:** One row, and eight charges.
 
-**Ratko:** Explain that.
+**Ratko:** How? Seven of them failed.
 
-**Tihomir:** The constraint protected the database. It did not protect the money. By the time the `INSERT` is rejected, the provider call has already happened — it is an HTTP request, and it does not roll back when my transaction does.
+**Tihomir:** They failed at the `INSERT`, and by then they'd already called the provider. That call is an HTTP request to someone else's system, and it doesn't roll back when my transaction does.
 
-**Ratko:** So the table looks correct.
+**Ratko:** But the table looks right.
 
-**Tihomir:** The table looks perfect, and that is what makes this the dangerous version. An engineer checks the data, sees one payment row, and closes the ticket. The rider paid $28.00 for a $3.50 ride, and nothing in the schema disagrees.
+**Tihomir:** It looks perfect, and that's what makes this version dangerous. Someone checks the data, sees one payment row and closes the ticket. Meanwhile the rider paid $28.00 for a $3.50 ride, and nothing in the schema disagrees.
 
-**Ratko:** This is the part most answers skip.
+**Ratko:** Most answers stop right here.
 
-**Tihomir:** Because the unique constraint feels like the finish line. It is only the finish line if the entire operation lives inside the transaction, and a payment does not.
+**Tihomir:** Because the unique constraint feels like the finish line. It only is if the whole operation happens inside the transaction, and a payment doesn't.
 
 ---
 
 ### The third trap
 
-**Ratko:** Raise the isolation level. `SERIALIZABLE` prevents write skew — does it fix this?
+**Ratko:** Then make the database stricter. Does `SERIALIZABLE` fix it?
 
-**Tihomir:** No. Same eight requests, same code, `SERIALIZABLE`:
+**Tihomir:** No, but I ran it anyway. `SERIALIZABLE` is Postgres's strictest mode: transactions behave as if they ran one after another, and any that can't get cancelled. Same eight requests, same code:
 
 ```
   1 x 201 charged
@@ -129,25 +129,25 @@ payment rows:       1
 times money moved:  8
 ```
 
-**Ratko:** Identical.
+**Ratko:** Exactly the same.
 
-**Tihomir:** Identical, because isolation levels govern what the database does with concurrent transactions, and the charge is not in the database. Postgres correctly serialized eight transactions and correctly rejected seven of them — after all eight had already spent the rider's money.
+**Tihomir:** Because the isolation level only decides what Postgres does with transactions that run at the same time, and the charge isn't in Postgres. It correctly cancelled seven of the eight, after all eight had spent the rider's money.
 
-**Ratko:** So no isolation level saves you.
+**Ratko:** So no isolation level saves you?
 
-**Tihomir:** None of them can. The provider call is outside the system that provides the guarantee.
+**Tihomir:** None of them can. The provider call happens outside the system that gives the guarantee.
 
 ---
 
 ### The fix
 
-**Ratko:** Then what is the actual answer?
+**Ratko:** Then what's the real answer?
 
-**Tihomir:** Reverse the order. Claim the key *before* calling the provider, not after.
+**Tihomir:** Flip the order. Claim the key before calling the provider, not after.
 
 ![Charge-first versus claim-first](assets/000/02-order.png)
 
-The insert becomes the lock.
+The insert becomes the lock: whoever writes the row first is the only one allowed to charge.
 
 ```python
 def handle_purchase(cur, KEY: str) -> str:
@@ -168,13 +168,13 @@ def handle_purchase(cur, KEY: str) -> str:
     return "confirmed"
 ```
 
-**Ratko:** Why does that work when the constraint alone did not?
+**Ratko:** It's the same constraint as before. Why does it work now?
 
-**Tihomir:** Because the constraint is now arbitrating *who is allowed to call the provider*, instead of auditing who already did. `ON CONFLICT DO NOTHING ... RETURNING` gives exactly one caller a row; everyone else gets `None` and stops before spending anything.
+**Tihomir:** Because now it decides who's allowed to call the provider, instead of recording who already did. `ON CONFLICT DO NOTHING ... RETURNING` means "insert unless the key exists, and tell me if you did", so exactly one caller gets a row back. Everyone else gets `None` and stops before spending anything.
 
-**Ratko:** Numbers.
+**Ratko:** With the same eight at once?
 
-**Tihomir:**
+**Tihomir:** Same eight, and this time there's one charge:
 
 ```
   1 x 201 charged
@@ -187,7 +187,7 @@ times money moved:  1
 
 ### The fourth trap
 
-**Ratko:** Your worker calls the provider. The provider succeeds. The worker is killed before the `UPDATE`.
+**Ratko:** Your worker calls the provider, and the provider succeeds. Then the worker gets killed before the `UPDATE`.
 
 **Tihomir:** Then the row is stranded.
 
@@ -201,29 +201,29 @@ I killed the process at exactly that point:
  RIDE-2001       | pending | (none)       |            1
 ```
 
-Money moved, and the status says `pending`.
+The money moved, but the status still says `pending`.
 
-**Ratko:** And the client retries.
+**Ratko:** And the app retries.
 
-**Tihomir:** And gets `409` forever.
+**Tihomir:** And gets a `409`, "in flight or already done", forever.
 
 ```
   8 x 409 in flight / already done
 ```
 
-The claim is doing its job — it refuses to let anyone charge again — but nothing will ever complete it.
+The claim is doing its job, because it won't let anyone charge again. But nothing will ever finish it.
 
-**Ratko:** So the fix has its own failure mode.
+**Ratko:** So your fix made a new problem.
 
-**Tihomir:** Every fix does. I traded "charged twice" for "charged once and stuck," which is strictly better but not finished.
+**Tihomir:** Yeah. I swapped "charged twice" for "charged once and stuck." That's better, but it isn't finished.
 
 ---
 
 ### Closing the window
 
-**Ratko:** Finish it.
+**Ratko:** A payment stuck forever isn't acceptable either. How does it get unstuck?
 
-**Tihomir:** A sweeper reconciles rows that have been `pending` too long.
+**Tihomir:** With a sweeper, a background job that picks up rows that have sat in `pending` too long.
 
 ![The reconciliation path](assets/000/04-recovery.png)
 
@@ -238,15 +238,19 @@ def sweep(cur) -> None:
                     " WHERE payment_id=%s", (ref, payment_id))
 ```
 
-For each one, call the provider again with the same idempotency key.
+For each one, it calls the provider again with the same idempotency key.
 
-**Ratko:** You are re-calling a provider that may have already charged.
+**Ratko:** Hold on. That provider may have charged already.
 
-**Tihomir:** Which is safe *only* because the provider dedupes on that key. That is the load-bearing assumption in the whole design, and it is why the key has to travel all the way to the provider rather than stopping at my database. Stripe, Adyen and PayPal all support it. If a provider does not, you cannot build this, and you need a reconciliation file instead.
+**Tihomir:** It might have, and that's fine only because the provider dedupes on the key: if it's seen the key, it hands back the first charge instead of making a new one. The whole design rests on that. It's why the key has to travel all the way to the provider instead of stopping at my database.
 
-**Ratko:** Result?
+**Ratko:** Does every provider do that?
 
-**Tihomir:**
+**Tihomir:** Stripe, Adyen and PayPal all support it. If yours doesn't, you can't build this, and you're back to a reconciliation file: their list of charges, matched against your table.
+
+**Ratko:** So what happens to the stuck one?
+
+**Tihomir:** The sweeper finds it and closes it:
 
 ```
 stuck payments found: 1
@@ -257,43 +261,57 @@ stuck payments found: 1
  RIDE-2001       | charged | ch_70        |            1
 ```
 
-Still one charge, and `FOR UPDATE SKIP LOCKED` keeps two sweeper instances off the same row.
+Still one real charge. And `FOR UPDATE SKIP LOCKED` makes a second copy of the sweeper skip any row the first one has locked, so two of them never work on the same payment.
 
 ---
 
 ### What it costs
 
-**Ratko:** What did you give up?
+**Ratko:** What did all this cost you?
 
-**Tihomir:** Throughput. `pgbench`, 8 clients, 20 seconds, comparing a plain insert against claim-plus-update:
+**Tihomir:** Throughput. I ran `pgbench`, Postgres's load-testing tool, with 8 clients for 20 seconds, comparing a plain insert with the claim plus the update:
 
 | | latency | tps |
 |---|---|---|
 | Plain `INSERT` | 1.356 ms | 5,901 |
 | Claim + `UPDATE` | 1.709 ms | 4,680 |
 
-About **21% fewer transactions per second**, and an extra 0.35 ms.
+That's about **21% fewer transactions per second**.
 
-**Ratko:** That is not nothing.
+**Ratko:** 21% for one extra statement?
 
-**Tihomir:** It is not, and I would not present it as free. Most of it is the second round trip — the `UPDATE` that closes the claim. The unique index costs storage too: 3.9 MB against an 8.9 MB table at 93,561 rows, so roughly 44% of the table size.
+**Tihomir:** It isn't nothing, and I wouldn't call it free. Most of it is the second round trip to the database, the `UPDATE` that closes the claim, and it adds about 0.35 ms to every payment.
+
+**Ratko:** Anything besides speed?
+
+**Tihomir:** Disk. The unique index came to 3.9 MB, on a table of 8.9 MB.
+
+**Ratko:** That's almost half the table again.
+
+**Tihomir:** About 44%, measured at 93,561 rows.
 
 **Ratko:** Would you take that trade?
 
-**Tihomir:** For payments, without hesitating. For a notification service, probably not — a duplicate push notification is an annoyance, and 21% throughput is real money at scale. The pattern is correct; whether it is *worth* it depends entirely on what a duplicate costs you, and that is a product question rather than an architecture one.
+**Tihomir:** For payments, without thinking twice. For a notification service, probably not: a duplicate push notification is an annoyance, and 21% of your throughput is real money at scale.
+
+**Ratko:** So it depends.
+
+**Tihomir:** On what a duplicate costs you. That's a product question more than an architecture one.
 
 ---
 
 ### Conclusion
 
-The summary Ratko was waiting for is four lines.
+**Ratko:** Okay. Give me the short version.
 
-**Claim the key before the side effect, not after.** The unique constraint has to gate the provider call, not audit it.
+**Tihomir:** Four things.
 
-**Send the key to the provider too.** Your database can prevent a second attempt; only the provider can make a repeated attempt harmless.
+**Claim the key before you charge, not after.** The unique constraint has to decide who calls the provider, not record who already did.
 
-**Expect to be killed between the two writes.** A `pending` state plus a sweeper is the difference between "charged once" and "charged once and stuck."
+**Send the key to the provider too.** Your database can stop a second attempt, but only the provider can make a repeated one harmless.
 
-**Know the price.** 21% throughput and 44% index overhead, measured — cheap for payments, possibly not for anything else.
+**Expect to be killed between the two writes.** A `pending` status and a sweeper are the difference between "charged once" and "charged once and stuck."
 
-The reason the standard answer stops at the unique constraint is that the constraint is where the *database* problem ends. The interesting half of this question lives in the gap between your transaction and an external system that has never heard of it, and no isolation level will close that gap for you.
+**Know the price.** About 21% less throughput and an index 44% the size of the table, both measured. That's cheap for payments, and maybe not for anything else.
+
+The usual answer stops at the unique constraint because that's where the database's part of the problem ends. The harder half lives between your transaction and an outside system that has never heard of it, and no isolation level will close that gap for you.

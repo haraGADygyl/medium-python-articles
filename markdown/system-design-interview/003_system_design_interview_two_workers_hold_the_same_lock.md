@@ -1,6 +1,6 @@
 # System Design Interview: Two Workers Hold the Same Lock. How Is That Possible?
 
-#### A `SET NX PX` lock let 24 scenes have two live owners at once — and the watchdog everybody adds does not fix it
+#### A Redis lock with an expiry gave 24 scenes two owners at once, and the watchdog everyone adds doesn't fix it
 
 **By Tihomir Manushev**
 
@@ -10,7 +10,7 @@
 
 A data platform team at a satellite imagery company, hiring a senior backend engineer. The interviewer is Ingrid.
 
-`SET key value NX PX 30000` is the shortest correct-looking answer in distributed systems, and it is what almost everyone writes. The part that gets left out is what the expiry means: the lock can end while the process holding it is still using it, and nothing tells that process it has been demoted.
+The usual answer to "only one worker at a time" is one line of Redis: `SET key value NX PX 30000`. It creates the key only if nobody holds it, and deletes it after 30 seconds. It looks correct, but the lock can expire while the worker holding it is still using it, and nothing tells that worker it has lost it.
 
 Everything below ran on Redis 7.4.11 and PostgreSQL 17.6, six worker processes on a Ryzen 5 3600, Python 3.12.
 
@@ -18,11 +18,9 @@ Everything below ran on Redis 7.4.11 and PostgreSQL 17.6, six worker processes o
 
 ### The question
 
-**Ingrid:** Scenes arrive from a downlink and each one has to be tiled exactly once. Six worker processes, all of them polling the same pending set. How do you stop two of them tiling the same scene?
+**Ingrid:** Scenes come down from the satellite, and each one has to be tiled exactly once. Six worker processes all poll the same list of pending scenes. How do you stop two of them tiling the same scene?
 
-**Tihomir:** A lock per scene in Redis. `SET NX` so only one worker can take it, and a TTL so a crashed worker does not block the scene forever. Whoever gets the key does the work and writes the result.
-
-The shared setup for everything below:
+**Tihomir:** A lock per scene in Redis. `NX` means the key is only created if nobody has it, so exactly one worker wins. `PX` gives it an expiry in milliseconds, so a crashed worker can't block a scene forever. Here's the shared setup, with a loop of hashing standing in for the tiling.
 
 ```python
 import hashlib
@@ -56,7 +54,9 @@ def render_tiles(scene_id: str, worker_id: str, seconds: float) -> str:
     return digest.hexdigest()[:16]
 ```
 
-And the worker, in the shape almost everyone writes it:
+**Ingrid:** And the worker?
+
+**Tihomir:** The way almost everyone writes it: take the lock, tile the scene, write the row, delete the key.
 
 ```python
 def process_naive(scene_id: str, worker_id: str, work_seconds: float) -> bool:
@@ -83,17 +83,25 @@ def process_naive(scene_id: str, worker_id: str, work_seconds: float) -> bool:
         pool.delete(key)
 ```
 
-**Ingrid:** Tiling takes how long?
+**Ingrid:** Your expiry is two seconds. How long does a scene take?
 
-**Tihomir:** Between 0.4 and 1.2 seconds in my lab, so the two-second TTL has plenty of headroom. That headroom is the whole argument for the design, and it is the thing I want to attack.
+**Tihomir:** Between 0.4 and 1.2 seconds in my lab, so there's plenty of room. That room is the whole argument for this design.
 
-**Ingrid:** Attack it.
+**Ingrid:** Plenty of room, as long as the worker keeps running.
 
 ---
 
 ### The first trap
 
-**Tihomir:** I froze a worker mid-job with `SIGSTOP` — a garbage collection pause, a hypervisor stealing the CPU, a swap storm, take your pick. Thirty percent of jobs, for 2.2 to 3.4 seconds. Eighty scenes arriving over 45 seconds. I logged every acquire and every release with timestamps so I could count overlapping ownership directly.
+**Tihomir:** So I stopped them. I froze workers with `SIGSTOP`, a signal that pauses the whole process until it's told to continue. In real life that's a long garbage-collection pause, a virtual machine losing its CPU, or a machine swapping to disk.
+
+**Ingrid:** For how long?
+
+**Tihomir:** Thirty percent of jobs froze for 2.2 to 3.4 seconds.
+
+**Ingrid:** Longer than the expiry.
+
+**Tihomir:** On purpose. Eighty scenes arrived over 45 seconds, and I logged every time a worker took or released a lock, so I could count the overlaps directly.
 
 ```
 naive SET NX PX, 6 workers, ttl=2000ms, stall=2.2-3.4s
@@ -107,19 +115,27 @@ naive SET NX PX, 6 workers, ttl=2000ms, stall=2.2-3.4s
   survivor is not the last owner     16
 ```
 
-**Ingrid:** Two live owners on twenty-four scenes.
+**Ingrid:** Twenty-four scenes with two owners at once.
 
-**Tihomir:** For up to 2.31 seconds each. And it is worse than duplicated work. Sixteen scenes ended up with the wrong row — the frozen worker woke up, wrote its result over the newer one, and the database accepted it, because as far as Postgres is concerned that is a perfectly ordinary `UPDATE`.
+**Tihomir:** For as long as 2.31 seconds. I expected some work to run twice, but not this: on 16 scenes, the row in the database came from the wrong worker.
+
+**Ingrid:** The frozen one?
+
+**Tihomir:** Yes. It woke up, finished, and wrote its result over the newer one. Postgres accepted it, because to Postgres that's a perfectly ordinary `UPDATE`.
 
 ![The lock expires while the holder is frozen](assets/003/01-expiry.gif)
 
-**Ingrid:** Redis did nothing wrong.
+**Ingrid:** So Redis did nothing wrong.
 
-**Tihomir:** Redis did exactly what I asked. `PX 2000` means "delete this key in two seconds", not "tell the holder when it stops being the holder". There is no callback, no invalidation, no error on the next command. The worker's local variables still say it owns the lock, and there is no query it can run that makes that belief safe, because the answer is stale the moment it arrives.
+**Tihomir:** Exactly what I asked. `PX 2000` means "delete this key in two seconds". It doesn't mean "tell the holder when it stops being the holder".
 
-**Ingrid:** Where else does that show up?
+**Ingrid:** Can't the worker just check before it writes?
 
-**Tihomir:** The release. Seven times in that run a worker's `DEL` removed a lock belonging to someone else — it woke up, finished, and deleted whatever key happened to be sitting there. That is a second worker being silently evicted mid-job by a process that has nothing to do with it.
+**Tihomir:** It can ask, but the answer is already old when it comes back. Nothing warns it, so its own variables still say it owns the lock.
+
+**Ingrid:** Does it break anything besides the write?
+
+**Tihomir:** The release. Seven times in that run, a worker woke up, finished, and its `DEL` removed a lock that now belonged to someone else. So a second worker lost its lock mid-job to a process that had nothing to do with it.
 
 ![A's release deletes B's lock](assets/003/02-unlock.gif)
 
@@ -127,9 +143,13 @@ naive SET NX PX, 6 workers, ttl=2000ms, stall=2.2-3.4s
 
 ### Guarding the release
 
-**Ingrid:** Fix the release.
+**Ingrid:** That one sounds easy to fix.
 
-**Tihomir:** Compare-and-delete, in Lua so it is atomic. Delete the key only if the value is still mine. And while I am there, a watchdog thread that extends the TTL every third of the lease, with the same ownership check so it cannot resurrect a lock it has already lost.
+**Tihomir:** It is. Compare-and-delete: remove the key only if its value is still my random ID. It's a small Lua script, because Redis runs a script as one step, so nobody sneaks in between the check and the delete.
+
+**Ingrid:** And the expiry?
+
+**Tihomir:** While I was there, I added a watchdog, a background thread that pushes the expiry back every third of the lease. It does the same ownership check, so it can't bring back a lock it has already lost.
 
 ```python
 UNLOCK_IF_MINE = """
@@ -156,9 +176,9 @@ def heartbeat(key: str, me: str, stop: threading.Event) -> None:
         extend_if_mine(keys=[key], args=[me, LOCK_TTL_MS])
 ```
 
-**Ingrid:** Result?
+**Ingrid:** Did it help?
 
-**Tihomir:** Wrong-owner deletes went from seven to zero, and it stays zero. That bug is genuinely fixed, and the fix is four lines. The rest of the run barely moved:
+**Tihomir:** Deleting someone else's lock went from seven to zero, and it stays zero. That bug is really fixed, with four lines. The rest barely moved.
 
 ```
 compare-and-delete + watchdog, same conditions
@@ -169,17 +189,17 @@ compare-and-delete + watchdog, same conditions
   survivor is not the last owner     12
 ```
 
-**Ingrid:** Twelve scenes still wrong.
+**Ingrid:** Twelve scenes still ended up with the wrong row.
 
-**Tihomir:** Eighteen scenes still had two owners. The watchdog moved the numbers a little because it wins the races where the worker is merely slow, and it does nothing for the case I actually built the lab around.
+**Tihomir:** And 18 still had two owners. The watchdog wins when a worker is just slow, and it does nothing for the frozen worker, which is the case I built the lab around.
 
 ---
 
 ### The second trap
 
-**Ingrid:** Why not?
+**Ingrid:** Nothing? Keeping the lock alive is the watchdog's whole job.
 
-**Tihomir:** Because a watchdog is a thread inside the process that is failing. I ran that as a separate four-cell experiment: one lock, a two-second TTL, five seconds of work, with and without the watchdog, and with the delay caused two different ways.
+**Tihomir:** But it's a thread inside the process that's failing. I tested that alone: one lock, a two-second expiry, five seconds of work, with and without the watchdog, and the delay caused two ways.
 
 ```
 does the watchdog keep the lock alive? (ttl=2000ms, work=5s)
@@ -189,27 +209,35 @@ does the watchdog keep the lock alive? (ttl=2000ms, work=5s)
   SIGSTOP (stop-the-world)   watchdog=True   lock still mine at the end: False
 ```
 
-**Ingrid:** Read me row four.
+**Ingrid:** The last row says false with the watchdog on.
 
-**Tihomir:** A stopped process has a stopped watchdog. `SIGSTOP` freezes every thread, and a stop-the-world GC pause, a suspended VM and a machine that has stopped scheduling you do the same thing. The watchdog only survives the failure mode where the process is still running, which is the failure mode where I did not really need it.
+**Tihomir:** Because a frozen process has a frozen watchdog. `SIGSTOP` stops every thread, and so does a long garbage-collection pause. The watchdog only helps while the process is still running, which is when I didn't really need it.
 
-**Ingrid:** So raise the TTL.
+**Ingrid:** Then make the expiry longer.
 
-**Tihomir:** That is the answer I gave the first time I met this, and it is not one. A longer TTL makes the window rarer and makes every crash cost more, because a dead worker's scene is now stuck for the length of the lease. Whatever number I pick, the window is the maximum pause I can imagine, and I cannot imagine the maximum pause. There is no TTL that makes the guarantee true — there are only TTLs that make it fail less often.
+**Tihomir:** That's what I said the first time this caught me. A longer expiry makes the overlap rarer, but now a crashed worker's scene sits stuck for the whole lease.
+
+**Ingrid:** How long is long enough?
+
+**Tihomir:** As long as the longest pause, and I can't know the longest pause. No expiry makes the guarantee true; some just make it fail less often.
 
 ![The process cannot tell it is a zombie](assets/003/03-belief.png)
 
-**Ingrid:** Then what is the actual guarantee?
+**Ingrid:** Then what can you actually promise?
 
-**Tihomir:** Mutual exclusion in Redis is not the guarantee I need. What I need is that a stale writer's write does not land. Those are different problems, and I had been solving the wrong one.
+**Tihomir:** Honestly, I'd been solving the wrong problem. I don't need Redis to promise that only one worker runs. I need an old worker's write to not land.
 
 ---
 
 ### Fencing tokens
 
-**Ingrid:** Solve the right one.
+**Ingrid:** How do you stop it landing?
 
-**Tihomir:** Every acquisition gets a monotonically increasing token — `INCR` on a per-scene counter — and the token travels with the write. The resource stores the highest token it has ever accepted and refuses anything lower. Two extra pieces: one column, one `WHERE` clause.
+**Tihomir:** A fencing token. Every time a worker takes the lock, it also gets a number from a per-scene counter with `INCR`, so each new owner's number is bigger than the last one's. That number travels with the write.
+
+**Ingrid:** And the database checks it?
+
+**Tihomir:** Postgres keeps the highest number it has accepted for each scene and refuses anything lower. That's one extra column and one `WHERE` clause.
 
 ```sql
 CREATE TABLE scene_product (
@@ -255,9 +283,13 @@ def process_fenced(scene_id: str, worker_id: str, work_seconds: float) -> bool:
         unlock_if_mine(keys=[key], args=[me])
 ```
 
-**Ingrid:** Explain the `WHERE` on the conflict branch.
+**Ingrid:** What's the `WHERE` doing on the conflict branch?
 
-**Tihomir:** `ON CONFLICT DO UPDATE` takes an optional predicate, and if it is false the row is left alone and `rowcount` comes back zero. So the write is not a write plus a check — it is one statement that either advances the row or refuses to. There is no window between deciding and doing, which is what went wrong everywhere else in this design.
+**Tihomir:** `ON CONFLICT DO UPDATE` means insert the row, or update it if it already exists. With a `WHERE`, the update only happens when the condition holds; otherwise the row stays as it was and `rowcount` comes back zero.
+
+**Ingrid:** So there's no check and then a write.
+
+**Tihomir:** Right, it's one statement that either moves the row forward or refuses. There's no gap between deciding and doing, and that gap is what broke everything else.
 
 ```
 fencing tokens, same conditions
@@ -268,46 +300,66 @@ fencing tokens, same conditions
   survivor is not the last owner     0
 ```
 
-**Ingrid:** Zero.
+**Ingrid:** Zero wrong rows.
 
-**Tihomir:** Fourteen stale writes bounced. Sixteen writes happened without the lock and were accepted anyway, and that is correct — those workers had the highest token issued, so nobody newer existed to be trampled. The lock had merely expired around them.
+**Tihomir:** Zero. Fourteen old writes bounced off the database. Sixteen more writes happened without the lock and were accepted, and that's correct.
+
+**Ingrid:** Accepted without the lock is correct?
+
+**Tihomir:** Those workers held the newest token, so there was no newer result to overwrite. Their lock had just expired around them.
 
 ![The resource refuses the older token](assets/003/04-fence.gif)
 
-**Ingrid:** And the twenty-two scenes with two owners?
+**Ingrid:** And the 22 scenes with two owners?
 
-**Tihomir:** Still twenty-two. Fencing does not stop double execution and never claimed to — the tiling ran twice, I paid for the CPU twice, and one of the two results was thrown away at the door. What it stops is the corruption. If duplicate work is the thing that hurts, the answer is somewhere else entirely.
+**Tihomir:** Still 22. Fencing doesn't stop the work running twice: I paid for the CPU twice and threw one result away. What it stops is the wrong result winning.
 
 ---
 
 ### What it costs
 
-**Ingrid:** Price it.
+**Ingrid:** That extra counter isn't free.
 
-**Tihomir:** One `INCR` round trip per acquisition and eight bytes per row, and the write path goes from 0.874 ms to 1.005 ms at p50 over three thousand iterations — about 15%, of which almost all is the extra Redis call. p99 goes from 1.40 ms to 1.80 ms. Against a job that takes 900 milliseconds it does not register.
+**Tihomir:** One more Redis call per lock and eight bytes per row. Over three thousand writes, the median went from 0.874 ms to 1.005 ms, about 15%, and nearly all of it is that extra call.
 
-**Ingrid:** What does it actually cost, then?
+**Ingrid:** And the slow end?
 
-**Tihomir:** The resource has to cooperate, and that is the real price. Fencing works here because Postgres can compare a token inside the same statement that writes. Against a plain object store with no conditional write, there is nowhere to put the check, and no client-side version of it is safe — the same gap between reading and writing reopens. That constraint decides the architecture, not the lock library.
+**Tihomir:** The 99th percentile went from 1.40 ms to 1.80 ms. Against a job that takes 900 milliseconds, nobody will notice.
 
-**Ingrid:** And the failure you have not measured?
+**Ingrid:** So the real price is somewhere else.
 
-**Tihomir:** Redis itself. Everything above is one Redis node, and a failover can hand the same lock to two workers through replication lag rather than expiry — Redlock exists for that and is argued about for good reason. Fencing covers it too, since tokens from a divergent replica still lose to the resource's high-water mark, but I have not run a failover and I would not claim a number for it.
+**Tihomir:** The thing you write to has to cooperate. This works because Postgres can compare the token in the same statement that writes.
 
-**Ingrid:** Anything else you are guessing at?
+**Ingrid:** What if it's a plain object store?
 
-**Tihomir:** What happens when a token is issued and the worker dies before writing. The counter skips a value, and nothing breaks, because the guarantee is monotonicity and not density. I would still want that written down before someone reads the sequence as a job count.
+**Tihomir:** If it has no conditional write, there's nowhere to put the check. Checking from the client doesn't work either, because the gap between reading and writing comes back.
+
+**Ingrid:** What haven't you measured?
+
+**Tihomir:** Redis itself failing. This was one Redis node, and if it fails over to a copy that hasn't caught up, two workers can get the same lock with no expiry involved. Redlock, the multi-node version, exists for that, and it's argued about.
+
+**Ingrid:** Does fencing cover that case?
+
+**Tihomir:** It should, because a token from the stale copy still loses to the highest one Postgres has seen. But I haven't run a failover, so I won't give you a number for it.
+
+**Ingrid:** Anything else you're guessing at?
+
+**Tihomir:** A worker that gets a token and dies before writing. The counter skips a number and nothing breaks, because the numbers only have to go up, not leave no gaps. I'd still write that down before someone reads the counter as a job count.
 
 ---
 
 ### Conclusion
 
-**The TTL ends the lease, not the work.** Six workers, a two-second TTL and ordinary stop-the-world pauses put two live owners on 24 of 80 scenes, for as long as 2.31 seconds each.
+**Ingrid:** If you had to sum it up?
 
-**A watchdog only survives the failures where you did not need it.** Extending the lease kept the lock alive through five seconds of slow-but-running work and lost it every time to `SIGSTOP` — the thread doing the extending is frozen by the same pause.
+**Tihomir:** Four things.
 
-**Compare-and-delete is still worth four lines.** Wrong-owner releases went from seven to zero, and that bug evicts workers who did nothing wrong.
+**The expiry ends the lock, not the work.** Six workers, a two-second expiry and ordinary pauses put two live owners on 24 of 80 scenes, for as long as 2.31 seconds.
 
-**Fencing tokens move the check to the resource, which is the only place it can be true.** Stale writes went from 32 accepted to 14 refused and zero corrupt survivors, at 0.131 ms and eight bytes per row.
+**A watchdog only survives the failures where you didn't need it.** It kept the lock through five seconds of slow work and lost it to `SIGSTOP` every time, because the pause freezes the watchdog too.
 
-The reason this question is asked is that `SET NX PX` really is the right primitive — nothing above replaces it. What the standard answer gets wrong is where the guarantee lives. A lock in Redis is a hint about who *should* be working; only the thing being written to can decide whose work counts.
+**Compare-and-delete is still worth four lines.** Deleting someone else's lock went from seven times to zero.
+
+**Fencing tokens let the database decide whose write counts.** Without them, 32 writes landed without the lock; with them, 14 old writes were refused and no scene kept the wrong row, for 0.131 ms and eight bytes per row.
+
+The question gets asked because `SET NX PX` really is the right tool, and nothing here replaces it. What the usual answer gets wrong is where the guarantee lives. A lock in Redis tells you who *should* be working; only the thing you write to can decide whose work counts.

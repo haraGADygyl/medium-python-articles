@@ -1,6 +1,6 @@
 # System Design Interview: Your Downstream Recovers and Immediately Falls Over Again. Why?
 
-#### 800 milliseconds of degradation produced 53 seconds of failure — and full jitter, the fix everyone reaches for, measured slightly worse
+#### An 800-millisecond slowdown caused 53 seconds of failures. Jitter, the fix everyone reaches for, made it slightly worse
 
 **By Tihomir Manushev**
 
@@ -10,7 +10,7 @@
 
 An integrations team at a freight-forwarding platform, hiring a senior backend engineer. The interviewer is Mateo.
 
-"Retry with exponential backoff" is the shortest sentence in resilience engineering and almost always the first one said out loud. What it leaves out is that a retry is not a repair — it is more load, aimed at the thing that is already struggling, which makes the length of an outage a property of the caller's policy rather than of the dependency.
+Ask how to handle a shaky service and almost everyone first says: retry, and wait a little longer each time. What that leaves out is that a retry isn't a repair. It's more traffic, sent to the thing that's already struggling, so the callers decide how long the outage lasts.
 
 Everything below ran on Python 3.12 and aiohttp 3.9.1, 2000 concurrent callers against a single-process rate service, on a Ryzen 5 3600.
 
@@ -18,11 +18,13 @@ Everything below ran on Python 3.12 and aiohttp 3.9.1, 2000 concurrent callers a
 
 ### The question
 
-**Mateo:** Every order in our system asks a pricing service for carrier rates. Two thousand callers, one service. The service degrades for under a second. What do you do?
+**Mateo:** Every order in our system asks a pricing service for carrier rates. Two thousand callers, one service. The service slows down for less than a second. What do you do?
 
-**Tihomir:** Retry. A per-attempt timeout so slow does not become stuck, exponential backoff so I am not hammering it, and a cap on attempts. That is the standard answer and I have shipped it more than once.
+**Tihomir:** Retry. Each attempt gets a timeout, and the wait between attempts doubles so I'm not hammering it. That's exponential backoff, and I've shipped it more than once.
 
-The service is a bounded pool of slots and nothing else — forty of them, 25 ms per lookup, 1600 requests per second of capacity, no admission control, no shedding. The incident is one line: the pool shrinks to eight slots for 800 ms.
+**Mateo:** What does the service look like in your test?
+
+**Tihomir:** Forty slots at 25 milliseconds a lookup, so 1600 requests a second. It never turns work away, it just queues it. The incident is one line: eight slots for 800 milliseconds.
 
 ```python
 import asyncio
@@ -74,7 +76,9 @@ async def quote(pool: SlotPool) -> str:
         await pool.release()
 ```
 
-And the caller, in the shape almost everyone writes it:
+**Mateo:** And the callers?
+
+**Tihomir:** The way almost everyone writes them: a 300-millisecond timeout and up to five attempts.
 
 ```python
 import aiohttp
@@ -111,17 +115,17 @@ async def fetch_rate(session: aiohttp.ClientSession) -> bool:
     return False
 ```
 
-**Mateo:** Baseline?
+**Mateo:** How busy is it on a normal day?
 
-**Tihomir:** 1200 requests per second sustained, 75% of capacity, p50 of 26 ms and no queue worth mentioning. That headroom is what I want you to attack — it is the only reason the design looks safe.
+**Tihomir:** 1200 requests a second, 75% of what it can handle, and no queue to speak of. That spare quarter is the only reason this design looks safe.
 
 ---
 
 ### The first trap
 
-**Mateo:** Eight slots for 800 milliseconds. Go.
+**Mateo:** Then run the dip.
 
-**Tihomir:** The dependency was healthy again at 6.8 seconds. The fleet was still failing at 60 seconds, when I stopped the run.
+**Tihomir:** The service was healthy again at 6.8 seconds. My callers were still failing at 60 seconds, when I stopped the run.
 
 ```
 exponential backoff, no jitter — 0.8 s of degradation
@@ -135,25 +139,33 @@ exponential backoff, no jitter — 0.8 s of degradation
   queue depth at t=60 s              31741
 ```
 
-**Mateo:** Read me the last two lines.
+**Mateo:** Hold on. The service recovered, and the queue still went from 1251 to 31741?
 
-**Tihomir:** The queue grew by roughly 570 requests every second for 53 seconds and never turned around. That is the whole answer: the 800 ms dip pushed queue wait past my 300 ms timeout, the timeout made every caller retry, and 3.72 attempts per job against 1600 rps of capacity is 2069 rps of arrivals. The dependency was never the problem after 6.8 seconds. I was.
+**Tihomir:** And it never turned around: roughly 570 more every second, for 53 seconds. I expected a bump, not that.
+
+**Mateo:** Why didn't it drain once the slots came back?
+
+**Tihomir:** The dip pushed queue waits past my 300-millisecond timeout, and every timeout turned into a retry. Each job ended up making 3.72 attempts.
+
+**Mateo:** Against a service that does 1600 a second.
+
+**Tihomir:** So it was getting about 2,070 a second and could never catch up. After 6.8 seconds the service wasn't the problem. I was.
 
 ![The retry loop feeds itself](assets/004/01-loop.gif)
 
-**Mateo:** So it is a closed loop.
+**Mateo:** So the retries fill the queue, and the queue makes more retries.
 
-**Tihomir:** With no term that shrinks. Every extra millisecond of queue wait produces more retries, and every retry adds queue wait. The trigger only has to cross the timeout once — a 10-second outage gave me the same behaviour.
+**Tihomir:** And nothing in that loop pushes back. The slowdown only has to cross the timeout once; a 10-second outage behaved the same way.
 
-**Mateo:** The pool served 1455 a second. Where did they go?
+**Mateo:** The pool still served 1455 a second. Who got those answers?
 
-**Tihomir:** Nowhere. 82.6% of everything that service completed was for a request whose caller had already timed out and moved on — 91% of capacity spent on work nobody was waiting for.
+**Tihomir:** Mostly nobody. 82.6% of the work it finished was for a caller who'd already timed out and moved on.
 
 ![One job, five attempts, five slots of work, nothing delivered](assets/004/02-deadwork.gif)
 
-**Mateo:** Nothing cancels?
+**Mateo:** Doesn't the timeout cancel the request?
 
-**Tihomir:** Nothing. The caller's timeout is a client-side stopwatch — it abandons the response, not the work. A queued request holds its place, reaches a slot two seconds later, gets served in full, and the answer goes to a socket nobody is reading.
+**Tihomir:** No, it's just a stopwatch on the caller's side. It stops the waiting, not the work. The request keeps its place in line, gets served two seconds later, and the answer goes to a connection nobody's reading.
 
 ---
 
@@ -161,7 +173,7 @@ exponential backoff, no jitter — 0.8 s of degradation
 
 **Mateo:** Fix it.
 
-**Tihomir:** Full jitter — sleep at a random point inside the backoff window instead of at its edge, so the fleet stops arriving in lockstep. Four lines, and it is the standard advice.
+**Tihomir:** The standard advice is full jitter. Instead of every caller waiting exactly 200 milliseconds before its second retry, each waits a random time between zero and 200, so they stop arriving in lockstep.
 
 ```python
 import random
@@ -173,9 +185,9 @@ def backoff_jittered(attempt: int) -> float:
     return random.uniform(0, window)
 ```
 
-**Mateo:** Numbers.
+**Mateo:** Did it help?
 
-**Tihomir:** Slightly worse. Same dip, same everything else.
+**Tihomir:** It made things slightly worse.
 
 ```
                         no jitter    full jitter
@@ -187,21 +199,25 @@ def backoff_jittered(attempt: int) -> float:
   recovered                 never          never
 ```
 
-**Mateo:** Explain why it did nothing.
+**Mateo:** Three thousand more failed jobs. Why didn't it help at all?
 
-**Tihomir:** Because jitter changes *when* retries arrive, not *how many*. My arrivals were never a spike — they were a sustained 2069 rps against 1600 rps of capacity, and smearing them evenly across the same second leaves the same deficit. Full jitter also picks uniformly inside the window, which halves the mean delay, so I got marginally *more* attempts per job than before.
+**Tihomir:** Because jitter changes *when* retries arrive, not *how many*. My traffic was never a spike. It was a steady 2069 a second against 1600, and spreading it out leaves the same gap.
 
-**Mateo:** So jitter is wrong.
+**Mateo:** Okay, that's why it isn't better. Why is it worse?
 
-**Tihomir:** Jitter is right, and it is not the fix here. It solves synchronised arrival — a shared cron, a cache that expires everywhere at once, clients reconnecting after a deploy. I reached for it against a volume problem because it is the reflex.
+**Tihomir:** A random wait is, on average, half the full one. So callers came back sooner and squeezed in more attempts, 3.86 instead of 3.72.
+
+**Mateo:** So jitter's useless.
+
+**Tihomir:** No, it's just not the fix here. It's for everyone showing up at the same instant: a shared cron job, a cache expiring everywhere at once, clients reconnecting after a deploy. I reached for it out of reflex, and this was a volume problem.
 
 ---
 
 ### The second trap
 
-**Mateo:** Volume, then.
+**Mateo:** Then cut the volume.
 
-**Tihomir:** A retry budget. Retries stop being free and start being paid for out of successes, so a dependency that is failing completely cannot fund any retries at all. Token bucket: each success deposits a fifth of a token, each retry withdraws a whole one.
+**Tihomir:** With a retry budget. Every success puts a fifth of a token into a shared bucket, and every retry takes a whole token out. If the service is failing outright, nothing goes in, so retries stop on their own.
 
 ```python
 class RetryBudget:
@@ -239,7 +255,9 @@ async def fetch_rate_budgeted(session: aiohttp.ClientSession,
     return False
 ```
 
-**Tihomir:** On the 800 ms dip it is the whole fix. The bucket drained in under a second, retries stopped, arrivals never crossed capacity, and the fleet was clean at 8 seconds — 1.2 seconds after the dependency recovered.
+**Mateo:** Same 800-millisecond dip?
+
+**Tihomir:** For that, it's the whole fix. The bucket ran dry in under a second, retries stopped, and everything was clean at 8 seconds, 1.2 after the service recovered.
 
 ```
 retry budget — 0.8 s of degradation
@@ -253,7 +271,7 @@ retry budget — 0.8 s of degradation
 
 **Mateo:** Now make the outage ten seconds.
 
-**Tihomir:** Then it is not the whole fix. The dependency came back at 16 seconds and the fleet was clean at 32.
+**Tihomir:** Then it's not the whole fix. The service came back at 16 seconds, and my callers were clean at 32.
 
 ```
 retry budget — 10 s of degradation
@@ -264,9 +282,13 @@ retry budget — 10 s of degradation
   recovered                            32 s
 ```
 
-**Mateo:** Sixteen seconds late. Why?
+**Mateo:** Sixteen seconds late. With retries capped, what's still filling the queue?
 
-**Tihomir:** Because a budget caps retries and does nothing about first attempts. Two thousand callers kept sending one request each, all of them queued behind a degraded pool, all of them timing out, and by 16 seconds 7244 were waiting — five seconds of dead work for a healthy service to clear before a live caller could get an answer. Twenty-four thousand jobs failed on their only attempt, which is honest and also a third of my traffic.
+**Tihomir:** First attempts. Two thousand callers kept sending one request each into a slow pool, and every one timed out. By recovery 7244 were waiting, about five seconds of dead work before a live caller gets an answer.
+
+**Mateo:** And those callers never retried.
+
+**Tihomir:** No, about 24,000 jobs failed on their only attempt. Honest, but it's a third of my traffic.
 
 ---
 
@@ -274,7 +296,11 @@ retry budget — 10 s of degradation
 
 **Mateo:** So stop sending.
 
-**Tihomir:** A circuit breaker, one per dependency, shared by every caller in the process. Watch a rolling window of outcomes, and when more than half of the last forty failed, refuse locally without a network call. After a cool-off, let exactly one request through as a probe.
+**Tihomir:** That's a circuit breaker, one per service, shared by every caller in the process. It watches the last forty results, and if more than half failed, it opens: calls fail right away, without touching the network.
+
+**Mateo:** For how long?
+
+**Tihomir:** For a cool-off. Then it goes half-open and lets exactly one request through as a test, a probe. If that works, the breaker closes again.
 
 ```python
 import time
@@ -354,17 +380,23 @@ async def fetch_rate_protected(session: aiohttp.ClientSession,
     return False
 ```
 
-**Tihomir:** On the ten-second outage the dependency is finally left alone: 371 rps of offered load against a pool that can serve 320, worst queue depth 512, dead work 1.7%. And it recovered at 23 seconds — seven seconds later than it should have.
+**Mateo:** Ten seconds down again?
+
+**Tihomir:** This time the service is left alone: 371 requests a second against the 320 it can serve, and only 1.7% of its work wasted.
+
+**Mateo:** And when did it recover?
+
+**Tihomir:** That's the catch. At 23 seconds, seven seconds later than it should have.
 
 ![The cool-off is the whole design](assets/004/03-breaker.png)
 
-**Mateo:** Seven seconds of self-inflicted outage.
+**Mateo:** Seven seconds of outage you caused yourself.
 
-**Tihomir:** Caused by the part of the breaker nobody tunes. My cool-off doubled on every consecutive trip up to sixteen seconds, so by the time the dependency was healthy the breaker had committed to not looking for another fifteen. The state machine did exactly what I told it; what I told it was wrong.
+**Tihomir:** With the part nobody tunes, the cool-off. Mine doubled after every trip in a row, up to sixteen seconds, so when the service came back the breaker wasn't going to look again for another fifteen.
 
-**Mateo:** So cool off for a fixed second.
+**Mateo:** Then cool off for a fixed second.
 
-**Tihomir:** Then it notices immediately — clean at 16 seconds, with zero failures for any job that started after the dependency recovered. The cost shows up on the dependency instead, and only because I also removed the single-flight guard so every caller probes.
+**Tihomir:** I tried it, and it noticed right away: clean at 16 seconds, with no failures for jobs started after recovery. But in that run I'd also let every caller send a probe instead of one at a time, and the service paid for it.
 
 ```
 half-open admits everyone, fixed 1 s cool-off
@@ -377,44 +409,60 @@ half-open admits everyone, fixed 1 s cool-off
 
 ![Two thousand breakers, one phase](assets/004/04-pulse.gif)
 
-**Mateo:** Describe the shape.
+**Mateo:** 1101 probes, to ask one question?
 
-**Tihomir:** Bursts of about 450 requests over 400 milliseconds, then 700 milliseconds of exactly zero, over and over — one shared breaker means one shared phase, so the fleet pulses. Against 320 rps of degraded capacity every burst queues and times out, and the breaker learns nothing it could not have learned from one request.
+**Tihomir:** In bursts: about 450 requests over 400 milliseconds, then 700 milliseconds of nothing, over and over. Every caller shares one breaker, so they all flip at once.
 
-**Mateo:** So both.
+**Mateo:** Into a service that's still slow.
 
-**Tihomir:** Single-flight probe, cool-off capped at two seconds. Eight probes across the whole run instead of 1101, 383 rps offered, and clean at 21 seconds. The probe is a question, and I only need to ask it once.
+**Tihomir:** So every burst queues and times out, and the breaker learns nothing a single request couldn't tell it.
+
+**Mateo:** So keep the one-probe rule and the short cool-off.
+
+**Tihomir:** One probe at a time, cool-off capped at two seconds. Eight probes in the whole run instead of 1101, and clean at 21 seconds.
 
 ---
 
 ### What it costs
 
-**Mateo:** Price the breaker.
+**Mateo:** What does the breaker cost you?
 
-**Tihomir:** 10,975 requests refused locally without ever being attempted, and 14,266 failed jobs against 18,880 for plain backoff. Cheaper in absolute failures, but the failures it causes are ones it chose — a request that would have succeeded, refused because forty of its neighbours did not.
+**Tihomir:** It refused 10,975 requests without trying them. Failed jobs came to 14,266, against 18,880 for plain backoff.
 
-**Mateo:** And when the dependency is fine?
+**Mateo:** So fewer failures.
 
-**Tihomir:** Nothing measurable — p50 stayed at 26 ms across every policy, and `allow()` is a comparison against a monotonic clock. The real cost is that a breaker trips on a 400 ms hiccup and then holds the circuit open for its full cool-off, so the floor on damage from a trivial blip is the cool-off, not the blip.
+**Tihomir:** Fewer, but it chose them. Some refused requests would have worked; they were turned away because forty of their neighbours didn't.
 
-**Mateo:** What have you not measured?
+**Mateo:** And when the service is fine?
 
-**Tihomir:** Two things. Everything here is one breaker in one process — I have not run it across a hundred client processes, where independent breakers with independent phases might smooth the pulse or might synchronise on the outage the way mine synchronised on itself, and I would not guess which. And I never built the fix I want most, deadline propagation: the caller sending its remaining budget with the request so the server can drop work that has already expired instead of serving 82% of its capacity into a closed socket.
+**Tihomir:** Nothing I could measure. The median stayed at 26 milliseconds under every policy, and checking the breaker is one comparison against a clock.
 
-**Mateo:** Finish it.
+**Mateo:** What about a tiny blip?
 
-**Tihomir:** Nothing here made the dependency faster. Every number moved because the caller sent less, and that is the part the standard answer hides.
+**Tihomir:** That's the real cost. A 400-millisecond hiccup can trip it, and then it stays open for the whole cool-off, so the shortest outage you get is the cool-off.
+
+**Mateo:** What haven't you measured?
+
+**Tihomir:** Two things. This is one breaker in one process; I haven't run a hundred processes with a breaker each. Honestly, I don't know whether they'd smooth out the pulse or sync up on the outage the way mine did.
+
+**Mateo:** And the second?
+
+**Tihomir:** The fix I want most and didn't build: deadline propagation. The caller sends how much time it has left with the request, so the server can drop expired work instead of spending 82% of its capacity answering closed connections.
 
 ---
 
 ### Conclusion
 
-**A retry is load, and the caller's policy decides how long the outage lasts.** 800 milliseconds of degradation produced 53 seconds of continuous failure: 3.72 attempts per job against 1600 rps of capacity is 2069 rps of arrivals, and the queue grew by 570 a second until the run ended.
+**Mateo:** Sum it up for me.
 
-**Full jitter fixes when, not how many.** Identical conditions, and every number moved the wrong way: 3.86 attempts per job, 83.1% dead work, 37612 queued. Jitter is for synchronised arrival; this was never a spike.
+**Tihomir:** Nothing I did made the service faster. Every number moved because the callers sent less. Four things.
 
-**A retry budget kills amplification and leaves first attempts alone.** It is the entire fix for a sub-second dip — clean 1.2 seconds after recovery — and 16 seconds late on a ten-second outage, because two thousand first attempts still queue.
+**A retry is extra traffic, and the callers decide how long the outage lasts.** An 800-millisecond slowdown became 53 seconds of failures: 3.72 attempts per job meant 2069 requests a second against 1600 of capacity.
 
-**A breaker's cool-off is the design, and its probe needs a single-flight guard.** Doubling to sixteen seconds cost seven seconds of self-inflicted outage; letting every caller probe produced 450-request pulses against 320 rps of capacity. Both fixed: eight probes, clean at 21 seconds.
+**Jitter changes when retries arrive, not how many.** Every number got a little worse: 3.86 attempts per job, 37612 queued. It's for everyone arriving at once, and this was never a spike.
 
-The question gets asked because retrying really is the right instinct — a dropped packet, a replica failing over, a rolling restart, all cured by trying again. What the standard answer misses is that backoff decides only the *spacing* between attempts, and what keeps outages alive is their *number*. A dependency that is down cannot be helped by anyone asking more often, and the only party able to ask less is the caller.
+**A retry budget stops retries and leaves first attempts alone.** It fixed the short dip outright, but ran 16 seconds late on a ten-second outage, because two thousand first attempts still queued.
+
+**A breaker's cool-off is the design, and it should send one probe at a time.** A cool-off doubling to sixteen seconds cost seven seconds of outage, and letting everyone probe sent 450-request bursts. With both fixed: eight probes, clean at 21 seconds.
+
+The question gets asked because retrying really is the right instinct: a dropped packet, a replica failing over or a rolling restart are all fixed by trying again. What the standard answer misses is that backoff only decides how far apart the attempts are, and what keeps an outage going is how many there are. A service that's down isn't helped by anyone asking more often, and only the caller can ask less.
