@@ -59,13 +59,15 @@ def parse_track(text: str, default_name: str | None = None) -> Track:
                 raise TrackError(f"line {number}: expected the header 'lat,lon,ele'")
             header_seen = True
             continue
-        points.append(_parse_point(line, number, scale))
+        points.append(_parse_point(line, number))
     if len(points) < 2:
         raise TrackError("a track needs at least two points")
+    if scale != 1.0:
+        points = [Point(point.lat, point.lon, point.ele * scale) for point in points]
     return Track(name, points)
 
 
-def _parse_point(line: str, number: int, scale: float) -> Point:
+def _parse_point(line: str, number: int) -> Point:
     fields = [part.strip() for part in line.split(",")]
     if len(fields) != 3:
         raise TrackError(f"line {number}: expected 3 fields, got {len(fields)}")
@@ -75,7 +77,7 @@ def _parse_point(line: str, number: int, scale: float) -> Point:
         raise TrackError(f"line {number}: not a number") from None
     if not -90 <= lat <= 90 or not -180 <= lon <= 180:
         raise TrackError(f"line {number}: coordinates out of range")
-    return Point(lat, lon, ele * scale)
+    return Point(lat, lon, ele)
 
 
 def load_track(path: str | Path) -> Track:

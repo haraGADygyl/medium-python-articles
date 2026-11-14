@@ -1,0 +1,6 @@
+`mypy` now passes on all 9 source files, and the 47 tests pass. I fixed all three errors without `# type: ignore`, `cast`, `Any`, or config changes.
+
+- **`geo.py`:** I added the missing annotations to `initial_bearing`: `(lat1: float, lon1: float, lat2: float, lon2: float) -> float`. That also cleared the untyped-call error in `report.py`.
+- **`report.py`:** I changed `Summary.heading` from `str` to `str | None`. `_heading()` returns `None` when a track is a loop, so the old type was wrong.
+
+For a loop track, `format_summary` still prints `heading   None`. I left that as it was because you only asked for the type errors, and the tests don't cover that case. Say if you'd like it to print something like "loop" instead.

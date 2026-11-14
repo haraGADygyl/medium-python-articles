@@ -21,16 +21,20 @@ from collections import Counter
 from common import MODELS, RESULTS, TIERS, WORK_ROOT, build_start, git, load_tasks, tool_env
 from grade import grade_repo
 
+# Calibration showed agents use far more shell than the first allowlist covered (git stash,
+# scratch files, here-documents, hex dumps); refused calls cost turns, Haiku's most. This
+# list allows ordinary development commands, still without rm, network tools or sudo.
+# Subshells "( ... )" and "cd <dir> && git ..." stay refused by Claude Code's own safety
+# checks whatever the allowlist says; refusals are recorded per run.
 ALLOWED = ["Read", "Edit", "Write", "MultiEdit", "Glob", "Grep", "TodoWrite", "Task",
-           "Bash(python:*)", "Bash(python3:*)", "Bash(pytest:*)", "Bash(ruff:*)", "Bash(mypy:*)",
-           "Bash(ls:*)", "Bash(cat:*)", "Bash(head:*)", "Bash(tail:*)", "Bash(grep:*)",
-           "Bash(rg:*)", "Bash(find:*)", "Bash(wc:*)", "Bash(sed:*)", "Bash(git diff:*)",
-           "Bash(git status:*)", "Bash(git log:*)", "Bash(git show:*)", "Bash(cd *)",
-           "Bash(echo *)",
-           # Agents often prefix an environment variable (PYTHONPATH=src python3 ...),
-           # which a plain prefix rule does not match; refused commands would handicap them.
-           "Bash(PYTHONPATH=* python *)", "Bash(PYTHONPATH=* python3 *)",
-           "Bash(PYTHONPATH=* pytest *)", "Bash(PYTHONPATH=* mypy *)"]
+           *(f"Bash({command} *)" for command in (
+               "python", "python3", "pytest", "ruff", "mypy", "git", "ls", "cat", "head",
+               "tail", "grep", "rg", "find", "wc", "sed", "awk", "sort", "uniq", "cut", "tr",
+               "diff", "cmp", "od", "xxd", "hexdump", "file", "stat", "mkdir", "touch", "cp",
+               "mv", "printf", "echo", "cd", "pwd", "set", "env", "true", "xargs", "tee",
+               "PYTHONPATH=* python", "PYTHONPATH=* python3", "PYTHONPATH=* pytest",
+               "PYTHONPATH=* mypy")),
+           *(f"Bash({command})" for command in ("ls", "pwd", "git status", "git diff", "true"))]
 DISALLOWED = ["WebFetch", "WebSearch", "CronCreate", "CronDelete", "CronList", "DesignSync",
               "ListAgents", "Monitor", "EnterWorktree", "ExitWorktree", "SendMessage",
               "PushNotification", "RemoteTrigger"]
@@ -118,7 +122,8 @@ def run_one(run_id: str, model: str, task, repeat: int, max_turns: int, timeout:
         handle.write(stdout)
     (out / "diff.patch").write_text(git(work, "diff", "--cached", "HEAD"))
     (out / "final.txt").write_text(info.pop("final_text"))
-    meta = {"run_id": run_id, "task": task.id, "tier": task.tier, "repeat": repeat,
+    meta = {"run_id": run_id, "task": task.id, "tier": task.tier, "baseline": task.baseline,
+            "repeat": repeat,
             "model_alias": model, "prompt": task.prompt, "harness_timeout": code == -1,
             "wall_s": round(time.time() - started, 1), **info, "grade": verdict}
     (out / "meta.json").write_text(json.dumps(meta, indent=2))

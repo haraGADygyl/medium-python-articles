@@ -1,0 +1,106 @@
+{
+  "run_id": "fable-r01-r1",
+  "task": "r01",
+  "tier": "refactor",
+  "repeat": 1,
+  "model_alias": "fable",
+  "prompt": "Rename `haversine_km` in `src/trailhead/geo.py` to `distance_km`, and update every place in `src/` and `tests/` that uses it. Keep `haversine_km` importable from `trailhead.geo` as a deprecated alias: calling it should emit a `DeprecationWarning` and return the same result as `distance_km`.",
+  "harness_timeout": false,
+  "wall_s": 33.6,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 10,
+  "duration_ms": 31638,
+  "duration_api_ms": 30321,
+  "api_equivalent_usd": 0.31018120000000005,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 11955,
+    "cache_read_input_tokens": 99906,
+    "output_tokens": 2471,
+    "output_tokens_details": {
+      "thinking_tokens": 191
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 11955,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 266,
+        "cache_read_input_tokens": 23126,
+        "cache_creation_input_tokens": 1313,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1313
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 10,
+      "outputTokens": 2471,
+      "cacheReadInputTokens": 99906,
+      "cacheCreationInputTokens": 11955,
+      "webSearchRequests": 0,
+      "costUSD": 0.31018120000000005,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 191,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 11955,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 1,
+    "Bash": 4,
+    "Edit": 4
+  },
+  "bash_commands": [
+    "git ls-files; cat src/trailhead/geo.py; cat pyproject.toml setup.cfg pytest.ini 2>/dev/null",
+    "set -e\nsed -i 's/\\bhaversine_km\\b/distance_km/g' src/trailhead/report.py src/trailhead/track.py src/trailhead/geo.py tests/test_geo.py\npython - <<'EOF'\nimport re,pathlib\np=pathlib.Path('src/trailhead/geo.py'); s=p.read_text()\ns=s.replace('''\"\"\"Great-circle geometry on a spherical Earth.\"\"\"\n\nfrom math''','''\"\"\"Great-circle geometry on a spherical Earth.\"\"\"\n\nimport warnings\nfrom math''')\ns=s.replace('''    return 2 * EARTH_RADIUS_KM * asin(sqrt(a))\n''','''    return 2 * EARTH_RADIUS_KM * asin(sqrt(a))\n\n\ndef haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:\n    \"\"\"Deprecated alias for :func:`distance_km`.\"\"\"\n    warnings.warn(\n        \"haversine_km() is deprecated; use distance_km() instead\",\n        DeprecationWarning,\n        stacklevel=2,\n    )\n    return distance_km(lat1, lon1, lat2, lon2)\n''')\np.write_text(s)\np=pathlib.Path('tests/test_geo.py'); s=p.read_text()\ns=s.replace('from trailhead.geo import compass_point, distance_km, initial_bearing','from trailhead.geo import compass_point, distance_km, haversine_km, initial_bearing')\np.write_text(s)\nEOF\nsed -n 1,22p tests/test_geo.py",
+    "sed -i 's/\\bhaversine_km\\b/distance_km/g' src/trailhead/report.py src/trailhead/track.py src/trailhead/geo.py tests/test_geo.py && sed -n 1,22p tests/test_geo.py",
+    "python -m pytest -q -W error::DeprecationWarning 2>&1 | tail -5; ruff check . 2>&1 | tail -3; mypy 2>&1 | tail -2; git status --short"
+  ],
+  "permission_denials": [
+    {
+      "command": "set -e\nsed -i 's/\\bhaversine_km\\b/distance_km/g' src/trailhead/report.py src/trailhead/track.py src/trailhead/geo.py tests/test_geo.py\npython - <<'EOF'\nimport re,pathlib\np=pathlib.Path('src/trailhead/geo.py'); s=p.read_text()\ns=s.replace('''\"\"\"Great-circle geometry on a spherical Earth.\"\"\"\n\nfrom math''','''\"\"\"Great-circle geometry on a spherical Earth.\"\"\"\n\nimport warnings\nfrom math''')\ns=s.replace('''    return 2 * EARTH_RADIUS_KM * asin(sqrt(a))\n''','''    return 2 * EARTH_RADIUS_KM * asin(sqrt(a))\n\n\ndef haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:\n    \"\"\"Deprecated alias for :func:`distance_km`.\"\"\"\n    warnings.warn(\n        \"haversine_km() is deprecated; use distance_km() instead\",\n        DeprecationWarning,\n        stacklevel=2,\n    )\n    return distance_km(lat1, lon1, lat2, lon2)\n''')\np.write_text(s)\np=pathlib.Path('tests/test_geo.py'); s=p.read_text()\ns=s.replace('from trailhead.geo import compass_point, distance_km, initial_bearing','from trailhead.geo import compass_point, distance_km, haversine_km, initial_bearing')\np.write_text(s)\nEOF\nsed -n 1,22p tests/test_geo.py",
+      "description": "Rename function across files and add deprecated alias"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "ro_for_the_same_point\n  /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/grading-3476890-clean/tests/test_geo.py:17: DeprecationWarning: haversine_km() is deprecated; use distance_km() instead\n    assert there == pytest.approx(haversine_km(42.2, 23.4, 42.1, 23.3))\n\ntests/test_geo.py::test_distance_is_symmetric_and_zero_for_the_same_point\n  /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/grading-3476890-clean/tests/test_geo.py:18: DeprecationWarning: haversine_km() is deprecated; use distance_km() instead\n    assert haversine_km(42.1, 23.3, 42.1, 23.3) == 0\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n52 passed, 5 warnings in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py",
+      "M src/trailhead/report.py",
+      "M src/trailhead/track.py",
+      "M tests/test_geo.py"
+    ],
+    "lines_added": 28,
+    "lines_removed": 11,
+    "own_suite_pass_as_left": true
+  }
+}

@@ -1,0 +1,15 @@
+The cause was an off-by-one in the day-splitting loop in `src/trailhead/plan.py`, and it's fixed. The full suite passes (47 tests).
+
+**Cause:** `split_days` decided whether to start a new day by checking whether the day was *already* over the limit (`used > max_hours_per_day`) before adding the next leg. So a leg that pushed the day over the limit was still added to that day. The day only closed once the *next* leg arrived. With `--max-hours 6`, a day at 5h50m could take a 1h leg to reach 6h50m. That matches the report, and the per-leg times were all under an hour, as the user said.
+
+**Fix:** one line, in `split_days`. The check now asks whether adding the leg would exceed the limit:
+
+```python
+if used > 0 and used + hours > max_hours_per_day:
+```
+
+This matches the function's docstring: a day never goes over the limit unless a single leg on its own does.
+
+**Test:** added `test_day_never_exceeds_limit_by_adding_a_leg` to `tests/test_plan.py`. It uses five 1-hour legs with a 2.5-hour limit. Before the fix it produced a 3.0-hour day 1. It now produces `[(1, 0, 2, 2.0), (2, 2, 4, 2.0), (3, 4, 5, 1.0)]`.
+
+I haven't committed anything. The changes are in the working tree for you to review.

@@ -1,0 +1,108 @@
+{
+  "run_id": "haiku-l02-r1",
+  "task": "l02",
+  "tier": "lint",
+  "repeat": 1,
+  "model_alias": "haiku",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "harness_timeout": false,
+  "wall_s": 17.5,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 9,
+  "duration_ms": 14754,
+  "duration_api_ms": 13307,
+  "api_equivalent_usd": 0.004386480000000001,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 11106,
+    "cache_read_input_tokens": 117258,
+    "output_tokens": 1983,
+    "output_tokens_details": {
+      "thinking_tokens": 154
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 11106,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 339,
+        "cache_read_input_tokens": 23324,
+        "cache_creation_input_tokens": 266,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 266
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 1983,
+      "cacheReadInputTokens": 117258,
+      "cacheCreationInputTokens": 11106,
+      "webSearchRequests": 0,
+      "costUSD": 0.004386480000000001,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 154,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 11106,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4,
+    "Read": 2,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "cat pyproject.toml && git status --short && (mypy src/ 2>&1 | tail -50)",
+    "cat pyproject.toml",
+    "mypy src/",
+    "mypy src/ && echo MYPY_OK; python -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [
+    {
+      "command": "cat pyproject.toml && git status --short && (mypy src/ 2>&1 | tail -50)",
+      "description": "Inspect project config and run mypy on src"
+    }
+  ],
+  "grade": {
+    "outcome": "fail",
+    "reasons": [
+      "hidden or regression tests fail"
+    ],
+    "tests_pass": false,
+    "tests_output_tail": "=====================\n__________________________ test_loop_heading_is_loop ___________________________\n\nmake_track = <function make_track.<locals>.build at 0x7abde39958a0>\n\n    def test_loop_heading_is_loop(make_track):\n        summary = summarise(make_track(*LOOP, name=\"Lake Circuit\"))\n>       assert summary.heading == \"loop\"\nE       AssertionError: assert None == 'loop'\nE        +  where None = Summary(name='Lake Circuit', length_km=2.2, gain_m=100.0, loss_m=100.0, highest_m=1100, lowest_m=1000, steepest_pct=9.3, hours=0.605061677928428, heading=None).heading\n\ntests/test_hidden.py:11: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_hidden.py::test_loop_heading_is_loop - AssertionError: asse...\n1 failed, 49 passed in 0.09s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py",
+      "M src/trailhead/report.py"
+    ],
+    "lines_added": 2,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

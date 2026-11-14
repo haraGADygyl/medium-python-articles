@@ -1,0 +1,97 @@
+{
+  "run_id": "sonnet-b01-r1",
+  "task": "b01",
+  "tier": "bug",
+  "repeat": 1,
+  "model_alias": "sonnet",
+  "prompt": "Bug report from a user: \"I recorded a long, steady climb with a point for every metre of height, about 300 m up in total. `trailhead summary` shows the ascent as +0 m. Tracks with bigger gaps between points look fine.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 17.1,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 14624,
+  "duration_api_ms": 13976,
+  "api_equivalent_usd": 0.0583879,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 9423,
+    "cache_read_input_tokens": 93859,
+    "output_tokens": 1129,
+    "output_tokens_details": {
+      "thinking_tokens": 0
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 9423,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 284,
+        "cache_read_input_tokens": 21816,
+        "cache_creation_input_tokens": 91,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 91
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 10,
+      "outputTokens": 1129,
+      "cacheReadInputTokens": 93859,
+      "cacheCreationInputTokens": 9423,
+      "webSearchRequests": 0,
+      "costUSD": 0.0583879,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 0,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 9423,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 1,
+    "Read": 1,
+    "Edit": 2,
+    "Bash": 1
+  },
+  "bash_commands": [
+    "python -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 4,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  }
+}

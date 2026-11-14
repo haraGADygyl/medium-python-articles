@@ -1,0 +1,20 @@
+Both bugs are fixed, and `--threshold 0` now counts every change. The test suite passes (49 tests), and I checked your two commands end to end on a sample track.
+
+**Cause**
+
+1. **`--threshold 0.5` rejected:** `src/trailhead/cli.py` declared the option as `type=int`, so argparse refused any fractional value. It is now `type=float`.
+2. **`--threshold 0` ignored:** `src/trailhead/report.py` had `threshold or DEFAULT_THRESHOLD_M`. Zero is falsy in Python, so `0` silently became the 3 m default. The `or` is removed, and the value goes straight to `gain_and_loss`, which already rejects negative thresholds.
+
+**Results on a sample track** (elevations 1000, 1002, 1001, 1003):
+
+| Command | Ascent | Descent |
+|---|---|---|
+| `--threshold 0` | +4 m | -1 m |
+| `--threshold 0.5` | +4 m | -1 m |
+| default (3 m) | +3 m | -0 m |
+
+**Tests added**
+- `tests/test_report.py`: `test_zero_threshold_counts_every_change` checks that threshold 0 yields different gain and loss from the default.
+- `tests/test_cli.py`: `test_fractional_and_zero_threshold_are_accepted` checks that `0.5` and `0` are accepted by the CLI.
+
+I did not run the new tests against the unfixed code to confirm they fail there. Nothing is committed; the changes are in the working tree.

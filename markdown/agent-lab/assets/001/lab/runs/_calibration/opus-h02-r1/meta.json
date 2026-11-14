@@ -1,0 +1,105 @@
+{
+  "run_id": "opus-h02-r1",
+  "task": "h02",
+  "tier": "two-file bug",
+  "repeat": 1,
+  "model_alias": "opus",
+  "prompt": "Bug report from a user: \"`trailhead summary walk.csv --threshold 0` gives the same ascent as without the option, and `--threshold 0.5` is rejected with `invalid int value`. I want to count every change for a track I already smoothed.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 32.3,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 7,
+  "duration_ms": 30373,
+  "duration_api_ms": 29742,
+  "api_equivalent_usd": 0.16490499999999997,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 11548,
+    "cache_read_input_tokens": 119565,
+    "output_tokens": 2428,
+    "output_tokens_details": {
+      "thinking_tokens": 408
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 11548,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 660,
+        "cache_read_input_tokens": 23772,
+        "cache_creation_input_tokens": 260,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 260
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 2428,
+      "cacheReadInputTokens": 119565,
+      "cacheCreationInputTokens": 11548,
+      "webSearchRequests": 0,
+      "costUSD": 0.16490499999999997,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 408,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 11548,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "git ls-files; grep -rn \"threshold\" --include=*.py . | grep -v \"^./.git\"",
+    "cat src/trailhead/elevation.py; sed -n 1,50p src/trailhead/report.py; cat src/trailhead/cli.py; cat tests/test_cli.py tests/test_report.py | head -80",
+    "cat >> tests/test_report.py <<'EOF'\n\n\ndef test_zero_threshold_counts_every_change(make_track):\n    jitter = ((0, 0, 1000), (0, 0.001, 1001), (0, 0.002, 1000), (0, 0.003, 1002))\n    assert (summarise(make_track(*jitter)).gain_m, summarise(make_track(*jitter)).loss_m) == (0.0, 0.0)\n    summary = summarise(make_track(*jitter), threshold=0)\n    assert (summary.gain_m, summary.loss_m) == (3.0, 1.0)\nEOF\ncat >> tests/test_cli.py <<'EOF'\n\n\nJITTER = \"# name: Flat\\nlat,lon,ele\\n0,0,1000\\n0,0.001,1000.6\\n0,0.002,1000\\n\"\n\n\ndef test_summary_threshold_accepts_zero_and_fractions(write_track, capsys):\n    path = str(write_track(JITTER))\n    assert main([\"summary\", path]) == 0\n    assert \"  ascent    +0 m / -0 m\\n\" in capsys.readouterr().out\n    for threshold in (\"0\", \"0.5\"):\n        assert main([\"summary\", path, \"--threshold\", threshold]) == 0\n        assert \"  ascent    +1 m / -1 m\\n\" in capsys.readouterr().out\nEOF\npython -m pytest -q 2>&1 | tail -15",
+    "git stash push src -q && python -m pytest -q 2>&1 | tail -4; git stash pop -q && git diff --stat"
+  ],
+  "permission_denials": [
+    {
+      "command": "git stash push src -q && python -m pytest -q 2>&1 | tail -4; git stash pop -q && git diff --stat",
+      "description": "Run tests against unfixed source, then restore"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/report.py",
+      "M tests/test_cli.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 21,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

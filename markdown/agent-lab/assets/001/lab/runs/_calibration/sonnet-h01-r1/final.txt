@@ -1,0 +1,10 @@
+`trailhead plan --fitness` now changes the days it prints. The existing 47 tests pass. I didn't add a test for the plan path or run the command on a real route file, so the fix itself isn't covered by a test.
+
+The fitness value was being dropped in two places on the `plan` path:
+
+1. **`src/trailhead/cli.py`:** the `plan` command parsed `--fitness` but called `split_days(track, args.max_hours)` without it. It now passes `args.fitness` as well.
+2. **`src/trailhead/plan.py`:** `split_days` accepted a `fitness` argument but called `leg_hours(track)` without it, so it always used 1.0. It now calls `leg_hours(track, fitness)`.
+
+`summary` already passed fitness through, which is why it worked.
+
+Fixing only the CLI would not have been enough, because `split_days` would still have ignored the value.

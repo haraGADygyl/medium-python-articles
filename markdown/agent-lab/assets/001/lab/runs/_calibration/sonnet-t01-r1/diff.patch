@@ -1,0 +1,130 @@
+diff --git a/tests/test_elevation.py b/tests/test_elevation.py
+new file mode 100644
+index 0000000..3de83bf
+--- /dev/null
++++ b/tests/test_elevation.py
+@@ -0,0 +1,124 @@
++import pytest
++
++from trailhead.elevation import gain_and_loss, highest_and_lowest, steepest_grade
++
++# One degree of longitude at the equator, in metres, on the README's sphere.
++METRES_PER_DEGREE = 6371.0088 * 3.141592653589793 / 180 * 1000
++
++
++def test_simple_climb_and_descent():
++    assert gain_and_loss([0, 10, 4]) == (10.0, 6.0)
++
++
++def test_empty_and_single_elevation():
++    assert gain_and_loss([]) == (0.0, 0.0)
++    assert gain_and_loss([100]) == (0.0, 0.0)
++
++
++def test_jitter_below_threshold_is_ignored():
++    assert gain_and_loss([100, 101, 100, 99, 100, 101, 100]) == (0.0, 0.0)
++
++
++def test_long_climb_in_small_steps_still_counts():
++    elevations = list(range(0, 301))
++    assert gain_and_loss(elevations) == (300.0, 0.0)
++
++
++def test_long_descent_in_small_steps_still_counts():
++    elevations = list(range(300, -1, -1))
++    assert gain_and_loss(elevations) == (0.0, 300.0)
++
++
++def test_default_threshold_is_three_metres():
++    assert gain_and_loss([0, 2.9]) == (0.0, 0.0)
++    assert gain_and_loss([0, 3.0]) == (3.0, 0.0)
++    assert gain_and_loss([3.0, 0]) == (0.0, 3.0)
++    assert gain_and_loss([0, -2.9]) == (0.0, 0.0)
++
++
++def test_change_is_measured_from_last_counted_elevation():
++    # 0 -> 2 is ignored, but 2 is not the reference: 0 -> 4 counts as 4 m.
++    assert gain_and_loss([0, 2, 4]) == (4.0, 0.0)
++    # After counting the climb to 10, a dip to 8 is ignored and 10 -> 6 is a 4 m loss.
++    assert gain_and_loss([0, 10, 8, 6]) == (10.0, 4.0)
++
++
++def test_custom_threshold():
++    assert gain_and_loss([0, 5, 0], threshold=10) == (0.0, 0.0)
++    assert gain_and_loss([0, 1, 0], threshold=1) == (1.0, 1.0)
++
++
++def test_zero_threshold_counts_every_change():
++    assert gain_and_loss([0, 0.5, 0.2], threshold=0) == (0.5, 0.3)
++
++
++def test_negative_threshold_is_an_error():
++    with pytest.raises(ValueError):
++        gain_and_loss([0, 10], threshold=-1)
++
++
++def test_totals_are_rounded_to_a_tenth():
++    assert gain_and_loss([0, 10.04, 0]) == (10.0, 10.0)
++    gain, loss = gain_and_loss([0, 10.26, 0])
++    assert (gain, loss) == (10.3, 10.3)
++
++
++def test_accepts_any_sequence():
++    assert gain_and_loss((0, 10)) == (10.0, 0.0)
++
++
++def test_highest_and_lowest(make_track):
++    track = make_track((0, 0, 1200), (0, 0.01, 1500), (0, 0.02, 900), (0, 0.03, 1000))
++    assert highest_and_lowest(track) == (1500, 900)
++
++
++def test_highest_and_lowest_with_flat_track(make_track):
++    track = make_track((0, 0, 700), (0, 0.01, 700))
++    assert highest_and_lowest(track) == (700, 700)
++
++
++def test_steepest_grade_is_a_percentage(make_track):
++    # Climb 18 m over (almost exactly) 100 m: 18 %.
++    run_deg = 100 / METRES_PER_DEGREE
++    track = make_track((0, 0, 1000), (0, run_deg, 1018))
++    assert steepest_grade(track) == pytest.approx(18.0, abs=0.1)
++
++
++def test_steepest_grade_is_rounded_to_a_tenth(make_track):
++    track = make_track((0, 0, 0), (0, 0.01, 7.77))
++    grade = steepest_grade(track)
++    assert grade == round(grade, 1)
++    expected = 7.77 / (track.leg_lengths_km()[0] * 1000) * 100
++    assert grade == pytest.approx(expected, abs=0.05)
++
++
++def test_steepest_grade_counts_downhill(make_track):
++    run_deg = 100 / METRES_PER_DEGREE
++    track = make_track((0, 0, 1000), (0, run_deg, 1005), (0, 2 * run_deg, 975))
++    assert steepest_grade(track) == pytest.approx(30.0, abs=0.1)
++
++
++def test_steepest_grade_picks_the_steepest_leg(make_track):
++    run_deg = 100 / METRES_PER_DEGREE
++    track = make_track(
++        (0, 0, 0), (0, run_deg, 5), (0, 2 * run_deg, 25), (0, 3 * run_deg, 30)
++    )
++    assert steepest_grade(track) == pytest.approx(20.0, abs=0.1)
++
++
++def test_steepest_grade_of_flat_track_is_zero(make_track):
++    track = make_track((0, 0, 500), (0, 0.01, 500))
++    assert steepest_grade(track) == 0.0
++
++
++def test_steepest_grade_skips_zero_length_legs(make_track):
++    # A repeated point with an elevation jump has no horizontal distance;
++    # it must be skipped, not divide by zero or count as infinitely steep.
++    run_deg = 100 / METRES_PER_DEGREE
++    track = make_track((0, 0, 0), (0, 0, 50), (0, run_deg, 60))
++    assert steepest_grade(track) == pytest.approx(10.0, abs=0.1)
++
++
++def test_steepest_grade_with_only_zero_length_legs(make_track):
++    track = make_track((10, 10, 0), (10, 10, 50))
++    assert steepest_grade(track) == 0.0

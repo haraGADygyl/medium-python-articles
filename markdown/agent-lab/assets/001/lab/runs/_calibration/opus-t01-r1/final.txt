@@ -1,0 +1,23 @@
+I wrote `tests/test_elevation.py` with 34 tests. The full suite passes (72 tests) and `ruff check` is clean. Nothing under `src/` was changed.
+
+What's covered:
+
+- **`gain_and_loss`**
+  - Simple climbs and descents, plus empty, single-value and flat inputs.
+  - The README's two promises: a metre of jitter either way adds nothing, and a 300 m climb (or descent) in 1 m steps counts as 300 m.
+  - Threshold edges: a change of exactly the threshold counts, and one just below it doesn't.
+  - Changes are measured from the last *counted* elevation, not the previous point.
+  - Custom and zero thresholds.
+  - A negative threshold raises `ValueError`, even when the list is empty.
+  - Totals are rounded to 0.1 m and returned as floats, and the 3 m default is checked.
+- **`highest_and_lowest`**: ordinary, flat and below-sea-level tracks.
+- **`steepest_grade`**
+  - The README example (18 m over 100 m gives `18.0`).
+  - Downhill legs count, with a positive result.
+  - The steepest single leg wins, rather than the overall slope of the track.
+  - Results are rounded to 0.1, and legs running east–west and north–south both work.
+  - Repeated points (zero-length legs) are skipped: no division by zero, and their elevation change is ignored.
+
+To get legs of an exact length, the test points sit on the equator and their spacing is worked out from the radius constant in `trailhead.geo`. That keeps the expected grades exact rather than approximate.
+
+All tests passed on the first run, so I found no differences between the code and what the README and docstrings describe.

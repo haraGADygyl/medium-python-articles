@@ -1,0 +1,96 @@
+{
+  "run_id": "sonnet-b02-r1",
+  "task": "b02",
+  "tier": "bug",
+  "repeat": 1,
+  "model_alias": "sonnet",
+  "prompt": "Bug report from a user: \"`trailhead summary` says the heading is N for my ridge walk, which runs due east from 42.20, 23.30 to 42.20, 23.45.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 15.8,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 13715,
+  "duration_api_ms": 13166,
+  "api_equivalent_usd": 0.055398199999999995,
+  "usage": {
+    "input_tokens": 8,
+    "cache_creation_input_tokens": 9004,
+    "cache_read_input_tokens": 70762,
+    "output_tokens": 1229,
+    "output_tokens_details": {
+      "thinking_tokens": 184
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 9004,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 251,
+        "cache_read_input_tokens": 20697,
+        "cache_creation_input_tokens": 791,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 791
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 8,
+      "outputTokens": 1229,
+      "cacheReadInputTokens": 70762,
+      "cacheCreationInputTokens": 9004,
+      "webSearchRequests": 0,
+      "costUSD": 0.055398199999999995,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 184,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 9004,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 1,
+    "Read": 2,
+    "Edit": 1,
+    "Bash": 1
+  },
+  "bash_commands": [
+    "PYTHONPATH=src python -c \"\nfrom trailhead.geo import *\nb=initial_bearing(42.20,23.30,42.20,23.45);print(b,compass_point(b))\" ; python -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".......................................................                  [100%]\n55 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py"
+    ],
+    "lines_added": 1,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  }
+}

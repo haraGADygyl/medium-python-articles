@@ -1,0 +1,120 @@
+{
+  "id": "t05",
+  "tier": "tests",
+  "baseline": false,
+  "title": "Write tests for report.py",
+  "prompt": "`src/trailhead/report.py` has no tests. Write `tests/test_report.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "setup": [
+    {
+      "delete": "tests/test_report.py"
+    }
+  ],
+  "grade": {
+    "kind": "mutants",
+    "test_file": "tests/test_report.py",
+    "min_kills": 8,
+    "mutants": [
+      {
+        "name": "loop radius 1 km",
+        "edits": [
+          {
+            "file": "src/trailhead/report.py",
+            "old": "LOOP_RADIUS_KM = 0.1",
+            "new": "LOOP_RADIUS_KM = 1.0"
+          }
+        ]
+      },
+      {
+        "name": "heading measured finish to start",
+        "edits": [
+          {
+            "file": "src/trailhead/report.py",
+            "old": "compass_point(initial_bearing(start.lat, start.lon, finish.lat, finish.lon))",
+            "new": "compass_point(initial_bearing(finish.lat, finish.lon, start.lat, start.lon))"
+          }
+        ]
+      },
+      {
+        "name": "distance rounded to 0.01",
+        "edits": [
+          {
+            "file": "src/trailhead/report.py",
+            "old": "length_km=round(length, 1),",
+            "new": "length_km=round(length, 2),"
+          }
+        ]
+      },
+      {
+        "name": "time uses descent",
+        "edits": [
+          {
+            "file": "src/trailhead/report.py",
+            "old": "hours=naismith_hours(length, gain, fitness),",
+            "new": "hours=naismith_hours(length, loss, fitness),"
+          }
+        ]
+      },
+      {
+        "name": "fitness dropped",
+        "edits": [
+          {
+            "file": "src/trailhead/report.py",
+            "old": "hours=naismith_hours(length, gain, fitness),",
+            "new": "hours=naismith_hours(length, gain),"
+          }
+        ]
+      },
+      {
+        "name": "threshold dropped",
+        "edits": [
+          {
+            "file": "src/trailhead/report.py",
+            "old": "gain_and_loss([point.ele for point in track.points], threshold)",
+            "new": "gain_and_loss([point.ele for point in track.points])"
+          }
+        ]
+      },
+      {
+        "name": "altitude printed high-low",
+        "edits": [
+          {
+            "file": "src/trailhead/report.py",
+            "old": "{summary.lowest_m:.0f}-{summary.highest_m:.0f}",
+            "new": "{summary.highest_m:.0f}-{summary.lowest_m:.0f}"
+          }
+        ]
+      },
+      {
+        "name": "minutes truncated",
+        "edits": [
+          {
+            "file": "src/trailhead/report.py",
+            "old": "divmod(round(summary.hours * 60), 60)",
+            "new": "divmod(int(summary.hours * 60), 60)"
+          }
+        ]
+      },
+      {
+        "name": "steepest rounded to whole percent",
+        "edits": [
+          {
+            "file": "src/trailhead/report.py",
+            "old": "steepest_pct=steepest_grade(track),",
+            "new": "steepest_pct=round(steepest_grade(track)),"
+          }
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "files": {
+      "tests/test_report.py": "reference_test.py"
+    }
+  },
+  "bad": {
+    "kind": "happy-path tests only",
+    "files": {
+      "tests/test_report.py": "weak_test.py"
+    }
+  }
+}

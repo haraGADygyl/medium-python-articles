@@ -1,0 +1,7 @@
+`split_days` now returns a list of frozen `DayPlan` dataclass instances (`day`, `first_point`, `last_point`, `hours`), defined in `src/trailhead/plan.py`. The 47 tests, ruff and strict mypy all pass, and the `plan` command prints the same lines as before.
+
+- **Callers:** `describe_plan` is the only code that consumed the tuples; it now takes `list[DayPlan]` and reads fields by name. `cli.py` just passes the result of `split_days` straight into it, so it needed no change.
+- **Tests:** `tests/test_plan.py` now builds and compares `DayPlan` instances instead of tuples.
+- **One addition:** I gave `DayPlan` `slots=True` as well as `frozen=True`, to match the existing `Summary` dataclass in `report.py`.
+
+Nothing is committed.

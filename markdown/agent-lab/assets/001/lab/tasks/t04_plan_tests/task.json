@@ -1,0 +1,130 @@
+{
+  "id": "t04",
+  "tier": "tests",
+  "baseline": false,
+  "title": "Write tests for plan.py",
+  "prompt": "`src/trailhead/plan.py` has no tests. Write `tests/test_plan.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "setup": [
+    {
+      "delete": "tests/test_plan.py"
+    }
+  ],
+  "grade": {
+    "kind": "mutants",
+    "test_file": "tests/test_plan.py",
+    "min_kills": 8,
+    "mutants": [
+      {
+        "name": "a day that exactly fills the limit is closed early",
+        "edits": [
+          {
+            "file": "src/trailhead/plan.py",
+            "old": "if used > 0 and used + hours > max_hours_per_day:",
+            "new": "if used > 0 and used + hours >= max_hours_per_day:"
+          }
+        ]
+      },
+      {
+        "name": "days numbered from 0",
+        "edits": [
+          {
+            "file": "src/trailhead/plan.py",
+            "old": "days.append((len(days) + 1, first, index,",
+            "new": "days.append((len(days), first, index,"
+          },
+          {
+            "file": "src/trailhead/plan.py",
+            "old": "days.append((len(days) + 1, first, len(track.points)",
+            "new": "days.append((len(days), first, len(track.points)"
+          }
+        ]
+      },
+      {
+        "name": "last day stops one point short",
+        "edits": [
+          {
+            "file": "src/trailhead/plan.py",
+            "old": "len(track.points) - 1, round(used, 2)",
+            "new": "len(track.points) - 2, round(used, 2)"
+          }
+        ]
+      },
+      {
+        "name": "hours rounded to 0.1",
+        "edits": [
+          {
+            "file": "src/trailhead/plan.py",
+            "old": "first, index, round(used, 2)))",
+            "new": "first, index, round(used, 1)))"
+          },
+          {
+            "file": "src/trailhead/plan.py",
+            "old": "len(track.points) - 1, round(used, 2)))",
+            "new": "len(track.points) - 1, round(used, 1)))"
+          }
+        ]
+      },
+      {
+        "name": "zero limit allowed",
+        "edits": [
+          {
+            "file": "src/trailhead/plan.py",
+            "old": "if max_hours_per_day <= 0:",
+            "new": "if max_hours_per_day < 0:"
+          }
+        ]
+      },
+      {
+        "name": "fitness dropped",
+        "edits": [
+          {
+            "file": "src/trailhead/plan.py",
+            "old": "leg_hours(track, fitness)",
+            "new": "leg_hours(track)"
+          }
+        ]
+      },
+      {
+        "name": "minutes not zero-padded",
+        "edits": [
+          {
+            "file": "src/trailhead/plan.py",
+            "old": "{whole}h {minutes:02d}m",
+            "new": "{whole}h {minutes}m"
+          }
+        ]
+      },
+      {
+        "name": "minutes truncated",
+        "edits": [
+          {
+            "file": "src/trailhead/plan.py",
+            "old": "divmod(round(hours * 60), 60)",
+            "new": "divmod(int(hours * 60), 60)"
+          }
+        ]
+      },
+      {
+        "name": "next day starts one point late",
+        "edits": [
+          {
+            "file": "src/trailhead/plan.py",
+            "old": "first, used = index, 0.0",
+            "new": "first, used = index + 1, 0.0"
+          }
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "files": {
+      "tests/test_plan.py": "reference_test.py"
+    }
+  },
+  "bad": {
+    "kind": "happy-path tests only",
+    "files": {
+      "tests/test_plan.py": "weak_test.py"
+    }
+  }
+}

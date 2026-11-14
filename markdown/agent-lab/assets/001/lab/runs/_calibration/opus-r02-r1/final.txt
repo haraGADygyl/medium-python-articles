@@ -1,0 +1,5 @@
+I added `format_duration(hours: float) -> str` in a new module, `src/trailhead/timefmt.py`. Both `plan.py` (`describe_plan`) and `report.py` (`format_summary`) now call it instead of keeping their own copy.
+
+The output is unchanged because the function body is the same logic the two copies had: round to the nearest minute, split into hours and minutes, and show the minutes as two digits. Each caller just puts the result where it used to build the string itself.
+
+I also added `tests/test_timefmt.py` with a few cases, including rounding up into the next hour (`1.999` → `2h 00m`). All 52 tests pass (the existing 47 plus 5 new ones), and ruff and mypy (strict) report no issues. Nothing is committed yet.

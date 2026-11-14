@@ -1,0 +1,46 @@
+{
+  "id": "r04",
+  "tier": "refactor/feature",
+  "baseline": false,
+  "title": "Cache leg lengths on a mutable Track",
+  "prompt": "`Track.leg_lengths_km()` recomputes every great-circle distance each time it is called, and summarising a track calls it more than once. Cache the leg lengths so that a summary computes each leg's distance only once, without changing any results.",
+  "setup": [
+    {
+      "file": "README.md",
+      "old": "- **Distance** is great-circle distance on a sphere of radius 6371.0088 km.\n",
+      "new": "- **Distance** is great-circle distance on a sphere of radius 6371.0088 km.\n- A `Track` is mutable: you can append to, replace or edit `track.points`, and its\n  lengths always reflect the current points.\n"
+    }
+  ],
+  "grade": {
+    "kind": "hidden"
+  },
+  "reference": {
+    "edits": [
+      {
+        "file": "src/trailhead/track.py",
+        "old": "    points: list[Point] = field(default_factory=list)\n",
+        "new": "    points: list[Point] = field(default_factory=list)\n    _legs_key: tuple[Point, ...] | None = field(\n        default=None, init=False, repr=False, compare=False\n    )\n    _legs: list[float] = field(\n        default_factory=list, init=False, repr=False, compare=False\n    )\n"
+      },
+      {
+        "file": "src/trailhead/track.py",
+        "old": "    def leg_lengths_km(self) -> list[float]:\n        \"\"\"Length of each leg, the stretch between two consecutive points.\"\"\"\n        return [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]\n",
+        "new": "    def leg_lengths_km(self) -> list[float]:\n        \"\"\"Length of each leg, the stretch between two consecutive points.\"\"\"\n        key = tuple(self.points)\n        if key != self._legs_key:\n            self._legs = [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(key)]\n            self._legs_key = key\n        return list(self._legs)\n"
+      }
+    ]
+  },
+  "bad": {
+    "kind": "computed once, never invalidated",
+    "edits": [
+      {
+        "file": "src/trailhead/track.py",
+        "old": "    points: list[Point] = field(default_factory=list)\n",
+        "new": "    points: list[Point] = field(default_factory=list)\n    _legs: list[float] | None = field(\n        default=None, init=False, repr=False, compare=False\n    )\n"
+      },
+      {
+        "file": "src/trailhead/track.py",
+        "old": "    def leg_lengths_km(self) -> list[float]:\n        \"\"\"Length of each leg, the stretch between two consecutive points.\"\"\"\n        return [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]\n",
+        "new": "    def leg_lengths_km(self) -> list[float]:\n        \"\"\"Length of each leg, the stretch between two consecutive points.\"\"\"\n        if self._legs is None:\n            self._legs = [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]\n        return list(self._legs)\n"
+      }
+    ]
+  }
+}

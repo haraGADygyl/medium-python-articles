@@ -1,0 +1,113 @@
+diff --git a/src/trailhead/plan.py b/src/trailhead/plan.py
+index d5cf5b1..589e315 100644
+--- a/src/trailhead/plan.py
++++ b/src/trailhead/plan.py
+@@ -1,37 +1,49 @@
+ """Splitting a track into days of walking."""
+ 
++from dataclasses import dataclass
++
+ from trailhead.pace import leg_hours
+ from trailhead.track import Track
+ 
+ DEFAULT_MAX_HOURS = 7.0
+ 
+ 
++@dataclass(frozen=True)
++class DayPlan:
++    """One day of walking: days count from 1, point indexes from 0, hours rounded to 0.01."""
++
++    day: int
++    first_point: int
++    last_point: int
++    hours: float
++
++
+ def split_days(
+     track: Track, max_hours_per_day: float = DEFAULT_MAX_HOURS, fitness: float = 1.0
+-) -> list[tuple[int, int, int, float]]:
++) -> list[DayPlan]:
+     """Group consecutive legs into days of walking.
+ 
+-    Returns ``(day, first_point, last_point, hours)`` tuples: days count from 1,
+-    point indexes from 0, hours rounded to 0.01. A day never goes over
+-    ``max_hours_per_day`` unless a single leg on its own does.
++    A day never goes over ``max_hours_per_day`` unless a single leg on its own does.
+     """
+     if max_hours_per_day <= 0:
+         raise ValueError("max_hours_per_day must be positive")
+-    days: list[tuple[int, int, int, float]] = []
++    days: list[DayPlan] = []
+     first, used = 0, 0.0
+     for index, hours in enumerate(leg_hours(track, fitness)):
+         if used > 0 and used + hours > max_hours_per_day:
+-            days.append((len(days) + 1, first, index, round(used, 2)))
++            days.append(DayPlan(len(days) + 1, first, index, round(used, 2)))
+             first, used = index, 0.0
+         used += hours
+-    days.append((len(days) + 1, first, len(track.points) - 1, round(used, 2)))
++    days.append(DayPlan(len(days) + 1, first, len(track.points) - 1, round(used, 2)))
+     return days
+ 
+ 
+-def describe_plan(days: list[tuple[int, int, int, float]]) -> list[str]:
++def describe_plan(days: list[DayPlan]) -> list[str]:
+     """One line per day, for example ``Day 2: points 14-31, 6h 05m``."""
+     lines: list[str] = []
+-    for day, first, last, hours in days:
+-        whole, minutes = divmod(round(hours * 60), 60)
+-        lines.append(f"Day {day}: points {first}-{last}, {whole}h {minutes:02d}m")
++    for day in days:
++        whole, minutes = divmod(round(day.hours * 60), 60)
++        lines.append(
++            f"Day {day.day}: points {day.first_point}-{day.last_point}, {whole}h {minutes:02d}m"
++        )
+     return lines
+diff --git a/tests/test_plan.py b/tests/test_plan.py
+index 6d01541..a59ec67 100644
+--- a/tests/test_plan.py
++++ b/tests/test_plan.py
+@@ -1,6 +1,6 @@
+ import pytest
+ 
+-from trailhead.plan import describe_plan, split_days
++from trailhead.plan import DayPlan, describe_plan, split_days
+ 
+ 
+ @pytest.fixture
+@@ -11,21 +11,21 @@ def five_flat_hours(make_track):
+ 
+ 
+ def test_everything_fits_in_one_day(five_flat_hours):
+-    assert split_days(five_flat_hours) == [(1, 0, 5, 1.0 * 5)]
++    assert split_days(five_flat_hours) == [DayPlan(1, 0, 5, 1.0 * 5)]
+ 
+ 
+ def test_days_respect_the_limit(five_flat_hours):
+     assert split_days(five_flat_hours, max_hours_per_day=2.5) == [
+-        (1, 0, 2, 2.0),
+-        (2, 2, 4, 2.0),
+-        (3, 4, 5, 1.0),
++        DayPlan(1, 0, 2, 2.0),
++        DayPlan(2, 2, 4, 2.0),
++        DayPlan(3, 4, 5, 1.0),
+     ]
+ 
+ 
+ def test_one_long_leg_is_a_day_on_its_own(make_track):
+     track = make_track((0, 0, 0), (0, 0.5, 0), (0, 0.51, 0))
+     days = split_days(track, max_hours_per_day=3)
+-    assert [(day, first, last) for day, first, last, _ in days] == [(1, 0, 1), (2, 1, 2)]
++    assert [(day.day, day.first_point, day.last_point) for day in days] == [(1, 0, 1), (2, 1, 2)]
+ 
+ 
+ def test_invalid_limit(five_flat_hours):
+@@ -34,7 +34,7 @@ def test_invalid_limit(five_flat_hours):
+ 
+ 
+ def test_describe_plan():
+-    assert describe_plan([(1, 0, 14, 6.0833), (2, 14, 31, 0.75)]) == [
++    assert describe_plan([DayPlan(1, 0, 14, 6.0833), DayPlan(2, 14, 31, 0.75)]) == [
+         "Day 1: points 0-14, 6h 05m",
+         "Day 2: points 14-31, 0h 45m",
+     ]

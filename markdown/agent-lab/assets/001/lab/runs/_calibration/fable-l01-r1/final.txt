@@ -1,0 +1,7 @@
+`ruff check` now passes and the 46 tests still pass. One of the fixes changes behaviour, so check that one:
+
+- **`src/trailhead/pace.py`** — `naismith_hours` computed `hours` with the `fitness` scaling but then returned the unscaled value, so `--fitness` had no effect on summaries or plans. I made it return `hours`, which matches the docstring and README, rather than deleting the unused line. Estimates with a fitness other than 1.0 will now differ from before; no existing test covers that case.
+- **`src/trailhead/track.py`** — removed the unused `import os`, which also resolved the import-order complaint.
+- **`src/trailhead/track.py`** — the bare `except:` in `_parse_point` is now `except ValueError as err: raise TrackError(...) from err`. `ValueError` is the only thing `float()` can raise there, so parsing behaves the same.
+
+Nothing is committed.

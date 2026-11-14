@@ -1,0 +1,14 @@
+`trailhead plan --fitness 1.5` now produces different days from the default run. The fix is in place and the full suite passes (48 tests).
+
+**Cause:** the `--fitness` value was dropped in two places:
+- `src/trailhead/cli.py`: the `plan` branch called `split_days(track, args.max_hours)` and never passed `args.fitness`.
+- `src/trailhead/plan.py`: `split_days` accepted a `fitness` parameter but called `leg_hours(track)` without it, so the parameter was ignored even when given. The `summary` command was unaffected because it goes through `naismith_hours` with the fitness value directly.
+
+**Fix:**
+- `plan.py`: `leg_hours(track, fitness)`.
+- `cli.py`: `split_days(track, args.max_hours, args.fitness)`.
+- `tests/test_plan.py`: added `test_fitness_changes_the_days`, which checks that fitness 2.0 halves the leg times so five 1 h legs fit into one 3 h day. Its limit is 3 h rather than 2.5 h because at exactly 2.5 h, floating-point error pushed the last leg into a second day; I used a limit off that boundary so the test checks fitness rather than rounding.
+
+**Verification:** on a five-point sample track with `--max-hours 0.5`, the default run gives four days and `--fitness 1.5` gives three. I didn't stash and re-run the new test against the old code because that command was blocked, so I haven't seen it fail before the fix.
+
+I haven't committed the change. The sample track is in `/tmp/claude-1000/trailhead-check/`, outside the repo.

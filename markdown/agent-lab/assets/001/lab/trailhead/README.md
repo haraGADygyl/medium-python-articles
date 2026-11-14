@@ -21,7 +21,8 @@ lat,lon,ele
 ```
 
 - Blank lines are ignored. Lines starting with `#` are comments; two of them are
-  settings: `# name: <text>` and `# units: m` or `# units: ft`.
+  settings: `# name: <text>` and `# units: m` or `# units: ft`. Settings may appear
+  anywhere in the file, before or after the points, and apply to the whole track.
 - Without a `# name:` line, `load_track` names the track after the file (`rila.csv` →
   `rila`) and `parse_track` uses its `default_name` argument, or `unnamed` if none is given.
 - With `# units: ft`, elevations are converted to metres (1 ft = 0.3048 m). Any other
@@ -53,8 +54,9 @@ lat,lon,ele
 - **Tobler's hiking function** (`pace.tobler_kmh`) gives speed on a slope as
   `6 * exp(-3.5 * |grade + 0.05|)` km/h, with grade as rise over run.
 - **Day plans** (`plan.split_days`) group consecutive legs into days, timing each leg
-  by Naismith's rule with only that leg's own climb. The default limit is 7 hours a
-  day. A day never goes over the limit unless a single leg on its own does, in which
+  by Naismith's rule. A leg's climb is the ascent the summary's rule (with the
+  default 3 m threshold) credits to it, so the days of a plan add up to the summary
+  time for the same track and fitness. The default limit is 7 hours a day. A day never goes over the limit unless a single leg on its own does, in which
   case that leg is a day by itself. `fitness` applies to the plan exactly as it does
   to the summary.
 - **Heading** in the summary is the compass point (N, NE, E, SE, S, SW, W, NW) from the

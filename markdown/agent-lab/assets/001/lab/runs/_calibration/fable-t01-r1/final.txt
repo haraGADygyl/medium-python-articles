@@ -1,0 +1,26 @@
+I added `tests/test_elevation.py` with 30 tests; the full suite passes (70 tests) and `ruff check tests` is clean. Nothing under `src/` was touched, and the file is not committed.
+
+The tests found no discrepancies between `elevation.py` and the README or docstrings. They cover:
+
+- **`gain_and_loss`**:
+  - the 3 m default threshold, and that a change of exactly the threshold counts;
+  - one-metre jitter adding nothing;
+  - a 300 m climb or descent in 1 m steps counting in full;
+  - changes measured from the last counted elevation;
+  - custom and zero thresholds;
+  - rounding to 0.1 m;
+  - empty, single-point and flat inputs;
+  - `ValueError` on a negative threshold.
+- **`highest_and_lowest`**: an ordinary track, a level track, and elevations below sea level.
+- **`steepest_grade`**:
+  - the README's example of 18 m over 100 m giving `18.0`;
+  - downhill legs reported as positive;
+  - the steepest single leg winning in either direction;
+  - rounding to 0.1;
+  - a level track giving zero;
+  - repeated points skipped, including a track made only of repeated points.
+
+Two of the tested behaviours are my reading of the docs rather than something they state outright:
+
+- **Downhill grade is positive**: "uphill or downhill" doesn't say whether a descent is signed, and the tests assert the magnitude.
+- **All-repeated-points track gives `0.0`**: the docs only say zero-length legs are skipped.

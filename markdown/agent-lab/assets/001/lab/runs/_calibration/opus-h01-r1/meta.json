@@ -1,0 +1,111 @@
+{
+  "run_id": "opus-h01-r1",
+  "task": "h01",
+  "tier": "two-file bug",
+  "repeat": 1,
+  "model_alias": "opus",
+  "prompt": "Bug report from a user: \"`trailhead plan route.csv --fitness 1.5` prints exactly the same days as `trailhead plan route.csv`. `trailhead summary` does take `--fitness` into account.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 49.1,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 13,
+  "duration_ms": 47024,
+  "duration_api_ms": 45497,
+  "api_equivalent_usd": 0.221083,
+  "usage": {
+    "input_tokens": 19,
+    "cache_creation_input_tokens": 13918,
+    "cache_read_input_tokens": 219315,
+    "output_tokens": 3290,
+    "output_tokens_details": {
+      "thinking_tokens": 727
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 13918,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 604,
+        "cache_read_input_tokens": 25869,
+        "cache_creation_input_tokens": 533,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 533
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 19,
+      "outputTokens": 3290,
+      "cacheReadInputTokens": 219315,
+      "cacheCreationInputTokens": 13918,
+      "webSearchRequests": 0,
+      "costUSD": 0.221083,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 727,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 13918,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 10,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "git ls-files; grep -rn \"fitness\" --include=*.py .",
+    "cat src/trailhead/plan.py src/trailhead/cli.py; cat tests/test_plan.py",
+    "sed -i 's/enumerate(leg_hours(track))/enumerate(leg_hours(track, fitness))/' src/trailhead/plan.py\nsed -i 's/split_days(track, args.max_hours)/split_days(track, args.max_hours, args.fitness)/' src/trailhead/cli.py\ngit diff; cat tests/test_cli.py | head -40",
+    "cat >> tests/test_plan.py <<'EOF'\n\n\ndef test_fitness_shortens_days(five_flat_hours):\n    # A walker 2x as fit covers each 5 km leg in half an hour.\n    assert split_days(five_flat_hours, max_hours_per_day=1.2, fitness=2.0) == [\n        (1, 0, 2, 1.0),\n        (2, 2, 4, 1.0),\n        (3, 4, 5, 0.5),\n    ]\nEOF\ncat >> tests/test_cli.py <<'EOF'\n\n\ndef test_plan_command_uses_fitness(write_track, capsys):\n    path = str(write_track(TRACK))\n    assert main([\"plan\", path, \"--max-hours\", \"0.3\", \"--fitness\", \"2\"]) == 0\n    assert capsys.readouterr().out == \"Day 1: points 0-2, 0h 18m\\n\"\nEOF\npython -m pytest -q 2>&1 | tail -15",
+    "sed -i 's/\"--max-hours\", \"0.3\", \"--fitness\", \"2\"\\]/\"--max-hours\", \"0.35\", \"--fitness\", \"2\"]/; s/\"Day 1: points 0-2, 0h 18m\\\\n\"/\"Day 1: points 0-2, 0h 18m\\\\n\"/' tests/test_cli.py\npython -m pytest -q 2>&1 | tail -8; git stash -q -- src; python -m pytest -q 2>&1 | tail -3; git stash pop -q; git status --short",
+    "python -m pytest -q 2>&1 | tail -8",
+    "git diff tests/test_cli.py",
+    "python -m pytest -q 2>&1 | tail -3",
+    "python -m pytest -q tests/test_cli.py 2>&1 | grep -E \"^E\" | head",
+    "python -m pytest -q 2>&1 | tail -2"
+  ],
+  "permission_denials": [
+    {
+      "command": "sed -i 's/\"--max-hours\", \"0.3\", \"--fitness\", \"2\"\\]/\"--max-hours\", \"0.35\", \"--fitness\", \"2\"]/; s/\"Day 1: points 0-2, 0h 18m\\\\n\"/\"Day 1: points 0-2, 0h 18m\\\\n\"/' tests/test_cli.py\npython -m pytest -q 2>&1 | tail -8; git stash -q -- src; python -m pytest -q 2>&1 | tail -3; git stash pop -q; git status --short",
+      "description": "Adjust test, run suite with and without fix"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/plan.py",
+      "M tests/test_cli.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 17,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

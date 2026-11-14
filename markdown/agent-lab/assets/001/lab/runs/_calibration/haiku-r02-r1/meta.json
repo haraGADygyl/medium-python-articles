@@ -1,0 +1,108 @@
+{
+  "run_id": "haiku-r02-r1",
+  "task": "r02",
+  "tier": "refactor",
+  "repeat": 1,
+  "model_alias": "haiku",
+  "prompt": "`plan.py` and `report.py` each have their own copy of the code that formats a number of hours as text like `5h 07m`. Move it into a single function `format_duration(hours: float) -> str` in a new module `src/trailhead/timefmt.py`, and make both modules use it. The output must not change.",
+  "harness_timeout": false,
+  "wall_s": 24.4,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 14,
+  "duration_ms": 22272,
+  "duration_api_ms": 21104,
+  "api_equivalent_usd": 0.00609992,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 14291,
+    "cache_read_input_tokens": 126952,
+    "output_tokens": 3942,
+    "output_tokens_details": {
+      "thinking_tokens": 329
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 14291,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 499,
+        "cache_read_input_tokens": 26093,
+        "cache_creation_input_tokens": 682,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 682
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 3942,
+      "cacheReadInputTokens": 126952,
+      "cacheCreationInputTokens": 14291,
+      "webSearchRequests": 0,
+      "costUSD": 0.00609992,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 329,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 14291,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 6,
+    "Write": 2,
+    "Edit": 5
+  },
+  "bash_commands": [
+    "git status --short && find . -path ./.git -prune -o -type f -print | head -100 && cat src/trailhead/plan.py && echo ---- && cat src/trailhead/report.py",
+    "grep -rn \"divmod\\|h {\\|:02d\" src tests; echo ---; cat src/trailhead/__init__.py; echo ---; cat tests/test_plan.py | head -40; echo ---; grep -n \"time\\|h \" tests/test_report.py | head; cat pyproject.toml",
+    "(python -m pytest -q 2>&1 | tail -15); (python -m ruff check src tests 2>&1 | tail -5); (python -m mypy 2>&1 | tail -3); git stash -q && (python -m pytest -q 2>&1 | tail -1); git stash pop -q && git status --short",
+    "python -m pytest -q",
+    "python -m ruff check src tests",
+    "python -m mypy"
+  ],
+  "permission_denials": [
+    {
+      "command": "(python -m pytest -q 2>&1 | tail -15); (python -m ruff check src tests 2>&1 | tail -5); (python -m mypy 2>&1 | tail -3); git stash -q && (python -m pytest -q 2>&1 | tail -1); git stash pop -q && git status --short",
+      "description": "Run tests, ruff, mypy, and compare with baseline"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "A src/trailhead/timefmt.py",
+      "A tests/test_timefmt.py"
+    ],
+    "lines_added": 32,
+    "lines_removed": 4,
+    "own_suite_pass_as_left": true
+  }
+}

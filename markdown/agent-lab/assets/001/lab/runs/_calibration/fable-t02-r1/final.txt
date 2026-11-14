@@ -1,0 +1,14 @@
+I wrote `tests/test_pace.py` with tests for all three functions in `pace.py`; they all pass, `ruff check` is clean, and nothing under `src/` was touched.
+
+The expected values come from the README and docstrings rather than from the code, and I found no mismatch between `pace.py` and its documentation.
+
+- **`naismith_hours`**: 5 km/h on the flat, one hour per 600 m of ascent, the two adding up, fitness dividing the time (1.25, 2.0, 0.8), no rounding, and `ValueError` for zero or negative fitness and for negative distance or ascent.
+- **`tobler_kmh`**: the README formula at several grades, the 6 km/h peak at a 5% descent, never reaching 6 km/h elsewhere, symmetry about that peak, and slowing as the slope steepens in either direction.
+- **`leg_hours`**: one time per leg, each leg timed on its own distance and its own climb, descent adding nothing and not cancelling a later climb, fitness applied to every leg, and the leg times summing to the whole-walk figure.
+
+Three `leg_hours` tests pin behaviour the docs don't state outright:
+- a repeated point gives a 0-hour leg;
+- a single-point track gives an empty list;
+- a 1.5 m climb on a leg is counted, i.e. the 3 m ascent threshold from `elevation.gain_and_loss` does not apply to per-leg timing.
+
+The last one is my reading of "only that leg's own climb"; if the threshold is meant to apply there, that test should change.

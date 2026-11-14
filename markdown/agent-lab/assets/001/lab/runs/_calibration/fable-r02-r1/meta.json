@@ -1,0 +1,97 @@
+{
+  "run_id": "fable-r02-r1",
+  "task": "r02",
+  "tier": "refactor",
+  "repeat": 1,
+  "model_alias": "fable",
+  "prompt": "`plan.py` and `report.py` each have their own copy of the code that formats a number of hours as text like `5h 07m`. Move it into a single function `format_duration(hours: float) -> str` in a new module `src/trailhead/timefmt.py`, and make both modules use it. The output must not change.",
+  "harness_timeout": false,
+  "wall_s": 18.9,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 4,
+  "duration_ms": 16942,
+  "duration_api_ms": 16333,
+  "api_equivalent_usd": 0.2511834,
+  "usage": {
+    "input_tokens": 6,
+    "cache_creation_input_tokens": 12098,
+    "cache_read_input_tokens": 55037,
+    "output_tokens": 1164,
+    "output_tokens_details": {
+      "thinking_tokens": 46
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 12098,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 174,
+        "cache_read_input_tokens": 22664,
+        "cache_creation_input_tokens": 1918,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1918
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 6,
+      "outputTokens": 1164,
+      "cacheReadInputTokens": 55037,
+      "cacheCreationInputTokens": 12098,
+      "webSearchRequests": 0,
+      "costUSD": 0.2511834,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 46,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 12098,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 2,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git ls-files; cat src/trailhead/plan.py src/trailhead/report.py; grep -rn \"h \\|02d\\|duration\\|divmod\" --include=*.py . | grep -v \"^./src/trailhead/\\(plan\\|report\\).py\"",
+    "python - <<'EOF'\nimport re, pathlib\np = pathlib.Path(\"src/trailhead/plan.py\"); s = p.read_text()\ns = s.replace(\"from trailhead.pace import leg_hours\\n\", \"from trailhead.pace import leg_hours\\nfrom trailhead.timefmt import format_duration\\n\")\ns = s.replace('''        whole, minutes = divmod(round(hours * 60), 60)\n        lines.append(f\"Day {day}: points {first}-{last}, {whole}h {minutes:02d}m\")''', '''        lines.append(f\"Day {day}: points {first}-{last}, {format_duration(hours)}\")''')\np.write_text(s)\np = pathlib.Path(\"src/trailhead/report.py\"); s = p.read_text()\ns = s.replace(\"from trailhead.pace import naismith_hours\\n\", \"from trailhead.pace import naismith_hours\\nfrom trailhead.timefmt import format_duration\\n\")\ns = s.replace(\"    whole, minutes = divmod(round(summary.hours * 60), 60)\\n\", \"\")\ns = s.replace('{whole}h {minutes:02d}m', '{format_duration(summary.hours)}')\np.write_text(s)\nEOF\ngit diff; python -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "A src/trailhead/timefmt.py"
+    ],
+    "lines_added": 11,
+    "lines_removed": 4,
+    "own_suite_pass_as_left": true
+  }
+}

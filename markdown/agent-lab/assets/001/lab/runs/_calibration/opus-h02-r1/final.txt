@@ -1,0 +1,13 @@
+I fixed both causes. The full test suite passes (49 tests), including new regression tests.
+
+**Cause:** two separate bugs, one for each symptom.
+- **`0.5` was rejected:** `src/trailhead/cli.py:20` declared `--threshold` with `type=int`, so the command line only accepted whole numbers. It is now `type=float`, the same as `--fitness` and `--max-hours`.
+- **`0` was silently ignored:** `src/trailhead/report.py:42` passed `threshold or DEFAULT_THRESHOLD_M`. Python treats `0` as false, so an explicit 0 was quietly replaced by the default 3 m. That fallback isn't needed because `summarise` already defaults to 3 m, so I removed it and the threshold is now passed through as given. The ascent calculation in `elevation.py` already handled 0 correctly ("count every change").
+
+**Tests added:**
+- `tests/test_report.py`: with `threshold=0`, small changes are counted (+3 / −1 m). With the default threshold they are still ignored.
+- `tests/test_cli.py`: `--threshold 0` and `--threshold 0.5` both work from the command line and count a 0.6 m bump that the default ignores.
+
+I tried to confirm the new tests fail on the old code by temporarily stashing the fix, but that command needed approval and didn't run. Reading the old code, they should fail: `0.5` raises the parser error and `0` gives +0 m.
+
+**Related issue I left alone:** a negative value like `--threshold -1` gets past the command line, and `gain_and_loss` then rejects it with a Python traceback rather than a clean error message. This isn't new, but it's easy to fix in the argument parser if you want.

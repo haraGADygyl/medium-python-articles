@@ -1,0 +1,99 @@
+{
+  "run_id": "fable-l03-r1",
+  "task": "l03",
+  "tier": "lint",
+  "repeat": 1,
+  "model_alias": "fable",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "harness_timeout": false,
+  "wall_s": 25.9,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 5,
+  "duration_ms": 23244,
+  "duration_api_ms": 21763,
+  "api_equivalent_usd": 0.2754582,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 12789,
+    "cache_read_input_tokens": 100571,
+    "output_tokens": 1266,
+    "output_tokens_details": {
+      "thinking_tokens": 160
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 12789,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 275,
+        "cache_read_input_tokens": 24456,
+        "cache_creation_input_tokens": 817,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 817
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 10,
+      "outputTokens": 1266,
+      "cacheReadInputTokens": 100571,
+      "cacheCreationInputTokens": 12789,
+      "webSearchRequests": 0,
+      "costUSD": 0.2754582,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 160,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 12789,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4
+  },
+  "bash_commands": [
+    "cat pyproject.toml; git ls-files; mypy 2>&1 | tail -40",
+    "cat -n src/trailhead/track.py src/trailhead/plan.py; grep -rn \"max_day_hours\\|name\" src/trailhead/cli.py src/trailhead/report.py tests/test_plan.py tests/test_track.py | head -60",
+    "grep -rn \"DEFAULT_MAX_HOURS\\|split_days\\|parse_track\\|max.hours\\|max_hours\" --include=*.py --include=*.md . | grep -v \"^./src/trailhead/plan.py\"; grep -n -i \"name\\|untitled\\|unnamed\" README.md src/trailhead/report.py",
+    "sed -n 53,60p README.md\npython - <<'EOF'\nimport re,pathlib\np=pathlib.Path('src/trailhead/track.py'); s=p.read_text()\ns=s.replace('    return Track(name, points)','    return Track(name if name is not None else \"unnamed\", points)')\np.write_text(s)\np=pathlib.Path('src/trailhead/plan.py'); s=p.read_text()\ns=s.replace('''    \"\"\"\n    if max_hours_per_day <= 0:''','''    \"\"\"\n    if max_hours_per_day is None:\n        max_hours_per_day = DEFAULT_MAX_HOURS\n    if max_hours_per_day <= 0:''')\np.write_text(s)\nEOF\nmypy; python -m pytest -q 2>&1 | tail -3; ruff check . | tail -2; git diff --stat"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/plan.py",
+      "M src/trailhead/track.py"
+    ],
+    "lines_added": 3,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  }
+}

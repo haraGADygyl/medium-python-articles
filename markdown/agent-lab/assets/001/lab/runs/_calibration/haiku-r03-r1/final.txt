@@ -1,0 +1,11 @@
+`plan.split_days` now returns `DayPlan` instances, and all 47 tests pass.
+
+**Changes**
+- **`src/trailhead/plan.py`**: added `@dataclass(frozen=True) class DayPlan` with fields `day`, `first_point`, `last_point`, `hours` in that order. `split_days` builds and returns `DayPlan` objects. `describe_plan` now reads attributes instead of unpacking tuples. I also updated the type hints and docstrings to match.
+- **`tests/test_plan.py`**: the expected values are now `DayPlan(...)`, and the long-leg test reads `day.day`, `day.first_point`, `day.last_point`.
+- **`src/trailhead/cli.py`**: no change needed. It passes the result of `split_days` straight to `describe_plan`.
+
+**Output check**
+The line format in `describe_plan` is the same as before. The unit tests pin the old values, and they pass. I could not run a byte-for-byte diff of old against new output: the sandbox blocked `git archive` for extracting the original code. The new code runs and produces sensible day lines on a sample track.
+
+I haven't committed anything.

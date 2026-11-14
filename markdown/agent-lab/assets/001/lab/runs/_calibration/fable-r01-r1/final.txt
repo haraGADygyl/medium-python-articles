@@ -1,0 +1,7 @@
+`haversine_km` is now `distance_km` in `src/trailhead/geo.py`, and the callers in `report.py`, `track.py` and `tests/test_geo.py` use the new name. All 48 tests pass with `DeprecationWarning` treated as an error, so nothing in `src/` or the existing tests still goes through the old name; ruff and mypy are clean.
+
+`haversine_km` remains in `trailhead.geo` as a thin wrapper that emits a `DeprecationWarning` pointing at `distance_km` and returns its result. The warning is attributed to the caller's line (`stacklevel=2`).
+
+I also added one test, `test_haversine_km_is_a_deprecated_alias_for_distance_km`, which checks the warning and that both names return the same value.
+
+Nothing is committed.

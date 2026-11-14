@@ -1,0 +1,11 @@
+`ruff check` now passes, and the 46 tests still pass. I didn't change the ruff configuration or add any `noqa` comments.
+
+The five reported problems were in two files:
+
+- **`src/trailhead/pace.py`**: ruff flagged `hours` as unused (F841). This was a real bug, not just dead code. `naismith_hours` computed the fitness-scaled value and then returned the unscaled one, so `fitness` had no effect. I changed the return to `return hours`. Ruff's suggested unsafe fix would have deleted the line and kept the bug. The README says `fitness` divides the time, so this matches the documented behaviour. Check: 10 km with 600 m ascent now gives 3.0 h at fitness 1.0 and 2.4 h at 1.25. Before the fix both calls returned 3.0 h. This is a behaviour change, so if anything depended on the old output, it will shift.
+- **`src/trailhead/track.py`**:
+  - Removed the unused `import os` (F401).
+  - Moved the remaining imports into order. The `os` import was out of place and the import-sorting check (I001) flagged it. Since it was unused, I removed it rather than moving it.
+  - Replaced the bare `except:` (E722) with `except ValueError as err:`, and chained the re-raised `TrackError` with `from err` (B904). `float()` only raises `ValueError` for bad strings here, so the narrower catch doesn't lose any cases.
+
+Nothing has been committed.

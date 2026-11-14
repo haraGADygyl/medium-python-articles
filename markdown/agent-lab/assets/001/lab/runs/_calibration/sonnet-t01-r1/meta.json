@@ -1,0 +1,109 @@
+{
+  "run_id": "sonnet-t01-r1",
+  "task": "t01",
+  "tier": "tests",
+  "repeat": 1,
+  "model_alias": "sonnet",
+  "prompt": "`src/trailhead/elevation.py` has no tests. Write `tests/test_elevation.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 28.1,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 25390,
+  "duration_api_ms": 24818,
+  "api_equivalent_usd": 0.095207,
+  "usage": {
+    "input_tokens": 8,
+    "cache_creation_input_tokens": 13336,
+    "cache_read_input_tokens": 75070,
+    "output_tokens": 3434,
+    "output_tokens_details": {
+      "thinking_tokens": 146
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 13336,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 438,
+        "cache_read_input_tokens": 23058,
+        "cache_creation_input_tokens": 2762,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 2762
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 8,
+      "outputTokens": 3434,
+      "cacheReadInputTokens": 75070,
+      "cacheCreationInputTokens": 13336,
+      "webSearchRequests": 0,
+      "costUSD": 0.095207,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 146,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 13336,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Read": 1,
+    "Bash": 3,
+    "Write": 1
+  },
+  "bash_commands": [
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/sonnet-t01-r1; git ls-files; cat README*",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/sonnet-t01-r1; cat tests/conftest.py src/trailhead/track.py; head -30 tests/test_pace.py",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/sonnet-t01-r1; python -m pytest tests/test_elevation.py -q 2>&1 | tail -30; ruff check tests/test_elevation.py 2>&1 | tail"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_elevation.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".....................                                                    [100%]\n21 passed in 0.03s\n",
+    "src_changed": [],
+    "killed": [
+      "gain threshold exclusive",
+      "no hysteresis",
+      "loss sign flipped",
+      "default threshold 2 m",
+      "negative threshold clamped",
+      "steepest ignores descents",
+      "zero-length legs not skipped"
+    ],
+    "survived": [],
+    "kills": 7,
+    "mutants": 7,
+    "changed": [
+      "A tests/test_elevation.py"
+    ],
+    "lines_added": 124,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

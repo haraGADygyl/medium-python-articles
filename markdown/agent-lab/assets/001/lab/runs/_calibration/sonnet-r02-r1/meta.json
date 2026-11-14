@@ -1,0 +1,99 @@
+{
+  "run_id": "sonnet-r02-r1",
+  "task": "r02",
+  "tier": "refactor",
+  "repeat": 1,
+  "model_alias": "sonnet",
+  "prompt": "`plan.py` and `report.py` each have their own copy of the code that formats a number of hours as text like `5h 07m`. Move it into a single function `format_duration(hours: float) -> str` in a new module `src/trailhead/timefmt.py`, and make both modules use it. The output must not change.",
+  "harness_timeout": false,
+  "wall_s": 21.7,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 11,
+  "duration_ms": 19607,
+  "duration_api_ms": 19111,
+  "api_equivalent_usd": 0.07984830000000001,
+  "usage": {
+    "input_tokens": 9,
+    "cache_creation_input_tokens": 12104,
+    "cache_read_input_tokens": 97843,
+    "output_tokens": 2163,
+    "output_tokens_details": {
+      "thinking_tokens": 0
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 12104,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 1,
+        "output_tokens": 148,
+        "cache_read_input_tokens": 24286,
+        "cache_creation_input_tokens": 302,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 302
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 9,
+      "outputTokens": 2163,
+      "cacheReadInputTokens": 97843,
+      "cacheCreationInputTokens": 12104,
+      "webSearchRequests": 0,
+      "costUSD": 0.07984830000000001,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 0,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 12104,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 1,
+    "Write": 1,
+    "Read": 2,
+    "Edit": 5,
+    "Bash": 1
+  },
+  "bash_commands": [
+    "python -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "A src/trailhead/timefmt.py"
+    ],
+    "lines_added": 8,
+    "lines_removed": 4,
+    "own_suite_pass_as_left": true
+  }
+}

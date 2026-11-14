@@ -1,0 +1,7 @@
+`plan.split_days` now returns a list of `DayPlan` instances, and the 47 tests pass. I didn't run the `plan` CLI command itself, so unchanged command output is covered only by the tests.
+
+`DayPlan` is a frozen dataclass in `src/trailhead/plan.py` with the fields `day`, `first_point`, `last_point` and `hours`, in that order.
+
+- **`src/trailhead/plan.py`:** `split_days` builds `DayPlan` objects, and its docstring and return type are updated. `describe_plan` now reads the fields by name instead of unpacking positionally, and its output text is unchanged.
+- **`src/trailhead/cli.py`:** no edit was needed. It passes the result straight to `describe_plan`.
+- **`tests/test_plan.py`:** the tests now compare against `DayPlan(...)` values instead of tuples.

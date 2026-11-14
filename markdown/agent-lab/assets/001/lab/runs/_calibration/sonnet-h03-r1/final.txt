@@ -1,0 +1,11 @@
+`steepest_grade()` now returns a percentage, so your 18 m over 100 m example gives `18.0`. All 46 tests pass. I didn't add a test that calls `steepest_grade()` directly, and I didn't run your exact example.
+
+**Cause:** The function returned a fraction (rise over run) rounded to 3 places, which is why you got 0.18. The docstring and README both promise percent. `report.py` was multiplying the result by 100 itself, which hid the mismatch.
+
+**Fix:**
+- `src/trailhead/elevation.py`: `steepest_grade` now multiplies by 100 and rounds to 0.1, as the docstring says.
+- `src/trailhead/report.py`: removed the `* 100` and the extra rounding, so the report's steepest-grade line is unchanged.
+
+`report.py` was the only other caller. Any code outside this repo that relied on the fraction will now get 100 times larger values.
+
+I haven't committed anything.

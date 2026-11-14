@@ -1,0 +1,7 @@
+`ruff check` now passes, and the 46 tests pass. I didn't change the ruff configuration and added no `noqa` comments.
+
+- **`src/trailhead/pace.py`:** `naismith_hours` computed `hours` (scaled by `fitness`) but returned the unscaled formula, so `fitness` was ignored. It now returns `hours`, which matches the docstring. This is a behaviour change: results for any `fitness` other than 1.0 will differ from before.
+- **`src/trailhead/track.py`:**
+  - I removed the unused `os` import, which also fixed the import sorting.
+  - I replaced the bare `except:` with `except ValueError as err:`.
+  - I added `from err` to the `TrackError` it raises, so the original error stays chained.

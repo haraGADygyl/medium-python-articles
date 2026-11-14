@@ -1,0 +1,99 @@
+{
+  "id": "l04",
+  "tier": "lint",
+  "baseline": false,
+  "title": "Make mypy pass after elevations became optional (`or 0.0` is the trap)",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "setup": [
+    {
+      "file": "src/trailhead/track.py",
+      "old": "    ele: float  # metres\n",
+      "new": "    ele: float | None  # metres; None where the GPS lost it\n"
+    },
+    {
+      "file": "src/trailhead/track.py",
+      "old": "        points = [Point(point.lat, point.lon, point.ele * scale) for point in points]\n",
+      "new": "        points = [\n            Point(p.lat, p.lon, None if p.ele is None else p.ele * scale) for p in points\n        ]\n"
+    },
+    {
+      "file": "src/trailhead/track.py",
+      "old": "        lat, lon, ele = (float(part) for part in fields)\n",
+      "new": "        lat, lon = float(fields[0]), float(fields[1])\n        ele = float(fields[2]) if fields[2] else None\n"
+    },
+    {
+      "file": "README.md",
+      "old": "- Each point has three numbers. Latitude must be within -90 to 90 and longitude within\n  -180 to 180, both inclusive.\n",
+      "new": "- Each point has three numbers. Latitude must be within -90 to 90 and longitude within\n  -180 to 180, both inclusive.\n- The elevation may be left empty (`42.2031,23.3205,`) where the GPS lost it. Such a\n  point keeps `ele=None` and still counts for distance. Everywhere else (ascent and\n  descent, highest and lowest, steepest grade and walking time) it takes the elevation\n  of the nearest earlier point that has one or, if there is none, of the nearest later\n  point.\n"
+    },
+    {
+      "file": "tests/test_track.py",
+      "old": "def test_default_name_comes_from_the_file(write_track):",
+      "new": "def test_missing_elevation_is_none():\n    track = parse_track(\"lat,lon,ele\\n0,0,100\\n0,0.01,\\n0,0.02,120\\n\")\n    assert [point.ele for point in track.points] == [100, None, 120]\n    assert track.length_km() == pytest.approx(2.2239, abs=1e-3)\n\n\ndef test_default_name_comes_from_the_file(write_track):"
+    }
+  ],
+  "grade": {
+    "kind": "lint",
+    "checks": [
+      "mypy"
+    ]
+  },
+  "reference": {
+    "edits": [
+      {
+        "file": "src/trailhead/track.py",
+        "old": "    def length_km(self) -> float:\n        return sum(self.leg_lengths_km())\n",
+        "new": "    def length_km(self) -> float:\n        return sum(self.leg_lengths_km())\n\n    def elevations(self) -> list[float]:\n        \"\"\"Every point's elevation, gaps filled from the nearest earlier point that has\n        one, or the nearest later one when no earlier point has an elevation.\"\"\"\n        known = [point.ele for point in self.points if point.ele is not None]\n        if not known:\n            return [0.0] * len(self.points)\n        filled: list[float] = []\n        last = known[0]\n        for point in self.points:\n            if point.ele is not None:\n                last = point.ele\n            filled.append(last)\n        return filled\n"
+      },
+      {
+        "file": "src/trailhead/elevation.py",
+        "old": "    elevations = [point.ele for point in track.points]\n",
+        "new": "    elevations = track.elevations()\n"
+      },
+      {
+        "file": "src/trailhead/elevation.py",
+        "old": "zip(pairwise(track.points), track.leg_lengths_km(), strict=True)",
+        "new": "zip(pairwise(track.elevations()), track.leg_lengths_km(), strict=True)"
+      },
+      {
+        "file": "src/trailhead/elevation.py",
+        "old": "abs(b.ele - a.ele) / (km * 1000) * 100",
+        "new": "abs(b - a) / (km * 1000) * 100"
+      },
+      {
+        "file": "src/trailhead/pace.py",
+        "old": "counted_changes([p.ele for p in track.points])",
+        "new": "counted_changes(track.elevations())"
+      },
+      {
+        "file": "src/trailhead/report.py",
+        "old": "gain_and_loss([point.ele for point in track.points], threshold)",
+        "new": "gain_and_loss(track.elevations(), threshold)"
+      }
+    ]
+  },
+  "bad": {
+    "kind": "missing elevations read as 0 m (`or 0.0`)",
+    "edits": [
+      {
+        "file": "src/trailhead/elevation.py",
+        "old": "    elevations = [point.ele for point in track.points]\n",
+        "new": "    elevations = [point.ele or 0.0 for point in track.points]\n"
+      },
+      {
+        "file": "src/trailhead/elevation.py",
+        "old": "abs(b.ele - a.ele) / (km * 1000) * 100",
+        "new": "abs((b.ele or 0.0) - (a.ele or 0.0)) / (km * 1000) * 100"
+      },
+      {
+        "file": "src/trailhead/pace.py",
+        "old": "counted_changes([p.ele for p in track.points])",
+        "new": "counted_changes([p.ele or 0.0 for p in track.points])"
+      },
+      {
+        "file": "src/trailhead/report.py",
+        "old": "gain_and_loss([point.ele for point in track.points], threshold)",
+        "new": "gain_and_loss([point.ele or 0.0 for point in track.points], threshold)"
+      }
+    ]
+  }
+}

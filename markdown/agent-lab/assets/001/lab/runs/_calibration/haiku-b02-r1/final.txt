@@ -1,0 +1,15 @@
+The ridge now reports `heading E` instead of `N`.
+
+**Cause:** `initial_bearing` in `src/trailhead/geo.py` had its two atan2 components swapped. The formula computed the east and north terms correctly but passed them to `atan2` as `(north, east)`, which yields `90° − true bearing`. Due east (90°) came out as 0°, which is N. Due north came out as E. The existing NE test passed by coincidence, because a 45° bearing is its own mirror under this swap.
+
+**Fix:** I renamed the two terms to `east` and `north` and passed them as `atan2(east, north)`. This is the standard initial-bearing formula.
+
+**Tests:** I added regression tests to `tests/test_geo.py`:
+- `test_initial_bearing_of_the_cardinal_directions` checks N, E, S and W.
+- `test_due_east_along_a_parallel_is_east_not_north` uses your exact coordinates, 42.20, 23.30 → 42.20, 23.45.
+
+The old formula gives 90, 0.3, 270 and 179.7 for the four cardinal test points, so these tests fail on the old code. I checked that by evaluating the old formula directly rather than stashing, so I didn't run the test suite against the old file.
+
+**Verification:** all 48 tests pass, `ruff check` is clean, and `mypy` reports no issues. I also ran `trailhead summary` on a two-point track built from your coordinates, and it printed `heading E`.
+
+I haven't committed anything. The change is in the working tree for you to review.

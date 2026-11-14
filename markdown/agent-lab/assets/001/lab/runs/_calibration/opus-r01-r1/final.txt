@@ -1,0 +1,10 @@
+I renamed `haversine_km` to `distance_km` and updated every caller. Tests (48 passed), ruff and mypy all pass.
+
+**What changed:**
+- **`src/trailhead/geo.py`:** the function is now `distance_km`. `haversine_km` is still there as a small wrapper that emits a `DeprecationWarning` and returns `distance_km(...)`. The warning points at the caller's line, not at `geo.py`.
+- **`src/trailhead/track.py`, `src/trailhead/report.py`, `tests/test_geo.py`:** switched to `distance_km`.
+- **New test** in `tests/test_geo.py`: checks that calling `haversine_km` emits the warning and gives exactly the same result as `distance_km`.
+
+The only places `haversine_km` still appears are the alias itself and its test.
+
+I wrote the warning by hand with `warnings.warn` instead of using the `@deprecated` decorator. That decorator only exists in the standard library from Python 3.13, the project supports 3.12, and using the backport would mean adding the `typing_extensions` dependency.

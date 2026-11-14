@@ -1,0 +1,7 @@
+I found and fixed the bug, and all 47 tests pass, including a new one for this case.
+
+**Cause:** In `gain_and_loss` (`src/trailhead/elevation.py`), the loop had an extra `reference = elevation` line that ran on every point. It was meant to run only when a change was counted. So each point was compared only with the one just before it, never with the last counted height. The ascent threshold is 3 m by default, and at one point per metre each step is 1 m. No single step reached 3 m, so the whole 300 m climb counted as +0 m. Tracks with bigger gaps looked fine because each step there was already over 3 m.
+
+**Fix:** I deleted that one line. Now small steps add up until they reach 3 m from the last counted height, which is what the function's docstring describes. GPS jitter is still ignored: the existing jitter test passes unchanged.
+
+**Test:** I added `test_long_climb_in_steps_below_the_threshold_is_counted` in `tests/test_elevation.py`. It checks that a 300 m climb in 1 m steps gives +300 m, and that the same track reversed gives −300 m.

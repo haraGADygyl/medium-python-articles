@@ -1,6 +1,7 @@
 {
   "id": "t02",
   "tier": "tests",
+  "baseline": true,
   "title": "Write tests for pace.py",
   "prompt": "`src/trailhead/pace.py` has no tests. Write `tests/test_pace.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
   "setup": [
@@ -78,8 +79,8 @@
         "edits": [
           {
             "file": "src/trailhead/pace.py",
-            "old": "max(b.ele - a.ele, 0.0)",
-            "new": "abs(b.ele - a.ele)"
+            "old": "max(change, 0.0)",
+            "new": "abs(change)"
           }
         ]
       },
@@ -88,8 +89,8 @@
         "edits": [
           {
             "file": "src/trailhead/pace.py",
-            "old": "naismith_hours(km, max(b.ele - a.ele, 0.0), fitness)",
-            "new": "naismith_hours(km, max(b.ele - a.ele, 0.0))"
+            "old": "naismith_hours(km, climb, fitness)",
+            "new": "naismith_hours(km, climb)"
           }
         ]
       }

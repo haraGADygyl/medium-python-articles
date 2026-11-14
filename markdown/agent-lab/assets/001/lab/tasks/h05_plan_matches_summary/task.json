@@ -1,0 +1,35 @@
+{
+  "id": "h05",
+  "tier": "two-file bug",
+  "baseline": false,
+  "title": "Plan days don't add up to the summary on noisy tracks (pace.py ignores the ascent rule)",
+  "prompt": "Bug report from a user: \"On my GPS track, which has a lot of small up-and-down noise, the days from `trailhead plan` add up to 9h 40m, but `trailhead summary` says 7h 05m for the same file. The README says the two should agree.\" Find the cause and fix it.",
+  "setup": [
+    {
+      "file": "src/trailhead/pace.py",
+      "old": "from math import exp\n\nfrom trailhead.elevation import counted_changes\nfrom trailhead.track import Track\n",
+      "new": "from itertools import pairwise\nfrom math import exp\n\nfrom trailhead.track import Track\n"
+    },
+    {
+      "file": "src/trailhead/pace.py",
+      "old": "def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:\n    \"\"\"Naismith time for every leg.\n\n    A leg's climb is the ascent the summary's rule credits to it\n    (`elevation.counted_changes` with the default threshold), so the legs of a\n    track add up to its summary time.\n    \"\"\"\n    climbs = [max(change, 0.0) for change in counted_changes([p.ele for p in track.points])]\n    return [\n        naismith_hours(km, climb, fitness)\n        for km, climb in zip(track.leg_lengths_km(), climbs, strict=True)\n    ]\n",
+      "new": "def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:\n    \"\"\"Naismith time for every leg, counting the leg's own climb.\"\"\"\n    return [\n        naismith_hours(km, max(b.ele - a.ele, 0.0), fitness)\n        for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True)\n    ]\n"
+    }
+  ],
+  "grade": {
+    "kind": "hidden"
+  },
+  "reference": {
+    "restore_src": true
+  },
+  "bad": {
+    "kind": "threshold applied to each leg on its own",
+    "edits": [
+      {
+        "file": "src/trailhead/pace.py",
+        "old": "naismith_hours(km, max(b.ele - a.ele, 0.0), fitness)",
+        "new": "naismith_hours(km, b.ele - a.ele if b.ele - a.ele >= 3 else 0.0, fitness)"
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+I added `tests/test_track.py` with 39 pytest tests for `src/trailhead/track.py`. They all pass, the full suite passes (77 tests), and `ruff check` is clean on the new file. Nothing under `src/` changed, and I did not commit.
+
+The tests cover what the README and docstrings promise:
+
+- **Parsing:** header and points, blank lines and comments ignored, and line numbers that count comments and blanks.
+- **Names:** the `# name:` line, `default_name`, and the `unnamed` fallback, with the name line taking priority over the default.
+- **Units:** `m` keeps elevations, `ft` converts at 0.3048, and any other units value raises `TrackError`.
+- **Errors:** wrong or missing header, wrong field count, non-numeric values, coordinates out of range (bounds inclusive), fewer than two points, and `TrackError` being a `ValueError`. Error messages are checked for the `line N:` prefix.
+- **`load_track`:** names the track after the file stem, accepts `str` or `Path`, and lets a `# name:` line override the file name.
+- **Distance:** one degree of latitude is about 111.195 km, pole to pole is π × 6371.0088 km, lengths are the sum of legs, and elevation does not affect distance.
+
+Two README points are not tested. The README says the header must be "exactly" `lat,lon,ele`, but the code strips whitespace around each column, so `lat, lon, ele` is accepted. I left that alone because the README and code disagree there and the choice belongs to you. Also, the README's Tobler and Naismith rules belong to `pace.py` and `plan.py`, so I did not test them here.

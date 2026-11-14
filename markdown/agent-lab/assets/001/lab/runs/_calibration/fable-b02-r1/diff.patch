@@ -1,0 +1,47 @@
+diff --git a/src/trailhead/geo.py b/src/trailhead/geo.py
+index ba7dd24..c0a3927 100644
+--- a/src/trailhead/geo.py
++++ b/src/trailhead/geo.py
+@@ -19,9 +19,10 @@ def initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float
+     """Compass bearing in degrees, 0 <= bearing < 360, from the first point to the second."""
+     phi1, phi2 = radians(lat1), radians(lat2)
+     d_lambda = radians(lon2 - lon1)
+-    x = sin(d_lambda) * cos(phi2)
+-    y = cos(phi1) * sin(phi2) - sin(phi1) * cos(phi2) * cos(d_lambda)
+-    return (degrees(atan2(y, x)) + 360) % 360
++    east = sin(d_lambda) * cos(phi2)
++    north = cos(phi1) * sin(phi2) - sin(phi1) * cos(phi2) * cos(d_lambda)
++    # Compass bearings run clockwise from north, so east is the "y" of atan2.
++    return (degrees(atan2(east, north)) + 360) % 360
+ 
+ 
+ def compass_point(bearing: float) -> str:
+diff --git a/tests/test_geo.py b/tests/test_geo.py
+index 08f5834..dad0bb9 100644
+--- a/tests/test_geo.py
++++ b/tests/test_geo.py
+@@ -1,6 +1,23 @@
+ import pytest
+ 
+-from trailhead.geo import compass_point, haversine_km
++from trailhead.geo import compass_point, haversine_km, initial_bearing
++
++
++@pytest.mark.parametrize(
++    ("start", "finish", "bearing"),
++    [
++        ((42.20, 23.30), (42.30, 23.30), 0),
++        ((42.20, 23.30), (42.20, 23.45), 90),
++        ((42.20, 23.30), (42.10, 23.30), 180),
++        ((42.20, 23.30), (42.20, 23.15), 270),
++    ],
++)
++def test_initial_bearing_along_the_cardinal_directions(start, finish, bearing):
++    assert initial_bearing(*start, *finish) == pytest.approx(bearing, abs=0.1)
++
++
++def test_due_east_ridge_walk_heads_east():
++    assert compass_point(initial_bearing(42.20, 23.30, 42.20, 23.45)) == "E"
+ 
+ 
+ def test_one_hundredth_of_a_degree_along_the_equator():

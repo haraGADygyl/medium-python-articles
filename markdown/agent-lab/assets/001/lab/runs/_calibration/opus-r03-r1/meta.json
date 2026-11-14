@@ -1,0 +1,108 @@
+{
+  "run_id": "opus-r03-r1",
+  "task": "r03",
+  "tier": "refactor",
+  "repeat": 1,
+  "model_alias": "opus",
+  "prompt": "`plan.split_days` returns plain tuples `(day, first_point, last_point, hours)` that callers unpack by position. Make it return instances of a frozen dataclass `DayPlan` instead, defined in `src/trailhead/plan.py`, with the fields `day`, `first_point`, `last_point` and `hours` in that order, and update every caller and test. Behaviour and command output must stay the same.",
+  "harness_timeout": false,
+  "wall_s": 44.4,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 9,
+  "duration_ms": 42557,
+  "duration_api_ms": 40514,
+  "api_equivalent_usd": 0.22492979999999999,
+  "usage": {
+    "input_tokens": 18,
+    "cache_creation_input_tokens": 14745,
+    "cache_read_input_tokens": 207889,
+    "output_tokens": 3266,
+    "output_tokens_details": {
+      "thinking_tokens": 86
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 14745,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 548,
+        "cache_read_input_tokens": 27022,
+        "cache_creation_input_tokens": 207,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 207
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 18,
+      "outputTokens": 3266,
+      "cacheReadInputTokens": 207889,
+      "cacheCreationInputTokens": 14745,
+      "webSearchRequests": 0,
+      "costUSD": 0.22492979999999999,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 86,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 14745,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 8
+  },
+  "bash_commands": [
+    "git ls-files && cat src/trailhead/plan.py && grep -rn \"split_days\\|plan\\b\\|from trailhead\\|import\" --include=*.py . | grep -v \"^./src/trailhead/plan.py\" ; cat CLAUDE.md README* 2>/dev/null | head -50",
+    "cat tests/test_plan.py tests/test_cli.py; grep -n -i \"split_days\\|tuple\\|plan\" README.md; cat src/trailhead/report.py | head -30; python -m pytest -q 2>&1 | tail -3",
+    "sed -n 50,70p README.md; cat pyproject.toml",
+    "cat > src/trailhead/plan.py <<'EOF'\n\"\"\"Splitting a track into days of walking.\"\"\"\n\nfrom dataclasses import dataclass\n\nfrom trailhead.pace import leg_hours\nfrom trailhead.track import Track\n\nDEFAULT_MAX_HOURS = 7.0\n\n\n@dataclass(frozen=True, slots=True)\nclass DayPlan:\n    \"\"\"One day of walking: days count from 1, point indexes from 0.\"\"\"\n\n    day: int\n    first_point: int\n    last_point: int\n    hours: float\n\n\ndef split_days(\n    track: Track, max_hours_per_day: float = DEFAULT_MAX_HOURS, fitness: float = 1.0\n) -> list[DayPlan]:\n    \"\"\"Group consecutive legs into days of walking.\n\n    Returns one ``DayPlan`` per day: days count from 1, point indexes from 0,\n    hours rounded to 0.01. A day never goes over ``max_hours_per_day`` unless a\n    single leg on its own does.\n    \"\"\"\n    if max_hours_per_day <= 0:\n        raise ValueError(\"max_hours_per_day must be positive\")\n    days: list[DayPlan] = []\n    first, used = 0, 0.0\n    for index, hours in enumerate(leg_hours(track, fitness)):\n        if used > 0 and used + hours > max_hours_per_day:\n            days.append(DayPlan(len(days) + 1, first, index, round(used, 2)))\n            first, used = index, 0.0\n        used += hours\n    days.append(DayPlan(len(days) + 1, first, len(track.points) - 1, round(used, 2)))\n    return days\n\n\ndef describe_plan(days: list[DayPlan]) -> list[str]:\n    \"\"\"One line per day, for example ``Day 2: points 14-31, 6h 05m``.\"\"\"\n    lines: list[str] = []\n    for plan in days:\n        whole, minutes = divmod(round(plan.hours * 60), 60)\n        lines.append(\n            f\"Day {plan.day}: points {plan.first_point}-{plan.last_point}, \"\n            f\"{whole}h {minutes:02d}m\"\n        )\n    return lines\nEOF\npython - <<'EOF'\np='tests/test_plan.py'; s=open(p).read()\ns=s.replace(\"from trailhead.plan import describe_plan, split_days\",\"from trailhead.plan import DayPlan, describe_plan, split_days\")\ns=s.replace(\"[(1, 0, 5, 1.0 * 5)]\",\"[DayPlan(1, 0, 5, 1.0 * 5)]\")\ns=s.replace(\"        (1, 0, 2, 2.0),\\n        (2, 2, 4, 2.0),\\n        (3, 4, 5, 1.0),\",\"        DayPlan(1, 0, 2, 2.0),\\n        DayPlan(2, 2, 4, 2.0),\\n        DayPlan(3, 4, 5, 1.0),\")\ns=s.replace(\"assert [(day, first, last) for day, first, last, _ in days] == [(1, 0, 1), (2, 1, 2)]\",\n \"assert [(d.day, d.first_point, d.last_point) for d in days] == [(1, 0, 1), (2, 1, 2)]\")\ns=s.replace(\"describe_plan([(1, 0, 14, 6.0833), (2, 14, 31, 0.75)])\",\"describe_plan([DayPlan(1, 0, 14, 6.0833), DayPlan(2, 14, 31, 0.75)])\")\nopen(p,'w').write(s)\nEOF\ngit diff --stat; python -m pytest -q 2>&1 | tail -2; ruff check; mypy; ruff format --check src tests 2>&1 | tail -2",
+    "ruff format --diff src tests 2>&1 | head -30; git stash -q; ruff format --check src tests | tail -1; git stash pop -q",
+    "ruff format --diff src tests",
+    "ruff format src/trailhead/plan.py && ruff check && python -m pytest -q | tail -1 && python -m trailhead plan <(printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1100\\n0,0.02,1050\\n') --max-hours 0.3",
+    "ruff format src/trailhead/plan.py && ruff check && mypy && python -m pytest -q | tail -1"
+  ],
+  "permission_denials": [
+    {
+      "command": "ruff format --diff src tests 2>&1 | head -30; git stash -q; ruff format --check src tests | tail -1; git stash pop -q"
+    },
+    {
+      "command": "ruff format src/trailhead/plan.py && ruff check && python -m pytest -q | tail -1 && python -m trailhead plan <(printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1100\\n0,0.02,1050\\n') --max-hours 0.3"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "................................................                         [100%]\n48 passed in 0.07s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/plan.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 32,
+    "lines_removed": 18,
+    "own_suite_pass_as_left": true
+  }
+}

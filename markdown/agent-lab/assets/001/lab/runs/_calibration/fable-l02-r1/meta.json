@@ -1,0 +1,99 @@
+{
+  "run_id": "fable-l02-r1",
+  "task": "l02",
+  "tier": "lint",
+  "repeat": 1,
+  "model_alias": "fable",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "harness_timeout": false,
+  "wall_s": 24.3,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 5,
+  "duration_ms": 21631,
+  "duration_api_ms": 20158,
+  "api_equivalent_usd": 0.24176720000000004,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 11367,
+    "cache_read_input_tokens": 99276,
+    "output_tokens": 999,
+    "output_tokens_details": {
+      "thinking_tokens": 56
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 11367,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 284,
+        "cache_read_input_tokens": 23444,
+        "cache_creation_input_tokens": 407,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 407
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 10,
+      "outputTokens": 999,
+      "cacheReadInputTokens": 99276,
+      "cacheCreationInputTokens": 11367,
+      "webSearchRequests": 0,
+      "costUSD": 0.24176720000000004,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 56,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 11367,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4
+  },
+  "bash_commands": [
+    "mypy 2>&1 | tail -40; cat pyproject.toml; git ls-files",
+    "cat -n src/trailhead/geo.py src/trailhead/report.py; grep -rn \"heading\\|initial_bearing\\|compass\" src tests README.md | grep -v \"^src/trailhead/report.py\\|^src/trailhead/geo.py\"",
+    "sed -n 50,70p README.md; grep -rn \"loop\\|Loop\" README.md tests src | head -20",
+    "sed -i 's/^def initial_bearing(lat1, lon1, lat2, lon2):/def initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:/' src/trailhead/geo.py\nsed -i 's/^def _heading(track: Track) -> str | None:/def _heading(track: Track) -> str:/; s/^        return None$/        return \"loop\"/' src/trailhead/report.py\ngit diff --stat; mypy; python -m pytest -q 2>&1 | tail -3; ruff check"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py",
+      "M src/trailhead/report.py"
+    ],
+    "lines_added": 3,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  }
+}

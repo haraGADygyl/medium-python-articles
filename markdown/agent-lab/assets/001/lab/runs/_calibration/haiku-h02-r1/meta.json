@@ -1,0 +1,112 @@
+{
+  "run_id": "haiku-h02-r1",
+  "task": "h02",
+  "tier": "two-file bug",
+  "repeat": 1,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"`trailhead summary walk.csv --threshold 0` gives the same ascent as without the option, and `--threshold 0.5` is rejected with `invalid int value`. I want to count every change for a track I already smoothed.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 28.9,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 13,
+  "duration_ms": 26300,
+  "duration_api_ms": 25433,
+  "api_equivalent_usd": 0.00768925,
+  "usage": {
+    "input_tokens": 16,
+    "cache_creation_input_tokens": 16748,
+    "cache_read_input_tokens": 185805,
+    "output_tokens": 4960,
+    "output_tokens_details": {
+      "thinking_tokens": 942
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 16748,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 623,
+        "cache_read_input_tokens": 28372,
+        "cache_creation_input_tokens": 860,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 860
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 16,
+      "outputTokens": 4960,
+      "cacheReadInputTokens": 185805,
+      "cacheCreationInputTokens": 16748,
+      "webSearchRequests": 0,
+      "costUSD": 0.00768925,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 942,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 16748,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 6,
+    "Edit": 5,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git status --short && git ls-files | head -100 && grep -rn \"threshold\" --include=*.py . | head -50",
+    "cat src/trailhead/cli.py && echo ---- && cat src/trailhead/report.py && echo ---- && cat src/trailhead/elevation.py && echo ---- && cat tests/test_cli.py tests/test_report.py tests/test_elevation.py",
+    "(python -m pytest -q 2>&1 | tail -20); echo ---; cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h02-r1 && PYTHONPATH=src python -m trailhead summary tests/../README.md 2>&1 | tail -2; git stash -q && (python -m pytest -q 2>&1 | tail -3); git stash pop -q && git status --short",
+    "python -m pytest -q",
+    "mkdir -p /tmp/th-check && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1002\\n0,0.02,1001\\n0,0.03,1003\\n' > /tmp/th-check/walk.csv && cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h02-r1 && PYTHONPATH=src python -m trailhead summary /tmp/th-check/walk.csv --threshold 0 && PYTHONPATH=src python -m trailhead summary /tmp/th-check/walk.csv --threshold 0.5 && PYTHONPATH=src python -m trailhead summary /tmp/th-check/walk.csv",
+    "PYTHONPATH=src python -m trailhead summary /tmp/th-check/walk.csv --threshold 0 && PYTHONPATH=src python -m trailhead summary /tmp/th-check/walk.csv --threshold 0.5 && PYTHONPATH=src python -m trailhead summary /tmp/th-check/walk.csv"
+  ],
+  "permission_denials": [
+    {
+      "command": "(python -m pytest -q 2>&1 | tail -20); echo ---; cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h02-r1 && PYTHONPATH=src python -m trailhead summary tests/../README.md 2>&1 | tail -2; git stash -q && (python -m pytest -q 2>&1 | tail -3); git stash pop -q && git status --short",
+      "description": "Run test suite before and after the fix"
+    },
+    {
+      "command": "mkdir -p /tmp/th-check && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1002\\n0,0.02,1001\\n0,0.03,1003\\n' > /tmp/th-check/walk.csv && cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h02-r1 && PYTHONPATH=src python -m trailhead summary /tmp/th-check/walk.csv --threshold 0 && PYTHONPATH=src python -m trailhead summary /tmp/th-check/walk.csv --threshold 0.5 && PYTHONPATH=src python -m trailhead summary /tmp/th-check/walk.csv",
+      "description": "Run summary command with threshold variants on sample track"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.10s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/report.py",
+      "M tests/test_cli.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 17,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

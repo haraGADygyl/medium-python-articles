@@ -1,0 +1,9 @@
+Fixed: the day splitter was closing a day only *after* it had already gone over the limit, so every day could overshoot by up to one leg.
+
+**Cause:** in `src/trailhead/plan.py`, `split_days` tested `used > max_hours_per_day` before adding the next leg. With `--max-hours 6` and legs of just under an hour, day 1 kept accepting legs until it was past 6h, which is how it reached 6h 50m.
+
+**Fix:** the check is now `used + hours > max_hours_per_day`, so a day ends before the leg that would push it over. A single leg longer than the limit still gets a day by itself, as the README specifies.
+
+I added two regression tests in `tests/test_plan.py` (one for the overshoot, one for an over-long leg in the middle of a route). The full suite, `ruff check` and `mypy` pass. I didn't have the user's `route.csv`, so the fix is verified against synthetic tracks rather than their file.
+
+Nothing is committed.

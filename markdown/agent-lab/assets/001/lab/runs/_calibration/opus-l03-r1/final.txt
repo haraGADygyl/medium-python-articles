@@ -1,0 +1,8 @@
+`mypy` now passes: "Success: no issues found in 9 source files". All 46 tests pass and `ruff` is clean.
+
+There were 3 errors in two files. Each one was a value that could be `None` but was used as if it never was. Both fixes give `None` the meaning the README already describes:
+
+- **`src/trailhead/track.py`**: `parse_track` could build a `Track` with no name when the file had no `# name:` line and no `default_name` was passed. It now falls back to `"unnamed"`.
+- **`src/trailhead/plan.py`**: `split_days` compared `max_hours_per_day` with numbers while it could still be `None`. `None` now means the default of 7 hours a day (`DEFAULT_MAX_HOURS`). The check that rejects zero or negative limits still runs after that.
+
+I didn't use `# type: ignore`, `cast` or `Any`, and the mypy configuration is unchanged.

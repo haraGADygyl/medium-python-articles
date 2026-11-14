@@ -1,0 +1,120 @@
+{
+  "run_id": "fable-h02-r1",
+  "task": "h02",
+  "tier": "two-file bug",
+  "repeat": 1,
+  "model_alias": "fable",
+  "prompt": "Bug report from a user: \"`trailhead summary walk.csv --threshold 0` gives the same ascent as without the option, and `--threshold 0.5` is rejected with `invalid int value`. I want to count every change for a track I already smoothed.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 53.5,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 18,
+  "duration_ms": 51508,
+  "duration_api_ms": 50910,
+  "api_equivalent_usd": 0.49756040000000007,
+  "usage": {
+    "input_tokens": 15,
+    "cache_creation_input_tokens": 18114,
+    "cache_read_input_tokens": 196082,
+    "output_tokens": 4210,
+    "output_tokens_details": {
+      "thinking_tokens": 570
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 18114,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 332,
+        "cache_read_input_tokens": 30460,
+        "cache_creation_input_tokens": 138,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 138
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 15,
+      "outputTokens": 4210,
+      "cacheReadInputTokens": 196082,
+      "cacheCreationInputTokens": 18114,
+      "webSearchRequests": 0,
+      "costUSD": 0.49756040000000007,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 570,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 18114,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 2,
+    "Bash": 9,
+    "Read": 4,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "git ls-files",
+    "cat tests/conftest.py tests/test_cli.py tests/test_report.py; sed -n 30,50p README.md",
+    "cat >> tests/test_report.py <<'EOF'\n\n\nJITTER = ((0, 0, 100), (0, 0.01, 101), (0, 0.02, 100), (0, 0.03, 102), (0, 0.04, 100.5))\n\n\ndef test_zero_threshold_counts_every_change(make_track):\n    track = make_track(*JITTER)\n    assert (summarise(track).gain_m, summarise(track).loss_m) == (0.0, 0.0)\n    summary = summarise(track, threshold=0)\n    assert (summary.gain_m, summary.loss_m) == (3.0, 2.5)\nEOF\ncat >> tests/test_cli.py <<'EOF'\n\n\nJITTER = \"lat,lon,ele\\n0,0,100\\n0,0.01,101\\n0,0.02,100\\n0,0.03,102\\n0,0.04,100.5\\n\"\n\n\ndef _ascent_line(args, capsys):\n    assert main(args) == 0\n    return next(line for line in capsys.readouterr().out.splitlines() if \"ascent\" in line)\n\n\ndef test_threshold_zero_counts_every_change(write_track, capsys):\n    path = str(write_track(JITTER))\n    assert _ascent_line([\"summary\", path], capsys) == \"  ascent    +0 m / -0 m\"\n    assert _ascent_line([\"summary\", path, \"--threshold\", \"0\"], capsys) == \"  ascent    +3 m / -2 m\"\n\n\ndef test_threshold_accepts_fractions(write_track, capsys):\n    path = str(write_track(JITTER))\n    assert _ascent_line([\"summary\", path, \"--threshold\", \"1.5\"], capsys) == \"  ascent    +2 m / -2 m\"\n    assert _ascent_line([\"summary\", path, \"--threshold\", \"0.5\"], capsys) == \"  ascent    +3 m / -2 m\"\nEOF\npython -m pytest -q 2>&1 | tail -15; git stash -q; python -m pytest -q 2>&1 | tail -6; git stash pop -q; git status --short",
+    "cat >> tests/test_report.py <<'EOF'\n\n\nJITTER = ((0, 0, 100), (0, 0.01, 101), (0, 0.02, 100), (0, 0.03, 102), (0, 0.04, 100.5))\n\n\ndef test_zero_threshold_counts_every_change(make_track):\n    track = make_track(*JITTER)\n    assert (summarise(track).gain_m, summarise(track).loss_m) == (0.0, 0.0)\n    summary = summarise(track, threshold=0)\n    assert (summary.gain_m, summary.loss_m) == (3.0, 2.5)\nEOF\ncat >> tests/test_cli.py <<'EOF'\n\n\nJITTER = \"lat,lon,ele\\n0,0,100\\n0,0.01,101\\n0,0.02,100\\n0,0.03,102\\n0,0.04,100.5\\n\"\n\n\ndef _ascent_line(args, capsys):\n    assert main(args) == 0\n    return next(line for line in capsys.readouterr().out.splitlines() if \"ascent\" in line)\n\n\ndef test_threshold_zero_counts_every_change(write_track, capsys):\n    path = str(write_track(JITTER))\n    assert _ascent_line([\"summary\", path], capsys) == \"  ascent    +0 m / -0 m\"\n    assert _ascent_line([\"summary\", path, \"--threshold\", \"0\"], capsys) == \"  ascent    +3 m / -2 m\"\n\n\ndef test_threshold_accepts_fractions(write_track, capsys):\n    path = str(write_track(JITTER))\n    assert _ascent_line([\"summary\", path, \"--threshold\", \"1.5\"], capsys) == \"  ascent    +2 m / -2 m\"\n    assert _ascent_line([\"summary\", path, \"--threshold\", \"0.5\"], capsys) == \"  ascent    +3 m / -2 m\"\nEOF",
+    "python -m pytest -q",
+    "git stash push -q -- src",
+    "python -m pytest -q | tail -6",
+    "git stash pop -q && python -m pytest -q | tail -2 && git status --short",
+    "git status --short; git stash list"
+  ],
+  "permission_denials": [
+    {
+      "command": "cat >> tests/test_report.py <<'EOF'\n\n\nJITTER = ((0, 0, 100), (0, 0.01, 101), (0, 0.02, 100), (0, 0.03, 102), (0, 0.04, 100.5))\n\n\ndef test_zero_threshold_counts_every_change(make_track):\n    track = make_track(*JITTER)\n    assert (summarise(track).gain_m, summarise(track).loss_m) == (0.0, 0.0)\n    summary = summarise(track, threshold=0)\n    assert (summary.gain_m, summary.loss_m) == (3.0, 2.5)\nEOF\ncat >> tests/test_cli.py <<'EOF'\n\n\nJITTER = \"lat,lon,ele\\n0,0,100\\n0,0.01,101\\n0,0.02,100\\n0,0.03,102\\n0,0.04,100.5\\n\"\n\n\ndef _ascent_line(args, capsys):\n    assert main(args) == 0\n    return next(line for line in capsys.readouterr().out.splitlines() if \"ascent\" in line)\n\n\ndef test_threshold_zero_counts_every_change(write_track, capsys):\n    path = str(write_track(JITTER))\n    assert _ascent_line([\"summary\", path], capsys) == \"  ascent    +0 m / -0 m\"\n    assert _ascent_line([\"summary\", path, \"--threshold\", \"0\"], capsys) == \"  ascent    +3 m / -2 m\"\n\n\ndef test_threshold_accepts_fractions(write_track, capsys):\n    path = str(write_track(JITTER))\n    assert _ascent_line([\"summary\", path, \"--threshold\", \"1.5\"], capsys) == \"  ascent    +2 m / -2 m\"\n    assert _ascent_line([\"summary\", path, \"--threshold\", \"0.5\"], capsys) == \"  ascent    +3 m / -2 m\"\nEOF\npython -m pytest -q 2>&1 | tail -15; git stash -q; python -m pytest -q 2>&1 | tail -6; git stash pop -q; git status --short",
+      "description": "Add regression tests, run suite with and without the fix"
+    },
+    {
+      "command": "git stash push -q -- src",
+      "description": "Temporarily set aside the source fix"
+    },
+    {
+      "command": "git stash pop -q && python -m pytest -q | tail -2 && git status --short",
+      "description": "Restore the fix and rerun tests"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/report.py",
+      "M tests/test_cli.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 32,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

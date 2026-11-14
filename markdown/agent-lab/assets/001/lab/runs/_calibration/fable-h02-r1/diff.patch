@@ -1,0 +1,72 @@
+diff --git a/src/trailhead/cli.py b/src/trailhead/cli.py
+index 247806b..0312f0a 100644
+--- a/src/trailhead/cli.py
++++ b/src/trailhead/cli.py
+@@ -17,7 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
+     summary = commands.add_parser("summary", help="distance, ascent and time for a track")
+     summary.add_argument("file")
+     summary.add_argument("--fitness", type=float, default=1.0)
+-    summary.add_argument("--threshold", type=int, default=DEFAULT_THRESHOLD_M)
++    summary.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD_M)
+ 
+     plan = commands.add_parser("plan", help="split a track into days of walking")
+     plan.add_argument("file")
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 0aa84b5..77269b7 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -39,7 +39,7 @@ def summarise(
+     track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M
+ ) -> Summary:
+     elevations = [point.ele for point in track.points]
+-    gain, loss = gain_and_loss(elevations, threshold or DEFAULT_THRESHOLD_M)
++    gain, loss = gain_and_loss(elevations, threshold)
+     highest, lowest = highest_and_lowest(track)
+     length = track.length_km()
+     return Summary(
+diff --git a/tests/test_cli.py b/tests/test_cli.py
+index 58e9930..3a9a9ab 100644
+--- a/tests/test_cli.py
++++ b/tests/test_cli.py
+@@ -18,3 +18,23 @@ def test_plan_command(write_track, capsys):
+ def test_missing_file_is_an_error(tmp_path, capsys):
+     assert main(["summary", str(tmp_path / "nope.csv")]) == 1
+     assert capsys.readouterr().err.startswith("trailhead: ")
++
++
++JITTER = "lat,lon,ele\n0,0,100\n0,0.01,101\n0,0.02,100\n0,0.03,102\n0,0.04,100.5\n"
++
++
++def _ascent_line(args, capsys):
++    assert main(args) == 0
++    return next(line for line in capsys.readouterr().out.splitlines() if "ascent" in line)
++
++
++def test_threshold_zero_counts_every_change(write_track, capsys):
++    path = str(write_track(JITTER))
++    assert _ascent_line(["summary", path], capsys) == "  ascent    +0 m / -0 m"
++    assert _ascent_line(["summary", path, "--threshold", "0"], capsys) == "  ascent    +3 m / -2 m"
++
++
++def test_threshold_accepts_fractions(write_track, capsys):
++    path = str(write_track(JITTER))
++    assert _ascent_line(["summary", path, "--threshold", "1.5"], capsys) == "  ascent    +2 m / -2 m"
++    assert _ascent_line(["summary", path, "--threshold", "0.5"], capsys) == "  ascent    +3 m / -2 m"
+diff --git a/tests/test_report.py b/tests/test_report.py
+index 3a65b99..ceb42fc 100644
+--- a/tests/test_report.py
++++ b/tests/test_report.py
+@@ -26,3 +26,13 @@ def test_format_summary(make_track):
+             "  heading   NE",
+         ]
+     )
++
++
++JITTER = ((0, 0, 100), (0, 0.01, 101), (0, 0.02, 100), (0, 0.03, 102), (0, 0.04, 100.5))
++
++
++def test_zero_threshold_counts_every_change(make_track):
++    track = make_track(*JITTER)
++    assert (summarise(track).gain_m, summarise(track).loss_m) == (0.0, 0.0)
++    summary = summarise(track, threshold=0)
++    assert (summary.gain_m, summary.loss_m) == (3.0, 2.5)

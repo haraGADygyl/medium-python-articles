@@ -1,0 +1,10 @@
+Both symptoms are fixed; they had two separate causes.
+
+- **`--threshold 0` ignored:** `summarise` in `src/trailhead/report.py` passed `threshold or DEFAULT_THRESHOLD_M`, so a threshold of 0 was treated as "not given" and replaced with the 3 m default. It now passes `threshold` straight through.
+- **`--threshold 0.5` rejected:** the option in `src/trailhead/cli.py` was declared `type=int`. It is now `type=float`, matching the rest of the code.
+
+The full suite passes (50 tests), including three new regression tests covering `--threshold 0`, fractional thresholds on the command line, and `summarise(track, threshold=0)`. I could not confirm the new tests fail against the old code, because the stash step for that was not approved.
+
+A negative `--threshold` on the command line still ends in a `ValueError` traceback rather than a clean error message. I left that alone since it wasn't in the report.
+
+Nothing is committed.

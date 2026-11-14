@@ -1,0 +1,98 @@
+{
+  "run_id": "haiku-h03-r1",
+  "task": "h03",
+  "tier": "two-file bug",
+  "repeat": 1,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"`elevation.steepest_grade()` returns 0.18 for a track whose steepest stretch climbs 18 m over 100 m. The README and the docstring say it returns a percentage, so I expected 18.0.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 22.1,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 11,
+  "duration_ms": 19986,
+  "duration_api_ms": 18700,
+  "api_equivalent_usd": 0.00584297,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 15057,
+    "cache_read_input_tokens": 100257,
+    "output_tokens": 3656,
+    "output_tokens_details": {
+      "thinking_tokens": 992
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 15057,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 660,
+        "cache_read_input_tokens": 25058,
+        "cache_creation_input_tokens": 2483,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 2483
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 10,
+      "outputTokens": 3656,
+      "cacheReadInputTokens": 100257,
+      "cacheCreationInputTokens": 15057,
+      "webSearchRequests": 0,
+      "costUSD": 0.00584297,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 992,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 15057,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 2,
+    "Read": 5,
+    "Edit": 3
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && grep -rn \"steepest\" --include=*.py --include=*.md . | head -50",
+    "cat >> tests/test_elevation.py <<'EOF'\n\n\ndef test_steepest_grade_is_percent(make_track):\n    # Roughly 100 m due north, climbing 18 m: a 18% grade.\n    track = make_track((42.0, 23.0, 1000), (42.0009, 23.0, 1018))\n    assert track.leg_lengths_km()[0] * 1000 == pytest.approx(100, rel=0.01)\n    assert steepest_grade(track) == 18.0\n\n\ndef test_steepest_grade_flat_and_downhill(make_track):\n    flat = make_track((42.0, 23.0, 1000), (42.0009, 23.0, 1000))\n    assert steepest_grade(flat) == 0.0\n    down = make_track((42.0, 23.0, 1018), (42.0009, 23.0, 1000))\n    assert steepest_grade(down) == 18.0\nEOF\npython -m pytest -q 2>&1 | tail -15; ruff check 2>&1 | tail -3; mypy 2>&1 | tail -2"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M src/trailhead/report.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 17,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  }
+}

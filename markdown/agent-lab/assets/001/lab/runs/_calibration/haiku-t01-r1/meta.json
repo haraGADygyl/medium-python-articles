@@ -1,0 +1,117 @@
+{
+  "run_id": "haiku-t01-r1",
+  "task": "t01",
+  "tier": "tests",
+  "repeat": 1,
+  "model_alias": "haiku",
+  "prompt": "`src/trailhead/elevation.py` has no tests. Write `tests/test_elevation.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 44.5,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 10,
+  "duration_ms": 41679,
+  "duration_api_ms": 40754,
+  "api_equivalent_usd": 0.010845650000000002,
+  "usage": {
+    "input_tokens": 18,
+    "cache_creation_input_tokens": 21680,
+    "cache_read_input_tokens": 240885,
+    "output_tokens": 8198,
+    "output_tokens_details": {
+      "thinking_tokens": 3075
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 21680,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 597,
+        "cache_read_input_tokens": 33661,
+        "cache_creation_input_tokens": 503,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 503
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 18,
+      "outputTokens": 8198,
+      "cacheReadInputTokens": 240885,
+      "cacheCreationInputTokens": 21680,
+      "webSearchRequests": 0,
+      "costUSD": 0.010845650000000002,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 3075,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 21680,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 6,
+    "Write": 1,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "git status --short && ls -la && cat src/trailhead/elevation.py && echo ---README--- && cat README* 2>/dev/null; echo ---; ls tests 2>/dev/null; ls src/trailhead; cat pyproject.toml setup.cfg pytest.ini 2>/dev/null",
+    "cat src/trailhead/track.py && echo ---CONF--- && cat tests/conftest.py && echo ---TRACKTEST--- && head -60 tests/test_track.py && echo ---GEO--- && cat src/trailhead/geo.py | head -60; ls /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-t01-r1/src/trailhead/ && grep -rn \"elevation\" src tests | head -30",
+    "(python -m pytest tests/test_elevation.py -q 2>&1 | tail -40); echo \"--- ruff\"; (ruff check tests/test_elevation.py 2>&1 | tail -20); echo \"--- full\"; python -m pytest -q 2>&1 | tail -5; git status --short",
+    "python -m pytest tests/test_elevation.py -q",
+    "python -m pytest tests/test_elevation.py -q",
+    "python -m pytest -q; ruff check tests/test_elevation.py; git status --short"
+  ],
+  "permission_denials": [
+    {
+      "command": "(python -m pytest tests/test_elevation.py -q 2>&1 | tail -40); echo \"--- ruff\"; (ruff check tests/test_elevation.py 2>&1 | tail -20); echo \"--- full\"; python -m pytest -q 2>&1 | tail -5; git status --short",
+      "description": "Run elevation tests, ruff, and full suite"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_elevation.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".....................                                                    [100%]\n21 passed in 0.03s\n",
+    "src_changed": [],
+    "killed": [
+      "gain threshold exclusive",
+      "no hysteresis",
+      "loss sign flipped",
+      "default threshold 2 m",
+      "negative threshold clamped",
+      "steepest ignores descents",
+      "zero-length legs not skipped"
+    ],
+    "survived": [],
+    "kills": 7,
+    "mutants": 7,
+    "changed": [
+      "A tests/test_elevation.py"
+    ],
+    "lines_added": 138,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

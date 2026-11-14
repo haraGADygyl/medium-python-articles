@@ -1,0 +1,24 @@
+I found the cause and fixed it. All 48 tests pass.
+
+**Cause:** in `split_days` (`src/trailhead/plan.py:23`), the planner only checked the hours walked so far before adding the next stretch:
+
+```python
+if used > 0 and used > max_hours_per_day:
+```
+
+So a day ended only after it had already gone over the limit. With `--max-hours 6` and stretches under an hour each, day 1 could reach 5h59m and still take one more stretch, ending anywhere up to just under 7h. That's how the user got 6h 50m. The function's docstring says a day should never go over the limit unless a single stretch does on its own, so this was a plain bug.
+
+**Fix:** the planner now checks whether the next stretch *would* push the day over the limit, and if so ends the day before it:
+
+```python
+if used > 0 and used + hours > max_hours_per_day + 1e-6:
+```
+
+- A single stretch longer than the limit still becomes a day on its own, as before.
+- The `1e-6` hour (about 4 ms) allowance is there so a day that fits the limit exactly isn't split because of tiny rounding errors. I needed it: the test route's "1-hour" stretches actually come out at 1.0000000021h each.
+
+**Tests added** in `tests/test_plan.py`:
+- With 1-hour stretches and a 2.5h limit, days are 2h, 2h and 1h. The old code made 3h days.
+- Five 1-hour stretches with a 5h limit stay in one day.
+
+I haven't committed anything.

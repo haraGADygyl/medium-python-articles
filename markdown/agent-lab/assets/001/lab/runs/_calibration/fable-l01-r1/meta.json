@@ -1,0 +1,98 @@
+{
+  "run_id": "fable-l01-r1",
+  "task": "l01",
+  "tier": "lint",
+  "repeat": 1,
+  "model_alias": "fable",
+  "prompt": "`ruff check` reports problems in `src/`. Fix them so that `ruff check` passes, without changing the ruff configuration and without `noqa` comments.",
+  "harness_timeout": false,
+  "wall_s": 21.1,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 4,
+  "duration_ms": 19136,
+  "duration_api_ms": 18508,
+  "api_equivalent_usd": 0.2466544,
+  "usage": {
+    "input_tokens": 8,
+    "cache_creation_input_tokens": 11789,
+    "cache_read_input_tokens": 77432,
+    "output_tokens": 1062,
+    "output_tokens_details": {
+      "thinking_tokens": 117
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 11789,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 309,
+        "cache_read_input_tokens": 23705,
+        "cache_creation_input_tokens": 568,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 568
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 8,
+      "outputTokens": 1062,
+      "cacheReadInputTokens": 77432,
+      "cacheCreationInputTokens": 11789,
+      "webSearchRequests": 0,
+      "costUSD": 0.2466544,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 117,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 11789,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 3
+  },
+  "bash_commands": [
+    "ruff check; git ls-files",
+    "cat src/trailhead/pace.py; sed -n 55,85p src/trailhead/track.py; cat tests/test_pace.py; grep -n \"fitness\" -r src README.md tests | grep -v \"pace.py\"",
+    "python - <<'E'\nimport re,pathlib\np=pathlib.Path('src/trailhead/pace.py'); s=p.read_text()\ns=s.replace(\"    return distance_km / FLAT_SPEED_KMH + ascent_m / CLIMB_M_PER_HOUR\\n\",\"    return hours\\n\"); p.write_text(s)\np=pathlib.Path('src/trailhead/track.py'); s=p.read_text()\ns=s.replace(\"from trailhead.geo import haversine_km\\nimport os\\n\",\"from trailhead.geo import haversine_km\\n\")\ns=s.replace('''    except:\n        raise TrackError(f\"line {number}: not a number\")''','''    except ValueError as err:\n        raise TrackError(f\"line {number}: not a number\") from err''')\np.write_text(s)\nE\ngit diff --stat; ruff check; python -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {
+      "ruff": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/track.py"
+    ],
+    "lines_added": 3,
+    "lines_removed": 4,
+    "own_suite_pass_as_left": true
+  }
+}

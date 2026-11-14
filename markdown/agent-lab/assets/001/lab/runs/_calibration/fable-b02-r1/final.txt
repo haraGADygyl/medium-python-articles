@@ -1,0 +1,5 @@
+The heading was wrong because `initial_bearing` in `src/trailhead/geo.py` passed its arguments to `atan2` in the wrong order, and that is now fixed: the ridge walk reports `E`.
+
+With the arguments swapped, the angle was measured anticlockwise from east instead of clockwise from north. That mirrored every bearing across the NE–SW diagonal: east came out as N, north as E, south as W, west as S. NE and SW were unaffected, which is why the existing test (a north-east track) never caught it.
+
+I added tests for the four cardinal directions plus the reported ridge walk; the full suite passes (48 tests). Nothing is committed.

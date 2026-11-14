@@ -1,0 +1,8 @@
+`mypy` now passes on `src/` in strict mode, and the test suite still passes (46 tests). I didn't use `# type: ignore`, `cast`, `Any`, or any config changes.
+
+There were three errors in two files:
+
+- **`src/trailhead/track.py:65`**: `parse_track` passed `default_name` (`str | None`) to `Track`, which requires a `str`. The fix is `name = default_name or "unnamed"`. The README already documents this fallback, so behaviour matches the docs.
+- **`src/trailhead/plan.py:18` and `:23`**: `split_days` takes `max_hours_per_day: float | None = None` and compared it to numbers without handling `None`. The fix resolves `None` to `DEFAULT_MAX_HOURS` (7.0) before the check. The CLI already passes that same default, so direct callers now get the same limit.
+
+I haven't committed anything.

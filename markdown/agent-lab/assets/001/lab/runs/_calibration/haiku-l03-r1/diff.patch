@@ -1,0 +1,26 @@
+diff --git a/src/trailhead/plan.py b/src/trailhead/plan.py
+index aadffc4..3007850 100644
+--- a/src/trailhead/plan.py
++++ b/src/trailhead/plan.py
+@@ -15,6 +15,8 @@ def split_days(
+     point indexes from 0, hours rounded to 0.01. A day never goes over
+     ``max_hours_per_day`` unless a single leg on its own does.
+     """
++    if max_hours_per_day is None:
++        max_hours_per_day = DEFAULT_MAX_HOURS
+     if max_hours_per_day <= 0:
+         raise ValueError("max_hours_per_day must be positive")
+     days: list[tuple[int, int, int, float]] = []
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index 452e710..5f82ff4 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -36,7 +36,7 @@ class Track:
+ 
+ def parse_track(text: str, default_name: str | None = None) -> Track:
+     """Parse a track; see the README for the format."""
+-    name = default_name
++    name = default_name or "unnamed"
+     scale = 1.0
+     points: list[Point] = []
+     header_seen = False

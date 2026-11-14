@@ -1,0 +1,12 @@
+Fixed. The attached `garmin-export.csv` now loads (4 points, 0.648 km), and the full suite passes (48 tests, including a new regression test).
+
+**Cause:** The Garmin file starts with a UTF-8 byte-order mark (`EF BB BF`). That's invisible in editors, so the first line looks like `lat,lon,ele`. But `load_track` decoded the file with plain `utf-8`, which keeps the BOM as a `\ufeff` character at the start of the header. `str.strip()` doesn't remove that character, so the header check in `parse_track` failed.
+
+**Fix:**
+- `src/trailhead/track.py`: `load_track` now reads with `encoding="utf-8-sig"`, which drops a leading BOM and otherwise behaves like `utf-8`. I also documented why in the docstring.
+- `tests/test_track.py`: added `test_file_with_utf8_byte_order_mark`, which writes a BOM-prefixed file with CRLF line endings and checks that it parses.
+
+**Not done:**
+- I didn't commit, since you didn't ask for one.
+- I couldn't run `ruff` because it isn't installed here, so lint is unchecked.
+- `parse_track` still doesn't strip a BOM when given a raw string. Only the file path is affected, and the CLI goes through `load_track`, so I left it alone. If you call `parse_track` directly with text that came from a file, read it with `utf-8-sig` as well.

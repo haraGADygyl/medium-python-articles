@@ -1,0 +1,13 @@
+Fixed: `plan --fitness` now changes the plan; the full suite passes (49 tests, two of them new). Nothing is committed.
+
+The value was dropped in two places, so either one alone would have kept the bug:
+
+- **`src/trailhead/cli.py:39`** — the `plan` branch called `split_days(track, args.max_hours)` and never passed `args.fitness`.
+- **`src/trailhead/plan.py:22`** — `split_days` accepted a `fitness` parameter but called `leg_hours(track)` without it, so it always timed legs at fitness 1.0.
+
+I added one regression test at each level: `test_fitness_shortens_the_legs` in `tests/test_plan.py` and `test_plan_command_uses_fitness` in `tests/test_cli.py`.
+
+Two things I noticed and left alone:
+
+- **Plan and summary can differ by a minute.** `split_days` rounds each day's hours to 0.01 before `describe_plan` formats minutes. On the test track at fitness 2, the plan prints `0h 19m` for a day whose true time is 18.3 minutes. The README says times are not rounded until displayed, but the `split_days` docstring promises the 0.01 rounding, so changing it is your call.
+- **Zero or negative `--fitness` crashes with a traceback.** The `ValueError` is not caught in the CLI. `summary` already did this; `plan` now does too, where before it silently ignored the value.

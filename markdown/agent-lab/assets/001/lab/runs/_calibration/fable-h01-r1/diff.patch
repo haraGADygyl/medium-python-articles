@@ -1,0 +1,59 @@
+diff --git a/src/trailhead/cli.py b/src/trailhead/cli.py
+index 907a842..0312f0a 100644
+--- a/src/trailhead/cli.py
++++ b/src/trailhead/cli.py
+@@ -36,6 +36,6 @@ def main(argv: Sequence[str] | None = None) -> int:
+     if args.command == "summary":
+         print(format_summary(summarise(track, args.fitness, args.threshold)))
+     else:
+-        for line in describe_plan(split_days(track, args.max_hours)):
++        for line in describe_plan(split_days(track, args.max_hours, args.fitness)):
+             print(line)
+     return 0
+diff --git a/src/trailhead/plan.py b/src/trailhead/plan.py
+index 5bfd77c..d5cf5b1 100644
+--- a/src/trailhead/plan.py
++++ b/src/trailhead/plan.py
+@@ -19,7 +19,7 @@ def split_days(
+         raise ValueError("max_hours_per_day must be positive")
+     days: list[tuple[int, int, int, float]] = []
+     first, used = 0, 0.0
+-    for index, hours in enumerate(leg_hours(track)):
++    for index, hours in enumerate(leg_hours(track, fitness)):
+         if used > 0 and used + hours > max_hours_per_day:
+             days.append((len(days) + 1, first, index, round(used, 2)))
+             first, used = index, 0.0
+diff --git a/tests/test_cli.py b/tests/test_cli.py
+index 58e9930..4749226 100644
+--- a/tests/test_cli.py
++++ b/tests/test_cli.py
+@@ -15,6 +15,14 @@ def test_plan_command(write_track, capsys):
+     assert capsys.readouterr().out == "Day 1: points 0-1, 0h 23m\nDay 2: points 1-2, 0h 13m\n"
+ 
+ 
++def test_plan_command_uses_fitness(write_track, capsys):
++    args = ["plan", str(write_track(TRACK)), "--max-hours", "0.4", "--fitness", "2"]
++    assert main(args) == 0
++    out = capsys.readouterr().out
++    assert out.startswith("Day 1: points 0-2, ")
++    assert out.count("\n") == 1
++
++
+ def test_missing_file_is_an_error(tmp_path, capsys):
+     assert main(["summary", str(tmp_path / "nope.csv")]) == 1
+     assert capsys.readouterr().err.startswith("trailhead: ")
+diff --git a/tests/test_plan.py b/tests/test_plan.py
+index 6d01541..ee1c17d 100644
+--- a/tests/test_plan.py
++++ b/tests/test_plan.py
+@@ -22,6 +22,10 @@ def test_days_respect_the_limit(five_flat_hours):
+     ]
+ 
+ 
++def test_fitness_shortens_the_legs(five_flat_hours):
++    assert split_days(five_flat_hours, max_hours_per_day=3, fitness=2.0) == [(1, 0, 5, 2.5)]
++
++
+ def test_one_long_leg_is_a_day_on_its_own(make_track):
+     track = make_track((0, 0, 0), (0, 0.5, 0), (0, 0.51, 0))
+     days = split_days(track, max_hours_per_day=3)

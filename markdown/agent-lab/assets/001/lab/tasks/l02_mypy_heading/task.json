@@ -1,6 +1,7 @@
 {
   "id": "l02",
   "tier": "lint",
+  "baseline": false,
   "title": "Make mypy pass (a None heading should be 'loop')",
   "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
   "setup": [

@@ -1,0 +1,120 @@
+{
+  "run_id": "haiku-h01-r1",
+  "task": "h01",
+  "tier": "two-file bug",
+  "repeat": 1,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"`trailhead plan route.csv --fitness 1.5` prints exactly the same days as `trailhead plan route.csv`. `trailhead summary` does take `--fitness` into account.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 34.6,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 17,
+  "duration_ms": 32746,
+  "duration_api_ms": 31597,
+  "api_equivalent_usd": 0.009336959999999998,
+  "usage": {
+    "input_tokens": 24,
+    "cache_creation_input_tokens": 17547,
+    "cache_read_input_tokens": 291466,
+    "output_tokens": 5821,
+    "output_tokens_details": {
+      "thinking_tokens": 829
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 17547,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 623,
+        "cache_read_input_tokens": 29136,
+        "cache_creation_input_tokens": 895,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 895
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 24,
+      "outputTokens": 5821,
+      "cacheReadInputTokens": 291466,
+      "cacheCreationInputTokens": 17547,
+      "webSearchRequests": 0,
+      "costUSD": 0.009336959999999998,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 829,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 17547,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 11,
+    "Edit": 4,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && grep -rn \"fitness\" --include=*.py . | head -100",
+    "cat src/trailhead/cli.py src/trailhead/plan.py && cat tests/test_plan.py",
+    "grep -n \"plan\" tests/test_cli.py | head; python -m pytest -q 2>&1 | tail -15",
+    "python -m pytest -q 2>&1 | tail -3 && git stash -q && python -m pytest -q tests/test_plan.py 2>&1 | tail -2; git stash pop -q && PYTHONPATH=src python -m trailhead plan tests/conftest.py --fitness 1.5 2>&1 | head -3; git status --short",
+    "python -m pytest -q 2>&1 | tail -3; git status --short",
+    "sed -n 1,12p tests/test_cli.py && grep -n \"def write_track\" -A6 tests/conftest.py",
+    "mkdir -p /tmp/claude-1000/trailhead-check && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1100\\n0,0.02,1050\\n0,0.03,1300\\n0,0.04,1000\\n' > /tmp/claude-1000/trailhead-check/walk.csv && cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h01-r1 && for f in \"\" \"--fitness 1.5\"; do PYTHONPATH=src python -I -m trailhead plan /tmp/claude-1000/trailhead-check/walk.csv --max-hours 0.5 $f; echo \"--\"; done",
+    "PYTHONPATH=src python -I -m trailhead plan /tmp/claude-1000/trailhead-check/walk.csv --max-hours 0.5; echo \"--\"; PYTHONPATH=src python -I -m trailhead plan /tmp/claude-1000/trailhead-check/walk.csv --max-hours 0.5 --fitness 1.5",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h01-r1/src && python -m trailhead plan /tmp/claude-1000/trailhead-check/walk.csv --max-hours 0.5; echo \"--\"; python -m trailhead plan /tmp/claude-1000/trailhead-check/walk.csv --max-hours 0.5 --fitness 1.5",
+    "mkdir -p /tmp/claude-1000/trailhead-check && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1100\\n0,0.02,1050\\n0,0.03,1300\\n0,0.04,1000\\n' > /tmp/claude-1000/trailhead-check/walk.csv && cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h01-r1/src && python -m trailhead plan /tmp/claude-1000/trailhead-check/walk.csv --max-hours 0.5; echo \"--\"; python -m trailhead plan /tmp/claude-1000/trailhead-check/walk.csv --max-hours 0.5 --fitness 1.5",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h01-r1/src && python -m trailhead plan /tmp/claude-1000/trailhead-check/walk.csv --max-hours 0.5; echo \"--\"; python -m trailhead plan /tmp/claude-1000/trailhead-check/walk.csv --max-hours 0.5 --fitness 1.5"
+  ],
+  "permission_denials": [
+    {
+      "command": "python -m pytest -q 2>&1 | tail -3 && git stash -q && python -m pytest -q tests/test_plan.py 2>&1 | tail -2; git stash pop -q && PYTHONPATH=src python -m trailhead plan tests/conftest.py --fitness 1.5 2>&1 | head -3; git status --short",
+      "description": "Run tests, check new test fails on old code, and restore changes"
+    },
+    {
+      "command": "mkdir -p /tmp/claude-1000/trailhead-check && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1100\\n0,0.02,1050\\n0,0.03,1300\\n0,0.04,1000\\n' > /tmp/claude-1000/trailhead-check/walk.csv && cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h01-r1 && for f in \"\" \"--fitness 1.5\"; do PYTHONPATH=src python -I -m trailhead plan /tmp/claude-1000/trailhead-check/walk.csv --max-hours 0.5 $f; echo \"--\"; done",
+      "description": "Compare plan output with and without fitness flag"
+    },
+    {
+      "command": "mkdir -p /tmp/claude-1000/trailhead-check && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1100\\n0,0.02,1050\\n0,0.03,1300\\n0,0.04,1000\\n' > /tmp/claude-1000/trailhead-check/walk.csv && cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h01-r1/src && python -m trailhead plan /tmp/claude-1000/trailhead-check/walk.csv --max-hours 0.5; echo \"--\"; python -m trailhead plan /tmp/claude-1000/trailhead-check/walk.csv --max-hours 0.5 --fitness 1.5",
+      "description": "Create sample track and compare plan output"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/plan.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 9,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

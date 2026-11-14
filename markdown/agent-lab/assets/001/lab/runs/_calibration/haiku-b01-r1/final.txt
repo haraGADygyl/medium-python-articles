@@ -1,0 +1,9 @@
+The cause was in `gain_and_loss` in `src/trailhead/elevation.py`. Its loop reset the reference elevation to the current point on every iteration, not only when a change was counted. With points about 1 m apart, each step's change from the reference stayed below the 3 m threshold, so the climb was never counted. The result was +0 m. Tracks with bigger gaps between points cross the threshold in one step, which is why they looked fine.
+
+**Fix:** I removed the unconditional `reference = elevation` line. The reference now only moves when a change is counted, which matches the README's definition ("the last counted elevation").
+
+**Test:** I added `test_long_climb_in_small_steps_is_counted` to `tests/test_elevation.py`. It uses 300 one-metre steps and expects +300 m ascent, and the reversed track expects +300 m descent. The old code returns 0 for this case, so the test covers the reported bug.
+
+The full suite passes: 47 tests. I haven't run `trailhead summary` on a real track, but `report.py` takes its ascent from this function, so the CLI output should now show the climb.
+
+I haven't committed anything. Say if you want a commit with the Co-Authored-By line.

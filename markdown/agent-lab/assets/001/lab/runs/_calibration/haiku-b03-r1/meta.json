@@ -1,0 +1,104 @@
+{
+  "run_id": "haiku-b03-r1",
+  "task": "b03",
+  "tier": "bug",
+  "repeat": 1,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"I ran `trailhead plan route.csv --max-hours 6` and day 1 came out at 6h 50m, even though no single stretch between two points takes more than an hour.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 24.5,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 12,
+  "duration_ms": 22529,
+  "duration_api_ms": 21793,
+  "api_equivalent_usd": 0.00614822,
+  "usage": {
+    "input_tokens": 14,
+    "cache_creation_input_tokens": 14440,
+    "cache_read_input_tokens": 144082,
+    "output_tokens": 3636,
+    "output_tokens_details": {
+      "thinking_tokens": 1007
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 14440,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 498,
+        "cache_read_input_tokens": 26200,
+        "cache_creation_input_tokens": 724,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 724
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 14,
+      "outputTokens": 3636,
+      "cacheReadInputTokens": 144082,
+      "cacheCreationInputTokens": 14440,
+      "webSearchRequests": 0,
+      "costUSD": 0.00614822,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 1007,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 14440,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4,
+    "Read": 5,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && cat $(git ls-files | grep -v -E '\\.csv$|\\.md$' | head -50) 2>/dev/null | head -400",
+    "git ls-files",
+    "python -m pytest -q tests/test_plan.py 2>&1 | tail -20",
+    "python -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [
+    {
+      "command": "git status --short && git ls-files && cat $(git ls-files | grep -v -E '\\.csv$|\\.md$' | head -50) 2>/dev/null | head -400",
+      "description": "List repo files and show source contents"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/plan.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 8,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  }
+}

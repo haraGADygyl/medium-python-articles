@@ -1,0 +1,61 @@
+diff --git a/src/trailhead/cli.py b/src/trailhead/cli.py
+index 247806b..0312f0a 100644
+--- a/src/trailhead/cli.py
++++ b/src/trailhead/cli.py
+@@ -17,7 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
+     summary = commands.add_parser("summary", help="distance, ascent and time for a track")
+     summary.add_argument("file")
+     summary.add_argument("--fitness", type=float, default=1.0)
+-    summary.add_argument("--threshold", type=int, default=DEFAULT_THRESHOLD_M)
++    summary.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD_M)
+ 
+     plan = commands.add_parser("plan", help="split a track into days of walking")
+     plan.add_argument("file")
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 0aa84b5..77269b7 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -39,7 +39,7 @@ def summarise(
+     track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M
+ ) -> Summary:
+     elevations = [point.ele for point in track.points]
+-    gain, loss = gain_and_loss(elevations, threshold or DEFAULT_THRESHOLD_M)
++    gain, loss = gain_and_loss(elevations, threshold)
+     highest, lowest = highest_and_lowest(track)
+     length = track.length_km()
+     return Summary(
+diff --git a/tests/test_cli.py b/tests/test_cli.py
+index 58e9930..b38938f 100644
+--- a/tests/test_cli.py
++++ b/tests/test_cli.py
+@@ -18,3 +18,15 @@ def test_plan_command(write_track, capsys):
+ def test_missing_file_is_an_error(tmp_path, capsys):
+     assert main(["summary", str(tmp_path / "nope.csv")]) == 1
+     assert capsys.readouterr().err.startswith("trailhead: ")
++
++
++JITTER = "# name: Flat\nlat,lon,ele\n0,0,1000\n0,0.001,1000.6\n0,0.002,1000\n"
++
++
++def test_summary_threshold_accepts_zero_and_fractions(write_track, capsys):
++    path = str(write_track(JITTER))
++    assert main(["summary", path]) == 0
++    assert "  ascent    +0 m / -0 m\n" in capsys.readouterr().out
++    for threshold in ("0", "0.5"):
++        assert main(["summary", path, "--threshold", threshold]) == 0
++        assert "  ascent    +1 m / -1 m\n" in capsys.readouterr().out
+diff --git a/tests/test_report.py b/tests/test_report.py
+index 3a65b99..9f76dba 100644
+--- a/tests/test_report.py
++++ b/tests/test_report.py
+@@ -26,3 +26,10 @@ def test_format_summary(make_track):
+             "  heading   NE",
+         ]
+     )
++
++
++def test_zero_threshold_counts_every_change(make_track):
++    jitter = ((0, 0, 1000), (0, 0.001, 1001), (0, 0.002, 1000), (0, 0.003, 1002))
++    assert (summarise(make_track(*jitter)).gain_m, summarise(make_track(*jitter)).loss_m) == (0.0, 0.0)
++    summary = summarise(make_track(*jitter), threshold=0)
++    assert (summary.gain_m, summary.loss_m) == (3.0, 1.0)

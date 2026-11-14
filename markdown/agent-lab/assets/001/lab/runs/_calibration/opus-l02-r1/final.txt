@@ -1,0 +1,9 @@
+`mypy` now passes: "Success: no issues found in 9 source files". All 48 tests pass and `ruff` is clean. I made two small source changes.
+
+1. **`src/trailhead/geo.py:18`**: `initial_bearing` had no type hints. I added `float` hints to its arguments and return value. This fixes both the missing-annotation error and the error about calling an untyped function from `report.py`.
+
+2. **`src/trailhead/report.py:60`**: the third error pointed to a real bug, not just a typing slip. For loop tracks (finish within 0.1 km of the start), `_heading` returned `None`, so the summary would have printed `heading   None`. The README says a loop's heading should be `loop`. I made `_heading` return `"loop"` and changed its return type to plain `str`. I fixed the function instead of making `Summary.heading` optional, because the optional version would still print the wrong output.
+
+I added `test_heading_of_a_loop` in `tests/test_report.py`, since no existing test covered loop tracks. I didn't confirm that it fails on the old code: the command that would temporarily undo the source changes needed your approval, so I skipped it.
+
+None of the fixes use `# type: ignore`, `cast` or `Any`, and the mypy configuration is unchanged. Nothing is committed yet.

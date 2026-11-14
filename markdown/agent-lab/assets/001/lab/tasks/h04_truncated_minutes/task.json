@@ -1,0 +1,35 @@
+{
+  "id": "h04",
+  "tier": "two-file bug",
+  "baseline": false,
+  "title": "Durations truncated, not rounded (the same copied code in report.py and plan.py)",
+  "prompt": "Bug report from a user: \"`trailhead summary` shows `time 0h 44m` for a flat 3.74 km walk. By Naismith's rule that is 44.9 minutes, and the README says times are rounded to the nearest minute.\" Find the cause and fix it.",
+  "setup": [
+    {
+      "file": "src/trailhead/plan.py",
+      "old": "divmod(round(hours * 60), 60)",
+      "new": "divmod(int(hours * 60), 60)"
+    },
+    {
+      "file": "src/trailhead/report.py",
+      "old": "divmod(round(summary.hours * 60), 60)",
+      "new": "divmod(int(summary.hours * 60), 60)"
+    }
+  ],
+  "grade": {
+    "kind": "hidden"
+  },
+  "reference": {
+    "restore_src": true
+  },
+  "bad": {
+    "kind": "fixed report.py only",
+    "edits": [
+      {
+        "file": "src/trailhead/report.py",
+        "old": "divmod(int(summary.hours * 60), 60)",
+        "new": "divmod(round(summary.hours * 60), 60)"
+      }
+    ]
+  }
+}

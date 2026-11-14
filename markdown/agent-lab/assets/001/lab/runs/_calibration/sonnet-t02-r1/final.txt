@@ -1,0 +1,25 @@
+I added `tests/test_pace.py` with 32 tests. They all pass, `ruff check` is clean, and nothing under `src/` changed.
+
+The tests follow the README and the docstrings:
+
+- **`naismith_hours`:**
+  - Flat, ascent-only and combined cases.
+  - Zero input.
+  - Fitness scaling (1.25 gives 25% less time, 0.8 gives more).
+  - The result is not rounded.
+  - `ValueError` for negative distance or ascent, and for zero or negative fitness.
+- **`tobler_kmh`:**
+  - The peak of 6 km/h at a -5% grade.
+  - Exact values at flat, +10% and -10%.
+  - Symmetry around -5%.
+  - Speed never exceeds 6 km/h.
+  - Steeper climbs are slower.
+- **`leg_hours`:**
+  - One value per leg.
+  - Each leg counts only its own climb.
+  - Descent adds nothing.
+  - Fitness is applied.
+  - Invalid fitness raises `ValueError`.
+  - A repeated point gives 0 hours.
+
+I didn't find any mismatch between the code and the documented behaviour, so no test is marked as expected to fail.

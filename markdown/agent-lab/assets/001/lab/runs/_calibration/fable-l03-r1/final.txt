@@ -1,0 +1,8 @@
+`mypy` now passes in strict mode with no ignores, casts, `Any` or config changes; the 46 tests and `ruff` pass too.
+
+Both errors were `None` defaults that were never resolved, so I filled them in with the behaviour the README documents:
+
+- **`src/trailhead/track.py`**: `parse_track` now names the track `unnamed` when there is no `# name:` line and no `default_name` is given.
+- **`src/trailhead/plan.py`**: `split_days` now falls back to `DEFAULT_MAX_HOURS` (7 hours) when `max_hours_per_day` is `None`. Previously that call would have crashed at runtime on the `<= 0` comparison.
+
+Neither fallback has a test; the existing tests always pass a limit and never check the `unnamed` case. The changes are uncommitted.

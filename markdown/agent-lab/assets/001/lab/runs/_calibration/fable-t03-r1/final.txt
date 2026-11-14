@@ -1,0 +1,13 @@
+I've written `tests/test_track.py` and just finished running it: the suite passes (114 passed, 2 expected failures) and `ruff check` is clean. Nothing under `src/` was touched.
+
+The two expected failures mark a place where `track.py` disagrees with the README:
+
+- **The mismatch:** a `# units: ft` line only converts the points below it. If it sits between points you get feet and metres mixed; if it sits after the points nothing is converted. No error is raised either way.
+- **What the README says:** "With `# units: ft`, elevations are converted to metres … Everything after parsing is in metres." A `# name:` line, the other setting, does work from anywhere in the file.
+- **How it's recorded:** `test_units_ft_applies_to_the_whole_track` is marked `xfail(strict=True)`, so the suite stays green now and will flag the marker for removal once the parser is fixed.
+
+The README doesn't say outright that the units line can go anywhere, so this is my reading of it. If you'd rather the units line be required above the points, the test should be changed to match.
+
+The rest of the file covers the documented format: name fallbacks, units, header, point validation with the inclusive coordinate limits, the two-point minimum, `line N:` numbering, `load_track`, and the `Track` length methods.
+
+Two things the code tolerates that I deliberately left untested, because the README neither promises nor forbids them: spaces around the header columns (`lat, lon, ele`) despite "exactly", and `nan`/`inf` as an elevation.

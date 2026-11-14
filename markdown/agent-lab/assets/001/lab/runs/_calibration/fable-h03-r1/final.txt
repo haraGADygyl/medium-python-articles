@@ -1,0 +1,10 @@
+`steepest_grade()` now returns a percentage: the reporter's track gives `18.0`. Tests (48), `ruff check` and `mypy` all pass. Nothing is committed.
+
+**Cause:** the function computed rise over run as a ratio and returned it rounded to three decimals, so an 18 m climb over 100 m came out as `0.18`. The summary report was compensating by multiplying by 100 itself, which is why the CLI output looked right and nobody noticed.
+
+**Fix:**
+- `src/trailhead/elevation.py`: `steepest_grade` returns `round(steepest * 100, 1)`, matching the README and docstring.
+- `src/trailhead/report.py`: dropped the `* 100` there, otherwise the summary would have shown 1800%.
+- `tests/test_elevation.py`: `steepest_grade` had no direct tests, so I added two — the 18 m over 100 m case from the report, and a descent with a repeated point.
+
+Any code outside this repo that calls `steepest_grade()` and multiplies by 100 itself will need the same change as `report.py`.

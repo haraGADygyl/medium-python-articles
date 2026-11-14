@@ -1,0 +1,89 @@
+diff --git a/src/trailhead/plan.py b/src/trailhead/plan.py
+index d5cf5b1..be7ee79 100644
+--- a/src/trailhead/plan.py
++++ b/src/trailhead/plan.py
+@@ -1,6 +1,7 @@
+ """Splitting a track into days of walking."""
+ 
+ from trailhead.pace import leg_hours
++from trailhead.timefmt import format_duration
+ from trailhead.track import Track
+ 
+ DEFAULT_MAX_HOURS = 7.0
+@@ -32,6 +33,5 @@ def describe_plan(days: list[tuple[int, int, int, float]]) -> list[str]:
+     """One line per day, for example ``Day 2: points 14-31, 6h 05m``."""
+     lines: list[str] = []
+     for day, first, last, hours in days:
+-        whole, minutes = divmod(round(hours * 60), 60)
+-        lines.append(f"Day {day}: points {first}-{last}, {whole}h {minutes:02d}m")
++        lines.append(f"Day {day}: points {first}-{last}, {format_duration(hours)}")
+     return lines
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 9c7e1a7..dedd48d 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -10,6 +10,7 @@ from trailhead.elevation import (
+ )
+ from trailhead.geo import compass_point, haversine_km, initial_bearing
+ from trailhead.pace import naismith_hours
++from trailhead.timefmt import format_duration
+ from trailhead.track import Track
+ 
+ LOOP_RADIUS_KM = 0.1
+@@ -55,7 +56,6 @@ def summarise(
+ 
+ 
+ def format_summary(summary: Summary) -> str:
+-    whole, minutes = divmod(round(summary.hours * 60), 60)
+     return "\n".join(
+         [
+             summary.name,
+@@ -63,7 +63,7 @@ def format_summary(summary: Summary) -> str:
+             f"  ascent    +{summary.gain_m:.0f} m / -{summary.loss_m:.0f} m",
+             f"  altitude  {summary.lowest_m:.0f}-{summary.highest_m:.0f} m",
+             f"  steepest  {summary.steepest_pct:.1f}%",
+-            f"  time      {whole}h {minutes:02d}m",
++            f"  time      {format_duration(summary.hours)}",
+             f"  heading   {summary.heading}",
+         ]
+     )
+diff --git a/src/trailhead/timefmt.py b/src/trailhead/timefmt.py
+new file mode 100644
+index 0000000..2a8d381
+--- /dev/null
++++ b/src/trailhead/timefmt.py
+@@ -0,0 +1,10 @@
++"""Formatting of durations for display."""
++
++
++def format_duration(hours: float) -> str:
++    """Format a number of hours as ``H"h "MM"m"``, for example ``5h 07m``.
++
++    Rounds to the nearest minute.
++    """
++    whole, minutes = divmod(round(hours * 60), 60)
++    return f"{whole}h {minutes:02d}m"
+diff --git a/tests/test_timefmt.py b/tests/test_timefmt.py
+new file mode 100644
+index 0000000..b7e50ad
+--- /dev/null
++++ b/tests/test_timefmt.py
+@@ -0,0 +1,18 @@
++import pytest
++
++from trailhead.timefmt import format_duration
++
++
++@pytest.mark.parametrize(
++    ("hours", "expected"),
++    [
++        (0.0, "0h 00m"),
++        (0.75, "0h 45m"),
++        (5.12, "5h 07m"),
++        (6.0833, "6h 05m"),
++        (2.0, "2h 00m"),
++        (0.999, "1h 00m"),
++    ],
++)
++def test_format_duration(hours, expected):
++    assert format_duration(hours) == expected

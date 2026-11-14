@@ -1,0 +1,97 @@
+{
+  "run_id": "sonnet-h01-r1",
+  "task": "h01",
+  "tier": "two-file bug",
+  "repeat": 1,
+  "model_alias": "sonnet",
+  "prompt": "Bug report from a user: \"`trailhead plan route.csv --fitness 1.5` prints exactly the same days as `trailhead plan route.csv`. `trailhead summary` does take `--fitness` into account.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 14.3,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 7,
+  "duration_ms": 12205,
+  "duration_api_ms": 11653,
+  "api_equivalent_usd": 0.0569146,
+  "usage": {
+    "input_tokens": 8,
+    "cache_creation_input_tokens": 9543,
+    "cache_read_input_tokens": 71566,
+    "output_tokens": 1157,
+    "output_tokens_details": {
+      "thinking_tokens": 0
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 9543,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 291,
+        "cache_read_input_tokens": 21171,
+        "cache_creation_input_tokens": 856,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 856
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 8,
+      "outputTokens": 1157,
+      "cacheReadInputTokens": 71566,
+      "cacheCreationInputTokens": 9543,
+      "webSearchRequests": 0,
+      "costUSD": 0.0569146,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 0,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 9543,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 1,
+    "Read": 2,
+    "Edit": 2,
+    "Bash": 1
+  },
+  "bash_commands": [
+    "python -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/plan.py"
+    ],
+    "lines_added": 2,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

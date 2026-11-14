@@ -1,0 +1,176 @@
+diff --git a/tests/test_elevation.py b/tests/test_elevation.py
+new file mode 100644
+index 0000000..5834c79
+--- /dev/null
++++ b/tests/test_elevation.py
+@@ -0,0 +1,170 @@
++from math import degrees
++
++import pytest
++
++from trailhead.elevation import (
++    DEFAULT_THRESHOLD_M,
++    gain_and_loss,
++    highest_and_lowest,
++    steepest_grade,
++)
++from trailhead.geo import EARTH_RADIUS_KM
++
++# Degrees of longitude that span 100 m along the equator.
++LON_100_M = degrees(0.1 / EARTH_RADIUS_KM)
++
++
++# gain_and_loss
++
++
++def test_default_threshold_is_three_metres():
++    assert DEFAULT_THRESHOLD_M == 3
++
++
++def test_simple_climb_and_descent():
++    assert gain_and_loss([100, 150, 120]) == (50.0, 30.0)
++
++
++def test_gain_and_loss_are_both_reported_as_positive_totals():
++    gain, loss = gain_and_loss([500, 400, 450, 300])
++    assert (gain, loss) == (50.0, 250.0)
++
++
++@pytest.mark.parametrize("elevations", [[], [1234.5], [800, 800, 800]])
++def test_nothing_to_count(elevations):
++    assert gain_and_loss(elevations) == (0.0, 0.0)
++
++
++def test_jitter_of_a_metre_either_way_adds_nothing():
++    assert gain_and_loss([100, 101, 99, 100, 101, 100, 99, 100]) == (0.0, 0.0)
++
++
++def test_changes_below_the_default_threshold_are_ignored():
++    assert gain_and_loss([100, 102.9, 100, 97.1, 100]) == (0.0, 0.0)
++
++
++def test_a_change_of_exactly_the_threshold_counts():
++    assert gain_and_loss([100, 103]) == (3.0, 0.0)
++    assert gain_and_loss([100, 97]) == (0.0, 3.0)
++    assert gain_and_loss([100, 110, 100], threshold=10) == (10.0, 10.0)
++
++
++def test_long_climb_in_one_metre_steps_counts_in_full():
++    assert gain_and_loss(list(range(1000, 1301))) == (300.0, 0.0)
++
++
++def test_long_descent_in_one_metre_steps_counts_in_full():
++    assert gain_and_loss(list(range(1300, 999, -1))) == (0.0, 300.0)
++
++
++def test_change_is_measured_from_the_last_counted_elevation():
++    # 100 -> 102 is ignored, but 104 is 4 m above the last counted elevation (100).
++    assert gain_and_loss([100, 102, 104]) == (4.0, 0.0)
++    # After counting 110, a dip to 108 is ignored and 112 is only 2 m above 110.
++    assert gain_and_loss([100, 110, 108, 112]) == (10.0, 0.0)
++
++
++def test_jitter_on_top_of_a_climb_does_not_inflate_it():
++    assert gain_and_loss([100, 150, 149, 151, 150, 200, 199, 201, 200]) == (100.0, 0.0)
++
++
++def test_custom_threshold():
++    elevations = [100, 104, 100, 104, 100]
++    assert gain_and_loss(elevations) == (8.0, 8.0)
++    assert gain_and_loss(elevations, threshold=5) == (0.0, 0.0)
++    assert gain_and_loss(elevations, 5) == (0.0, 0.0)
++
++
++def test_zero_threshold_counts_every_change():
++    assert gain_and_loss([100, 101, 100.5, 102], threshold=0) == (2.5, 0.5)
++
++
++def test_totals_are_rounded_to_a_tenth_of_a_metre():
++    assert gain_and_loss([100, 103.26, 100.12]) == (3.3, 3.1)
++    assert gain_and_loss([0, 10.04, 20.08, 30.12]) == (30.1, 0.0)
++
++
++def test_negative_threshold_is_an_error():
++    with pytest.raises(ValueError):
++        gain_and_loss([100, 200], threshold=-1)
++    with pytest.raises(ValueError):
++        gain_and_loss([], threshold=-0.1)
++
++
++def test_accepts_any_sequence_and_does_not_modify_it():
++    elevations = [100.0, 150.0, 120.0]
++    assert gain_and_loss(tuple(elevations)) == (50.0, 30.0)
++    gain_and_loss(elevations)
++    assert elevations == [100.0, 150.0, 120.0]
++
++
++# highest_and_lowest
++
++
++def test_highest_and_lowest(make_track):
++    track = make_track((42.0, 23.0, 2140), (42.01, 23.0, 2729.5), (42.02, 23.0, 1980))
++    assert highest_and_lowest(track) == (2729.5, 1980)
++
++
++def test_highest_and_lowest_on_a_level_track(make_track):
++    assert highest_and_lowest(make_track((0, 0, 650), (0, 0.01, 650))) == (650, 650)
++
++
++def test_highest_and_lowest_below_sea_level(make_track):
++    assert highest_and_lowest(make_track((31.5, 35.4, -410), (31.5, 35.5, -120))) == (-120, -410)
++
++
++# steepest_grade
++
++
++def test_grade_is_in_percent(make_track):
++    # The README example: a leg climbing 18 m over 100 m is 18.0.
++    assert steepest_grade(make_track((0, 0, 500), (0, LON_100_M, 518))) == 18.0
++
++
++def test_downhill_grade_is_reported_as_a_positive_number(make_track):
++    assert steepest_grade(make_track((0, 0, 518), (0, LON_100_M, 500))) == 18.0
++
++
++def test_steepest_leg_wins_whichever_way_it_slopes(make_track):
++    uphill_steepest = make_track(
++        (0, 0, 100), (0, LON_100_M, 105), (0, 2 * LON_100_M, 130), (0, 3 * LON_100_M, 120)
++    )
++    assert steepest_grade(uphill_steepest) == 25.0
++    downhill_steepest = make_track(
++        (0, 0, 100), (0, LON_100_M, 105), (0, 2 * LON_100_M, 75), (0, 3 * LON_100_M, 85)
++    )
++    assert steepest_grade(downhill_steepest) == 30.0
++
++
++def test_grade_is_per_leg_not_over_the_whole_track(make_track):
++    # 20 m up then 20 m down: flat overall, but each leg is 20%.
++    track = make_track((0, 0, 100), (0, LON_100_M, 120), (0, 2 * LON_100_M, 100))
++    assert steepest_grade(track) == 20.0
++
++
++def test_grade_uses_horizontal_distance_of_each_leg(make_track):
++    # Same 30 m climb over 100 m and then over 300 m.
++    track = make_track((0, 0, 0), (0, LON_100_M, 30), (0, 4 * LON_100_M, 60))
++    assert steepest_grade(track) == 30.0
++
++
++def test_grade_is_rounded_to_a_tenth(make_track):
++    assert steepest_grade(make_track((0, 0, 0), (0, LON_100_M, 12.34))) == 12.3
++    assert steepest_grade(make_track((0, 0, 0), (0, LON_100_M, 12.36))) == 12.4
++
++
++def test_level_track_has_zero_grade(make_track):
++    assert steepest_grade(make_track((0, 0, 300), (0, 0.01, 300), (0, 0.02, 300))) == 0.0
++
++
++def test_repeated_points_are_skipped(make_track):
++    # The middle leg has no length; its elevation jump must not count or divide by zero.
++    track = make_track(
++        (0, 0, 100), (0, LON_100_M, 110), (0, LON_100_M, 160), (0, 2 * LON_100_M, 165)
++    )
++    assert steepest_grade(track) == 10.0
++
++
++def test_track_of_only_repeated_points_has_zero_grade(make_track):
++    assert steepest_grade(make_track((42.0, 23.0, 100), (42.0, 23.0, 150))) == 0.0

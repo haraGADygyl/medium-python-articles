@@ -1,0 +1,96 @@
+{
+  "run_id": "sonnet-r03-r1",
+  "task": "r03",
+  "tier": "refactor",
+  "repeat": 1,
+  "model_alias": "sonnet",
+  "prompt": "`plan.split_days` returns plain tuples `(day, first_point, last_point, hours)` that callers unpack by position. Make it return instances of a frozen dataclass `DayPlan` instead, defined in `src/trailhead/plan.py`, with the fields `day`, `first_point`, `last_point` and `hours` in that order, and update every caller and test. Behaviour and command output must stay the same.",
+  "harness_timeout": false,
+  "wall_s": 18.8,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 16760,
+  "duration_api_ms": 16178,
+  "api_equivalent_usd": 0.06930069999999999,
+  "usage": {
+    "input_tokens": 8,
+    "cache_creation_input_tokens": 9961,
+    "cache_read_input_tokens": 71707,
+    "output_tokens": 2227,
+    "output_tokens_details": {
+      "thinking_tokens": 38
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 9961,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 294,
+        "cache_read_input_tokens": 20931,
+        "cache_creation_input_tokens": 1514,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1514
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 8,
+      "outputTokens": 2227,
+      "cacheReadInputTokens": 71707,
+      "cacheCreationInputTokens": 9961,
+      "webSearchRequests": 0,
+      "costUSD": 0.06930069999999999,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 38,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 9961,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 2,
+    "Read": 2,
+    "Bash": 1
+  },
+  "bash_commands": [
+    "python - <<'EOF'\np='src/trailhead/plan.py'\ns=open(p).read()\ns=s.replace('''from trailhead.pace''','''from dataclasses import dataclass\n\nfrom trailhead.pace''',1)\ns=s.replace('''DEFAULT_MAX_HOURS = 7.0\n''','''DEFAULT_MAX_HOURS = 7.0\n\n\n@dataclass(frozen=True)\nclass DayPlan:\n    \"\"\"One day of walking: days count from 1, point indexes from 0.\"\"\"\n\n    day: int\n    first_point: int\n    last_point: int\n    hours: float\n''',1)\ns=s.replace(') -> list[tuple[int, int, int, float]]:',') -> list[DayPlan]:')\ns=s.replace('Returns ``(day, first_point, last_point, hours)`` tuples: days count from 1,\\n    point indexes from 0, hours rounded to 0.01.','Returns :class:`DayPlan` items: days count from 1, point indexes from 0,\\n    hours rounded to 0.01.')\ns=s.replace('days: list[tuple[int, int, int, float]] = []','days: list[DayPlan] = []')\ns=s.replace('days.append((len(days) + 1, first, index, round(used, 2)))','days.append(DayPlan(len(days) + 1, first, index, round(used, 2)))')\ns=s.replace('days.append((len(days) + 1, first, len(track.points) - 1, round(used, 2)))','days.append(DayPlan(len(days) + 1, first, len(track.points) - 1, round(used, 2)))')\ns=s.replace('def describe_plan(days: list[tuple[int, int, int, float]])','def describe_plan(days: list[DayPlan])')\ns=s.replace('''    for day, first, last, hours in days:\n        whole, minutes = divmod(round(hours * 60), 60)\n        lines.append(f\"Day {day}: points {first}-{last}, {whole}h {minutes:02d}m\")''','''    for plan in days:\n        whole, minutes = divmod(round(plan.hours * 60), 60)\n        lines.append(\n            f\"Day {plan.day}: points {plan.first_point}-{plan.last_point}, \"\n            f\"{whole}h {minutes:02d}m\"\n        )''')\nopen(p,'w').write(s)\n\np='tests/test_plan.py'\ns=open(p).read()\ns=s.replace('import describe_plan, split_days','import DayPlan, describe_plan, split_days')\ns=s.replace('[(1, 0, 5, 1.0 * 5)]','[DayPlan(1, 0, 5, 1.0 * 5)]')\ns=s.replace('''        (1, 0, 2, 2.0),\n        (2, 2, 4, 2.0),\n        (3, 4, 5, 1.0),''','''        DayPlan(1, 0, 2, 2.0),\n        DayPlan(2, 2, 4, 2.0),\n        DayPlan(3, 4, 5, 1.0),''')\ns=s.replace('[(day, first, last) for day, first, last, _ in days] == [(1, 0, 1), (2, 1, 2)]','[(d.day, d.first_point, d.last_point) for d in days] == [(1, 0, 1), (2, 1, 2)]')\ns=s.replace('[(1, 0, 14, 6.0833), (2, 14, 31, 0.75)]','[DayPlan(1, 0, 14, 6.0833), DayPlan(2, 14, 31, 0.75)]')\nopen(p,'w').write(s)\nEOF\ngit diff --stat; python -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "................................................                         [100%]\n48 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/plan.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 32,
+    "lines_removed": 17,
+    "own_suite_pass_as_left": true
+  }
+}

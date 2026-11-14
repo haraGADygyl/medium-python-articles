@@ -25,7 +25,7 @@ MODELS = {  # alias passed to `claude --model`, in price order
     "opus": "claude-opus-5-5",
     "fable": "claude-fable-5-2",
 }
-TIERS = ["refactor", "tests", "lint", "bug", "two-file bug"]
+TIERS = ["refactor/feature", "tests", "lint", "bug", "two-file bug"]
 
 
 @dataclass
@@ -33,6 +33,7 @@ class Task:
     id: str
     path: Path
     tier: str
+    baseline: bool
     title: str
     prompt: str
     setup: list[dict]
@@ -49,16 +50,20 @@ def load_tasks() -> list[Task]:
     tasks = []
     for folder in sorted(p for p in TASKS_DIR.iterdir() if (p / "task.json").exists()):
         spec = json.loads((folder / "task.json").read_text())
-        tasks.append(Task(spec["id"], folder, spec["tier"], spec["title"], spec["prompt"],
+        tasks.append(Task(spec["id"], folder, spec["tier"], spec["baseline"], spec["title"],
+                          spec["prompt"],
                           spec["setup"], spec["grade"], spec["reference"], spec["bad"]))
     return tasks
 
 
 def apply_edits(root: Path, edits: list[dict]) -> None:
-    """Exact, single-occurrence string replacements, or file deletions; fail loudly."""
+    """Exact, single-occurrence string replacements, file deletions or new files; fail loudly."""
     for edit in edits:
         if "delete" in edit:
             (root / edit["delete"]).unlink()
+            continue
+        if "write" in edit:
+            (root / edit["write"]).write_bytes(edit["content"].encode("utf-8"))
             continue
         target = root / edit["file"]
         text = target.read_text()

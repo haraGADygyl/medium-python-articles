@@ -34,7 +34,7 @@ def test_invalid_limit(five_flat_hours):
 
 
 def test_describe_plan():
-    assert describe_plan([(1, 0, 14, 6.0833), (2, 14, 31, 0.75)]) == [
-        "Day 1: points 0-14, 6h 05m",
+    assert describe_plan([(1, 0, 14, 6.07), (2, 14, 31, 0.75)]) == [
+        "Day 1: points 0-14, 6h 04m",
         "Day 2: points 14-31, 0h 45m",
     ]

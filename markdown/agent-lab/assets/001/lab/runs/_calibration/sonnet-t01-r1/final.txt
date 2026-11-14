@@ -1,0 +1,18 @@
+I added `tests/test_elevation.py` with 21 tests. All of them pass, and `ruff check` is clean on the file. I didn't touch anything under `src/`.
+
+The tests cover the behaviour described in the README and docstrings:
+
+- **`gain_and_loss`:**
+  - A simple climb and descent, plus empty and single-element input.
+  - Jitter under the threshold is ignored, while a 300 m climb or descent in 1 m steps still counts in full.
+  - The default threshold of 3 m is tested at 2.9 m (ignored) and 3.0 m (counted), uphill and downhill.
+  - Changes are measured from the last counted elevation, a custom threshold and a threshold of zero both work, and a negative threshold raises `ValueError`.
+  - Totals are rounded to 0.1 m.
+- **`highest_and_lowest`:** a track with a clear high and low point, and a flat track.
+- **`steepest_grade`:**
+  - The result is a percentage, so an 18 m climb over 100 m comes out at about 18.
+  - It is rounded to 0.1, counts downhill legs, and picks the steepest leg.
+  - A flat track gives 0.
+  - Zero-length legs are skipped, including the case where every leg is zero-length.
+
+I found no discrepancies between the code and the documentation.

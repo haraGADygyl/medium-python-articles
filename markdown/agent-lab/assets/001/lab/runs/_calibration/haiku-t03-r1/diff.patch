@@ -1,0 +1,192 @@
+diff --git a/tests/test_track.py b/tests/test_track.py
+new file mode 100644
+index 0000000..1f2404b
+--- /dev/null
++++ b/tests/test_track.py
+@@ -0,0 +1,186 @@
++import math
++
++import pytest
++
++from trailhead.track import Point, Track, TrackError, load_track, parse_track
++
++PLAIN = """\
++lat,lon,ele
++42.2031,23.3205,2140
++42.2049,23.3188,2196
++"""
++
++
++def test_parses_header_and_points():
++    track = parse_track(PLAIN)
++    assert track.points == [
++        Point(42.2031, 23.3205, 2140.0),
++        Point(42.2049, 23.3188, 2196.0),
++    ]
++
++
++def test_track_without_name_is_unnamed():
++    assert parse_track(PLAIN).name == "unnamed"
++
++
++def test_default_name_is_used_when_no_name_line():
++    assert parse_track(PLAIN, default_name="rila").name == "rila"
++
++
++def test_name_line_overrides_default_name():
++    text = "# name: Seven Rila Lakes\n" + PLAIN
++    assert parse_track(text, default_name="rila").name == "Seven Rila Lakes"
++
++
++def test_name_line_is_case_insensitive_key_and_value_is_stripped():
++    text = "#   NAME:   Musala  \n" + PLAIN
++    assert parse_track(text).name == "Musala"
++
++
++def test_blank_lines_and_comments_are_ignored():
++    text = "\n# a comment about the walk\n\nlat,lon,ele\n\n1,2,3\n# trailing note\n4,5,6\n\n"
++    assert parse_track(text).points == [Point(1, 2, 3.0), Point(4, 5, 6.0)]
++
++
++def test_units_m_keeps_elevation():
++    text = "# units: m\n" + PLAIN
++    assert parse_track(text).points[0].ele == 2140.0
++
++
++def test_units_ft_converts_elevation_to_metres():
++    text = "# units: ft\nlat,lon,ele\n0,0,1000\n0,1,2000\n"
++    track = parse_track(text)
++    assert track.points[0].ele == pytest.approx(304.8)
++    assert track.points[1].ele == pytest.approx(609.6)
++
++
++def test_unknown_units_are_an_error():
++    with pytest.raises(TrackError, match=r"^line 1: unknown units 'km'"):
++        parse_track("# units: km\n" + PLAIN)
++
++
++def test_header_must_be_the_first_non_comment_line():
++    with pytest.raises(TrackError, match=r"^line 1: expected the header"):
++        parse_track("0,0,0\n0,1,0\n")
++
++
++def test_wrong_header_is_an_error():
++    with pytest.raises(TrackError, match=r"^line 1: expected the header 'lat,lon,ele'"):
++        parse_track("lat,lon\n0,0\n0,1\n")
++
++
++def test_header_may_follow_comments_and_blank_lines():
++    text = "# name: x\n\nlat,lon,ele\n0,0,0\n0,1,0\n"
++    assert len(parse_track(text).points) == 2
++
++
++@pytest.mark.parametrize(
++    "line, fields",
++    [("1,2", 2), ("1,2,3,4", 4)],
++)
++def test_wrong_number_of_fields_names_the_line(line, fields):
++    text = f"lat,lon,ele\n0,0,0\n{line}\n"
++    with pytest.raises(TrackError, match=rf"^line 3: expected 3 fields, got {fields}$"):
++        parse_track(text)
++
++
++def test_non_numeric_value_names_the_line():
++    with pytest.raises(TrackError, match=r"^line 3: not a number$"):
++        parse_track("lat,lon,ele\n0,0,0\n1,x,3\n")
++
++
++def test_line_numbers_count_comments_and_blank_lines():
++    text = "# name: x\n\n# more\nlat,lon,ele\n0,0,0\n\n1,2\n"
++    with pytest.raises(TrackError, match=r"^line 7: expected 3 fields"):
++        parse_track(text)
++
++
++@pytest.mark.parametrize(
++    "lat, lon",
++    [(90, 0), (-90, 0), (0, 180), (0, -180), (-90, -180), (90, 180)],
++)
++def test_coordinate_bounds_are_inclusive(lat, lon):
++    track = parse_track(f"lat,lon,ele\n{lat},{lon},0\n{lat},{lon},0\n")
++    assert len(track.points) == 2
++
++
++@pytest.mark.parametrize(
++    "lat, lon",
++    [(90.001, 0), (-90.001, 0), (0, 180.001), (0, -180.001)],
++)
++def test_coordinates_out_of_range_are_rejected(lat, lon):
++    with pytest.raises(TrackError, match=r"^line 2: coordinates out of range"):
++        parse_track(f"lat,lon,ele\n{lat},{lon},0\n0,0,0\n")
++
++
++def test_fewer_than_two_points_is_rejected():
++    with pytest.raises(TrackError, match="at least two points"):
++        parse_track("lat,lon,ele\n0,0,0\n")
++
++
++def test_header_only_is_rejected():
++    with pytest.raises(TrackError, match="at least two points"):
++        parse_track("lat,lon,ele\n")
++
++
++def test_track_error_is_a_value_error():
++    assert issubclass(TrackError, ValueError)
++    with pytest.raises(ValueError):
++        parse_track("")
++
++
++def test_load_track_names_track_after_file(write_track):
++    path = write_track(PLAIN, filename="rila.csv")
++    assert load_track(path).name == "rila"
++
++
++def test_load_track_accepts_str_path(write_track):
++    path = write_track(PLAIN, filename="rila.csv")
++    assert load_track(str(path)).name == "rila"
++
++
++def test_load_track_name_line_beats_file_name(write_track):
++    path = write_track("# name: Seven Rila Lakes\n" + PLAIN, filename="rila.csv")
++    assert load_track(path).name == "Seven Rila Lakes"
++
++
++def test_load_track_reads_points(write_track):
++    path = write_track("# units: ft\nlat,lon,ele\n0,0,1000\n0,1,1000\n")
++    track = load_track(path)
++    assert [p.ele for p in track.points] == [pytest.approx(304.8)] * 2
++
++
++def test_leg_lengths_one_per_consecutive_pair(make_track):
++    track = make_track((0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 1, 0))
++    legs = track.leg_lengths_km()
++    assert len(legs) == 3
++    assert legs[2] == pytest.approx(0.0)
++
++
++def test_one_degree_of_latitude_is_about_111_km(make_track):
++    track = make_track((0, 0, 0), (1, 0, 0))
++    assert track.leg_lengths_km()[0] == pytest.approx(111.195, abs=0.001)
++
++
++def test_pole_to_pole_is_half_the_sphere_circumference(make_track):
++    # Great-circle distance on a sphere of radius 6371.0088 km.
++    track = make_track((90, 0, 0), (-90, 0, 0))
++    assert track.length_km() == pytest.approx(math.pi * 6371.0088, rel=1e-9)
++
++
++def test_length_is_the_sum_of_leg_lengths(make_track):
++    track = make_track((0, 0, 0), (0, 0.5, 0), (0, 1.0, 0))
++    assert track.length_km() == pytest.approx(sum(track.leg_lengths_km()))
++    assert track.length_km() == pytest.approx(2 * 0.5 * 111.195, abs=0.01)
++
++
++def test_length_ignores_elevation(make_track):
++    flat = make_track((0, 0, 0), (0, 1, 0))
++    climbing = make_track((0, 0, 0), (0, 1, 5000))
++    assert flat.length_km() == pytest.approx(climbing.length_km())
++
++
++def test_track_is_built_from_points(make_track):
++    track = make_track((0, 0, 1), (0, 1, 2), name="x")
++    assert isinstance(track, Track)
++    assert track.name == "x"

@@ -1,0 +1,104 @@
+{
+  "run_id": "fable-r03-r1",
+  "task": "r03",
+  "tier": "refactor",
+  "repeat": 1,
+  "model_alias": "fable",
+  "prompt": "`plan.split_days` returns plain tuples `(day, first_point, last_point, hours)` that callers unpack by position. Make it return instances of a frozen dataclass `DayPlan` instead, defined in `src/trailhead/plan.py`, with the fields `day`, `first_point`, `last_point` and `hours` in that order, and update every caller and test. Behaviour and command output must stay the same.",
+  "harness_timeout": false,
+  "wall_s": 48.3,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 7,
+  "duration_ms": 46360,
+  "duration_api_ms": 44662,
+  "api_equivalent_usd": 0.497036,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 19023,
+    "cache_read_input_tokens": 136660,
+    "output_tokens": 4131,
+    "output_tokens_details": {
+      "thinking_tokens": 173
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 19023,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 289,
+        "cache_read_input_tokens": 30531,
+        "cache_creation_input_tokens": 976,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 976
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 12,
+      "outputTokens": 4131,
+      "cacheReadInputTokens": 136660,
+      "cacheCreationInputTokens": 19023,
+      "webSearchRequests": 0,
+      "costUSD": 0.497036,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 173,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 19023,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 1,
+    "Bash": 5
+  },
+  "bash_commands": [
+    "git ls-files; cat src/trailhead/plan.py",
+    "cat tests/test_plan.py src/trailhead/cli.py src/trailhead/report.py tests/test_cli.py tests/conftest.py; grep -n -B3 -A8 \"Day plans\" README.md; grep -rn \"days\\|hours\" src/trailhead/__init__.py src/trailhead/pace.py | head -30",
+    "python - <<'EOF'\nimport re, pathlib\np = pathlib.Path(\"src/trailhead/plan.py\"); s = p.read_text()\ns = s.replace('''\"\"\"Splitting a track into days of walking.\"\"\"\n\nfrom trailhead.pace''', '''\"\"\"Splitting a track into days of walking.\"\"\"\n\nfrom dataclasses import dataclass\n\nfrom trailhead.pace''')\ns = s.replace('''DEFAULT_MAX_HOURS = 7.0\n''', '''DEFAULT_MAX_HOURS = 7.0\n\n\n@dataclass(frozen=True, slots=True)\nclass DayPlan:\n    \"\"\"One day of walking, from ``first_point`` to ``last_point`` of the track.\"\"\"\n\n    day: int\n    first_point: int\n    last_point: int\n    hours: float\n''')\ns = s.replace(''') -> list[tuple[int, int, int, float]]:\n    \"\"\"Group''', ''') -> list[DayPlan]:\n    \"\"\"Group''')\ns = s.replace('''    Returns ``(day, first_point, last_point, hours)`` tuples: days count from 1,\n    point indexes from 0, hours rounded to 0.01. A day never goes over''', '''    Returns one ``DayPlan`` per day: days count from 1, point indexes from 0,\n    hours rounded to 0.01. A day never goes over''')\ns = s.replace(\"days: list[tuple[int, int, int, float]] = []\", \"days: list[DayPlan] = []\")\ns = s.replace(\"days.append((len(days) + 1, first, index, round(used, 2)))\", \"days.append(DayPlan(len(days) + 1, first, index, round(used, 2)))\")\ns = s.replace(\"days.append((len(days) + 1, first, len(track.points) - 1, round(used, 2)))\", \"days.append(DayPlan(len(days) + 1, first, len(track.points) - 1, round(used, 2)))\")\ns = s.replace(\"def describe_plan(days: list[tuple[int, int, int, float]])\", \"def describe_plan(days: list[DayPlan])\")\ns = s.replace('''    for day, first, last, hours in days:\n        whole, minutes = divmod(round(hours * 60), 60)\n        lines.append(f\"Day {day}: points {first}-{last}, {whole}h {minutes:02d}m\")''', '''    for plan in days:\n        whole, minutes = divmod(round(plan.hours * 60), 60)\n        lines.append(\n            f\"Day {plan.day}: points {plan.first_point}-{plan.last_point}, \"\n            f\"{whole}h {minutes:02d}m\"\n        )''')\np.write_text(s)\np = pathlib.Path(\"tests/test_plan.py\"); s = p.read_text()\ns = s.replace(\"import describe_plan, split_days\", \"import DayPlan, describe_plan, split_days\")\ns = s.replace(\"== [(1, 0, 5, 1.0 * 5)]\", \"== [DayPlan(1, 0, 5, 1.0 * 5)]\")\nfor t in [\"(1, 0, 2, 2.0)\", \"(2, 2, 4, 2.0)\", \"(3, 4, 5, 1.0)\"]:\n    s = s.replace(\"        \" + t, \"        DayPlan\" + t)\ns = s.replace(\"[(day, first, last) for day, first, last, _ in days]\", \"[(plan.day, plan.first_point, plan.last_point) for plan in days]\")\ns = s.replace(\"describe_plan([(1, 0, 14, 6.0833), (2, 14, 31, 0.75)])\", \"describe_plan([DayPlan(1, 0, 14, 6.0833), DayPlan(2, 14, 31, 0.75)])\")\np.write_text(s)\nEOF\ngit diff; python -m pytest -q 2>&1 | tail -5; (ruff check . ; ruff format --check .) 2>&1 | tail -5; grep -n -A12 \"tool\\.\" pyproject.toml",
+    "python - <<'EOF'\nimport pathlib\np = pathlib.Path(\"src/trailhead/plan.py\"); s = p.read_text()\ns = s.replace('''\"\"\"Splitting a track into days of walking.\"\"\"\n\nfrom trailhead.pace''', '''\"\"\"Splitting a track into days of walking.\"\"\"\n\nfrom dataclasses import dataclass\n\nfrom trailhead.pace''')\ns = s.replace('''DEFAULT_MAX_HOURS = 7.0\n''', '''DEFAULT_MAX_HOURS = 7.0\n\n\n@dataclass(frozen=True, slots=True)\nclass DayPlan:\n    \"\"\"One day of walking, from ``first_point`` to ``last_point`` of the track.\"\"\"\n\n    day: int\n    first_point: int\n    last_point: int\n    hours: float\n''')\ns = s.replace(''') -> list[tuple[int, int, int, float]]:\n    \"\"\"Group''', ''') -> list[DayPlan]:\n    \"\"\"Group''')\ns = s.replace('''    Returns ``(day, first_point, last_point, hours)`` tuples: days count from 1,\n    point indexes from 0, hours rounded to 0.01. A day never goes over''', '''    Returns one ``DayPlan`` per day: days count from 1, point indexes from 0,\n    hours rounded to 0.01. A day never goes over''')\ns = s.replace(\"days: list[tuple[int, int, int, float]] = []\", \"days: list[DayPlan] = []\")\ns = s.replace(\"days.append((len(days) + 1, first, index, round(used, 2)))\", \"days.append(DayPlan(len(days) + 1, first, index, round(used, 2)))\")\ns = s.replace(\"days.append((len(days) + 1, first, len(track.points) - 1, round(used, 2)))\", \"days.append(DayPlan(len(days) + 1, first, len(track.points) - 1, round(used, 2)))\")\ns = s.replace(\"def describe_plan(days: list[tuple[int, int, int, float]])\", \"def describe_plan(days: list[DayPlan])\")\ns = s.replace('''    for day, first, last, hours in days:\n        whole, minutes = divmod(round(hours * 60), 60)\n        lines.append(f\"Day {day}: points {first}-{last}, {whole}h {minutes:02d}m\")''', '''    for plan in days:\n        whole, minutes = divmod(round(plan.hours * 60), 60)\n        lines.append(\n            f\"Day {plan.day}: points {plan.first_point}-{plan.last_point}, \"\n            f\"{whole}h {minutes:02d}m\"\n        )''')\np.write_text(s)\np = pathlib.Path(\"tests/test_plan.py\"); s = p.read_text()\ns = s.replace(\"import describe_plan, split_days\", \"import DayPlan, describe_plan, split_days\")\ns = s.replace(\"== [(1, 0, 5, 1.0 * 5)]\", \"== [DayPlan(1, 0, 5, 1.0 * 5)]\")\nfor t in [\"(1, 0, 2, 2.0)\", \"(2, 2, 4, 2.0)\", \"(3, 4, 5, 1.0)\"]:\n    s = s.replace(\"        \" + t, \"        DayPlan\" + t)\ns = s.replace(\"[(day, first, last) for day, first, last, _ in days]\", \"[(plan.day, plan.first_point, plan.last_point) for plan in days]\")\ns = s.replace(\"describe_plan([(1, 0, 14, 6.0833), (2, 14, 31, 0.75)])\", \"describe_plan([DayPlan(1, 0, 14, 6.0833), DayPlan(2, 14, 31, 0.75)])\")\np.write_text(s)\nEOF\ngit diff; python -m pytest -q 2>&1 | tail -5; ruff check . 2>&1 | tail -5; ruff format --check . 2>&1 | tail -5; cat pyproject.toml",
+    "python - <<'EOF'\nimport pathlib\np = pathlib.Path(\"tests/test_plan.py\"); s = p.read_text()\ns = s.replace(\"    assert [(plan.day, plan.first_point, plan.last_point) for plan in days] == [(1, 0, 1), (2, 1, 2)]\",\n\"    assert [(d.day, d.first_point, d.last_point) for d in days] == [(1, 0, 1), (2, 1, 2)]\")\np.write_text(s)\np = pathlib.Path(\"src/trailhead/plan.py\"); s = p.read_text()\ns = s.replace('''    hours rounded to 0.01. A day never goes over\n    ``max_hours_per_day`` unless a single leg on its own does.''', '''    hours rounded to 0.01. A day never goes over ``max_hours_per_day`` unless a\n    single leg on its own does.''')\np.write_text(s)\nEOF\nruff format src/trailhead/plan.py tests/test_plan.py; ruff check .; python -m pytest -q 2>&1 | tail -2; mypy 2>&1 | tail -2; git diff --stat; git diff src/trailhead/plan.py | tail -15"
+  ],
+  "permission_denials": [
+    {
+      "command": "python - <<'EOF'\nimport re, pathlib\np = pathlib.Path(\"src/trailhead/plan.py\"); s = p.read_text()\ns = s.replace('''\"\"\"Splitting a track into days of walking.\"\"\"\n\nfrom trailhead.pace''', '''\"\"\"Splitting a track into days of walking.\"\"\"\n\nfrom dataclasses import dataclass\n\nfrom trailhead.pace''')\ns = s.replace('''DEFAULT_MAX_HOURS = 7.0\n''', '''DEFAULT_MAX_HOURS = 7.0\n\n\n@dataclass(frozen=True, slots=True)\nclass DayPlan:\n    \"\"\"One day of walking, from ``first_point`` to ``last_point`` of the track.\"\"\"\n\n    day: int\n    first_point: int\n    last_point: int\n    hours: float\n''')\ns = s.replace(''') -> list[tuple[int, int, int, float]]:\n    \"\"\"Group''', ''') -> list[DayPlan]:\n    \"\"\"Group''')\ns = s.replace('''    Returns ``(day, first_point, last_point, hours)`` tuples: days count from 1,\n    point indexes from 0, hours rounded to 0.01. A day never goes over''', '''    Returns one ``DayPlan`` per day: days count from 1, point indexes from 0,\n    hours rounded to 0.01. A day never goes over''')\ns = s.replace(\"days: list[tuple[int, int, int, float]] = []\", \"days: list[DayPlan] = []\")\ns = s.replace(\"days.append((len(days) + 1, first, index, round(used, 2)))\", \"days.append(DayPlan(len(days) + 1, first, index, round(used, 2)))\")\ns = s.replace(\"days.append((len(days) + 1, first, len(track.points) - 1, round(used, 2)))\", \"days.append(DayPlan(len(days) + 1, first, len(track.points) - 1, round(used, 2)))\")\ns = s.replace(\"def describe_plan(days: list[tuple[int, int, int, float]])\", \"def describe_plan(days: list[DayPlan])\")\ns = s.replace('''    for day, first, last, hours in days:\n        whole, minutes = divmod(round(hours * 60), 60)\n        lines.append(f\"Day {day}: points {first}-{last}, {whole}h {minutes:02d}m\")''', '''    for plan in days:\n        whole, minutes = divmod(round(plan.hours * 60), 60)\n        lines.append(\n            f\"Day {plan.day}: points {plan.first_point}-{plan.last_point}, \"\n            f\"{whole}h {minutes:02d}m\"\n        )''')\np.write_text(s)\np = pathlib.Path(\"tests/test_plan.py\"); s = p.read_text()\ns = s.replace(\"import describe_plan, split_days\", \"import DayPlan, describe_plan, split_days\")\ns = s.replace(\"== [(1, 0, 5, 1.0 * 5)]\", \"== [DayPlan(1, 0, 5, 1.0 * 5)]\")\nfor t in [\"(1, 0, 2, 2.0)\", \"(2, 2, 4, 2.0)\", \"(3, 4, 5, 1.0)\"]:\n    s = s.replace(\"        \" + t, \"        DayPlan\" + t)\ns = s.replace(\"[(day, first, last) for day, first, last, _ in days]\", \"[(plan.day, plan.first_point, plan.last_point) for plan in days]\")\ns = s.replace(\"describe_plan([(1, 0, 14, 6.0833), (2, 14, 31, 0.75)])\", \"describe_plan([DayPlan(1, 0, 14, 6.0833), DayPlan(2, 14, 31, 0.75)])\")\np.write_text(s)\nEOF\ngit diff; python -m pytest -q 2>&1 | tail -5; (ruff check . ; ruff format --check .) 2>&1 | tail -5; grep -n -A12 \"tool\\.\" pyproject.toml",
+      "description": "Apply the DayPlan refactor, show diff, run tests and lint"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "................................................                         [100%]\n48 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/plan.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 32,
+    "lines_removed": 18,
+    "own_suite_pass_as_left": true
+  }
+}

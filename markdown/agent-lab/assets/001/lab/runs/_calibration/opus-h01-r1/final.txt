@@ -1,0 +1,16 @@
+I fixed it: `plan` now takes `--fitness` into account. The full test suite passes (49 tests).
+
+**Cause:** the value was dropped in two places, so fixing just one wouldn't have helped.
+
+1. `src/trailhead/cli.py:39`: the `plan` command read `--fitness` but never passed it on. It called `split_days(track, args.max_hours)`.
+2. `src/trailhead/plan.py:22`: `split_days` has a `fitness` parameter, but it called `leg_hours(track)` without it. So the walking times always used the default fitness of 1.0, whatever you passed in.
+
+`summary` worked because `summarise` passes `fitness` all the way to `naismith_hours`.
+
+**Fix:** I passed `args.fitness` into `split_days`, and `fitness` into `leg_hours`.
+
+**Regression tests:**
+- `tests/test_plan.py`: with `fitness=2.0`, each 1-hour flat leg takes 0.5 h, so a 1.2 h limit fits two legs per day.
+- `tests/test_cli.py`: `plan --max-hours 0.35 --fitness 2` now gives a single 19-minute day, which is half of the 37 minutes `summary` reports for the same track.
+
+I didn't run the new tests against the old code; I checked that case by hand. Without the fix, the first test would get five 1-hour days and the second would get two days (23 min and 13 min), so both would fail.

@@ -1,0 +1,13 @@
+`split_days` now returns a list of `DayPlan` objects instead of tuples. All 47 tests pass and `ruff check` and `mypy` are clean. `tests/test_cli.py` checks the exact text printed by the `plan` command, so the command output is unchanged.
+
+**`src/trailhead/plan.py`**
+- `DayPlan` is a frozen dataclass with the fields `day`, `first_point`, `last_point` and `hours`, in that order. I added `slots=True` to match the existing `Summary` class in `report.py`.
+- `split_days` builds the result the same way as before, just with `DayPlan` instead of tuples, and its type hint and docstring are updated.
+- `describe_plan` was the only code that unpacked the tuples by position. It now reads the fields by name and is typed as taking `list[DayPlan]`. The CLI just passes the result from one to the other, so it needed no change.
+
+**`tests/test_plan.py`**
+- The expected results are now `DayPlan(...)` values.
+- The test that unpacked tuples by position now reads the fields by name.
+- `describe_plan` is given `DayPlan` objects.
+
+Since `DayPlan` is a dataclass, a `DayPlan` is never equal to a tuple, and it can't be unpacked like `day, first, last, hours = plan`. Any code outside this repo that compares against tuples or unpacks them will need updating; inside the repo, nothing else did. The README never described the tuple shape, so it needed no change.

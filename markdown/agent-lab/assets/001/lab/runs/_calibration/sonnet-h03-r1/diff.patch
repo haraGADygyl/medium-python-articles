@@ -1,0 +1,25 @@
+diff --git a/src/trailhead/elevation.py b/src/trailhead/elevation.py
+index 9abdb15..4b5b124 100644
+--- a/src/trailhead/elevation.py
++++ b/src/trailhead/elevation.py
+@@ -49,5 +49,5 @@ def steepest_grade(track: Track) -> float:
+     for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):
+         if km == 0:
+             continue
+-        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000))
+-    return round(steepest, 3)
++        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000) * 100)
++    return round(steepest, 1)
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 0525756..9c7e1a7 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -48,7 +48,7 @@ def summarise(
+         loss_m=loss,
+         highest_m=highest,
+         lowest_m=lowest,
+-        steepest_pct=round(steepest_grade(track) * 100, 1),
++        steepest_pct=steepest_grade(track),
+         hours=naismith_hours(length, gain, fitness),
+         heading=_heading(track),
+     )

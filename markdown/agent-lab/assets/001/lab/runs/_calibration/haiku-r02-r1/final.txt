@@ -1,0 +1,10 @@
+The duration formatting now lives in one function, `format_duration(hours: float) -> str`, in `src/trailhead/timefmt.py`. `plan.py` and `report.py` both call it, and the output is unchanged.
+
+- **New module:** `timefmt.py` uses the same expression as before: `divmod(round(hours * 60), 60)` formatted as `{whole}h {minutes:02d}m`. I kept it identical rather than rewriting it, so rounding behaves exactly as it did.
+- **`plan.py`:** `describe_plan` calls `format_duration(hours)`.
+- **`report.py`:** `format_summary` calls `format_duration(summary.hours)`. The `time` line keeps its label and padding.
+- **New test:** `tests/test_timefmt.py` covers a few values, including `0.0`, `0.75`, `5.12` → `5h 07m`, and the minute-rounding case `0.999` → `1h 00m`.
+
+The full suite passes (53 tests), and `ruff` and `mypy --strict` are clean. The existing `test_plan.py` and `test_report.py` assertions on the formatted text also still pass.
+
+I didn't commit anything. The changes are in the working tree alongside the new files.

@@ -1,0 +1,4 @@
+I found two separate bugs behind the report and fixed both. The existing 47 tests pass. I didn't add a test for `--threshold 0` or `--threshold 0.5`, and I didn't run the CLI on a real CSV.
+
+- **`--threshold 0.5` rejected:** the argument was declared with `type=int` in `src/trailhead/cli.py:20`, so any decimal value failed with `invalid int value`. I changed it to `type=float`.
+- **`--threshold 0` ignored:** `src/trailhead/report.py:42` called `gain_and_loss(elevations, threshold or DEFAULT_THRESHOLD_M)`. Because `0` is falsy, it was silently replaced by the 3 m default. I now pass `threshold` straight through. `gain_and_loss` already accepts 0 and only rejects negative values.

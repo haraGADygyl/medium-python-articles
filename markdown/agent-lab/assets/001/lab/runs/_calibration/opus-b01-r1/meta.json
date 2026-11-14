@@ -1,0 +1,97 @@
+{
+  "run_id": "opus-b01-r1",
+  "task": "b01",
+  "tier": "bug",
+  "repeat": 1,
+  "model_alias": "opus",
+  "prompt": "Bug report from a user: \"I recorded a long, steady climb with a point for every metre of height, about 300 m up in total. `trailhead summary` shows the ascent as +0 m. Tracks with bigger gaps between points look fine.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 23.2,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 21100,
+  "duration_api_ms": 20409,
+  "api_equivalent_usd": 0.127704,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 9977,
+    "cache_read_input_tokens": 94940,
+    "output_tokens": 1443,
+    "output_tokens_details": {
+      "thinking_tokens": 49
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 9977,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 419,
+        "cache_read_input_tokens": 22291,
+        "cache_creation_input_tokens": 170,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 170
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 10,
+      "outputTokens": 1443,
+      "cacheReadInputTokens": 94940,
+      "cacheCreationInputTokens": 9977,
+      "webSearchRequests": 0,
+      "costUSD": 0.127704,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 49,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 9977,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 3,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "git ls-files && grep -rn -i \"ascent\\|threshold\\|hysteresis\\|smooth\" --include=*.py . | head -50",
+    "cat src/trailhead/elevation.py tests/test_elevation.py",
+    "python -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 6,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  }
+}

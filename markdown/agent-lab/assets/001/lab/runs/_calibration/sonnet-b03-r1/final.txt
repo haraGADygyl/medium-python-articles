@@ -1,0 +1,5 @@
+**Cause:** the day-splitting check in `split_days` (`src/trailhead/plan.py:23`) looked at the hours used *before* adding the next leg (`used > max_hours_per_day`). A day was only closed after it had already gone over the limit, so the last leg could push it past the cap. With a 6h limit, a day at 5h 50m would take another 1h leg and finish at 6h 50m. That matches your report.
+
+**Fix:** the check now includes the leg about to be added: `used + hours > max_hours_per_day`. A leg that would break the limit starts a new day instead. A single leg longer than the limit still gets its own day, as the docstring says.
+
+All 46 existing tests pass. I didn't add a regression test for this case, and I didn't run your `route.csv`.

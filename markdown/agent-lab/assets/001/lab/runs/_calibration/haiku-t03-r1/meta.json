@@ -1,0 +1,117 @@
+{
+  "run_id": "haiku-t03-r1",
+  "task": "t03",
+  "tier": "tests",
+  "repeat": 1,
+  "model_alias": "haiku",
+  "prompt": "`src/trailhead/track.py` has no tests. Write `tests/test_track.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 40.8,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 9,
+  "duration_ms": 37736,
+  "duration_api_ms": 37225,
+  "api_equivalent_usd": 0.009439820000000002,
+  "usage": {
+    "input_tokens": 14,
+    "cache_creation_input_tokens": 19073,
+    "cache_read_input_tokens": 170282,
+    "output_tokens": 7842,
+    "output_tokens_details": {
+      "thinking_tokens": 2856
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 19073,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 555,
+        "cache_read_input_tokens": 31219,
+        "cache_creation_input_tokens": 338,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 338
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 14,
+      "outputTokens": 7842,
+      "cacheReadInputTokens": 170282,
+      "cacheCreationInputTokens": 19073,
+      "webSearchRequests": 0,
+      "costUSD": 0.009439820000000002,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 2856,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 19073,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 7,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git status --short && ls -la && cat src/trailhead/track.py && echo ---README--- && cat README* 2>/dev/null; echo ---; ls tests 2>/dev/null; find . -name \"*.toml\" -o -name \"setup.cfg\" -o -name \"pytest.ini\" -o -name \"conftest.py\" | grep -v .git/",
+    "cat pyproject.toml && echo ---CONF && cat tests/conftest.py && echo ---ELEV && cat tests/test_elevation.py | head -60 && echo ---SRC && find src -type f && cat src/trailhead/geo.py && cat src/trailhead/__init__.py 2>/dev/null",
+    "python -m pytest tests/test_track.py -q 2>&1 | tail -40; echo ---; (ruff check tests/test_track.py 2>&1 || python -m ruff check tests/test_track.py 2>&1) | tail -20; echo ---; python -m pytest -q 2>&1 | tail -3",
+    "python -m pytest tests/test_track.py -q 2>&1 | tail -40",
+    "python -m pytest -q 2>&1 | tail -3",
+    "python -m ruff check tests/test_track.py 2>&1 | tail -20",
+    "git status --short"
+  ],
+  "permission_denials": [
+    {
+      "command": "python -m pytest tests/test_track.py -q 2>&1 | tail -40; echo ---; (ruff check tests/test_track.py 2>&1 || python -m ruff check tests/test_track.py 2>&1) | tail -20; echo ---; python -m pytest -q 2>&1 | tail -3",
+      "description": "Run track tests, lint, and full suite"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_track.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".......................................                                  [100%]\n39 passed in 0.05s\n",
+    "src_changed": [],
+    "killed": [
+      "feet not converted",
+      "blank lines not skipped",
+      "range bounds exclusive",
+      "one point accepted",
+      "line numbers from 0",
+      "unknown units accepted",
+      "default name empty"
+    ],
+    "survived": [],
+    "kills": 7,
+    "mutants": 7,
+    "changed": [
+      "A tests/test_track.py"
+    ],
+    "lines_added": 186,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

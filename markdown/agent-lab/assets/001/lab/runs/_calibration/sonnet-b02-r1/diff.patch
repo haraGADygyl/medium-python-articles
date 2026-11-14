@@ -1,0 +1,13 @@
+diff --git a/src/trailhead/geo.py b/src/trailhead/geo.py
+index ba7dd24..0b8f135 100644
+--- a/src/trailhead/geo.py
++++ b/src/trailhead/geo.py
+@@ -21,7 +21,7 @@ def initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float
+     d_lambda = radians(lon2 - lon1)
+     x = sin(d_lambda) * cos(phi2)
+     y = cos(phi1) * sin(phi2) - sin(phi1) * cos(phi2) * cos(d_lambda)
+-    return (degrees(atan2(y, x)) + 360) % 360
++    return (degrees(atan2(x, y)) + 360) % 360
+ 
+ 
+ def compass_point(bearing: float) -> str:

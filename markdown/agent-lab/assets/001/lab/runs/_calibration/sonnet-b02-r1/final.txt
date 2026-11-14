@@ -1,0 +1,7 @@
+Fixed. The ridge walk now reports **E**: the bearing is about 89.95°, and all 43 tests pass.
+
+**Cause:** `initial_bearing` in `src/trailhead/geo.py:24` called `atan2(y, x)`, but the bearing formula needs `atan2(x, y)`. The swap measures the angle from east instead of from north. Due east therefore came out near 0° and was labelled N.
+
+**Fix:** I swapped the arguments to `atan2(x, y)`.
+
+The existing tests didn't catch this. `test_geo.py` only checks `compass_point` on hand-picked bearings, and the report test uses a NE track that happened to come out right (45° maps to NE either way). I didn't add a regression test for a due-east track.

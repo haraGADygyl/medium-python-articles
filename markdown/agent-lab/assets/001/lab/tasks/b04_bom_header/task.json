@@ -1,0 +1,35 @@
+{
+  "id": "b04",
+  "tier": "bug",
+  "baseline": false,
+  "title": "Garmin exports fail on the header (a UTF-8 byte-order mark)",
+  "prompt": "Bug report from a user: \"Track files exported from my Garmin app fail with `trailhead: line 1: expected the header 'lat,lon,ele'`, but when I open one in my editor the first line is exactly `lat,lon,ele`. One of the files is attached as `garmin-export.csv`.\" Find the cause and fix it.",
+  "setup": [
+    {
+      "write": "garmin-export.csv",
+      "content": "﻿lat,lon,ele\r\n42.2031,23.3205,2140\r\n42.2049,23.3188,2196\r\n42.2060,23.3170,2250\r\n42.2071,23.3149,2281\r\n"
+    }
+  ],
+  "grade": {
+    "kind": "hidden"
+  },
+  "reference": {
+    "edits": [
+      {
+        "file": "src/trailhead/track.py",
+        "old": "path.read_text(encoding=\"utf-8\")",
+        "new": "path.read_text(encoding=\"utf-8-sig\")"
+      }
+    ]
+  },
+  "bad": {
+    "kind": "strips the mark only when comparing the header",
+    "edits": [
+      {
+        "file": "src/trailhead/track.py",
+        "old": "if [column.strip() for column in line.split(\",\")] != HEADER:",
+        "new": "if [column.strip() for column in line.lstrip(\"\\ufeff\").split(\",\")] != HEADER:"
+      }
+    ]
+  }
+}

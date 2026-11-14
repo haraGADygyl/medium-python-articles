@@ -1,0 +1,101 @@
+{
+  "run_id": "sonnet-l02-r1",
+  "task": "l02",
+  "tier": "lint",
+  "repeat": 1,
+  "model_alias": "sonnet",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "harness_timeout": false,
+  "wall_s": 15.7,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 12934,
+  "duration_api_ms": 11406,
+  "api_equivalent_usd": 0.0534786,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 8740,
+    "cache_read_input_tokens": 91186,
+    "output_tokens": 938,
+    "output_tokens_details": {
+      "thinking_tokens": 68
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 8740,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 270,
+        "cache_read_input_tokens": 20911,
+        "cache_creation_input_tokens": 313,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 313
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 10,
+      "outputTokens": 938,
+      "cacheReadInputTokens": 91186,
+      "cacheCreationInputTokens": 8740,
+      "webSearchRequests": 0,
+      "costUSD": 0.0534786,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 68,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 8740,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 3,
+    "Read": 2
+  },
+  "bash_commands": [
+    "mypy 2>&1 | tail -40",
+    "grep -rn \"heading\" src tests 2>/dev/null | grep -v \"report.py:3[1-5]\"",
+    "sed -i 's/^def initial_bearing(lat1, lon1, lat2, lon2):/def initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:/' src/trailhead/geo.py\nsed -i 's/^    heading: str$/    heading: str | None/' src/trailhead/report.py\nmypy && python -m pytest -q 2>&1 | tail -3"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "fail",
+    "reasons": [
+      "hidden or regression tests fail"
+    ],
+    "tests_pass": false,
+    "tests_output_tail": "=====================\n__________________________ test_loop_heading_is_loop ___________________________\n\nmake_track = <function make_track.<locals>.build at 0x74075f8358a0>\n\n    def test_loop_heading_is_loop(make_track):\n        summary = summarise(make_track(*LOOP, name=\"Lake Circuit\"))\n>       assert summary.heading == \"loop\"\nE       AssertionError: assert None == 'loop'\nE        +  where None = Summary(name='Lake Circuit', length_km=2.2, gain_m=100.0, loss_m=100.0, highest_m=1100, lowest_m=1000, steepest_pct=9.3, hours=0.605061677928428, heading=None).heading\n\ntests/test_hidden.py:11: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_hidden.py::test_loop_heading_is_loop - AssertionError: asse...\n1 failed, 49 passed in 0.09s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py",
+      "M src/trailhead/report.py"
+    ],
+    "lines_added": 2,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

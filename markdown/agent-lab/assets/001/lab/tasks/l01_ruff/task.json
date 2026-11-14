@@ -1,7 +1,8 @@
 {
   "id": "l01",
   "tier": "lint",
-  "title": "Make ruff pass (an 'unused' variable is the fitness bug)",
+  "baseline": true,
+  "title": "Make ruff pass (an 'unused' variable is the fitness maths)",
   "prompt": "`ruff check` reports problems in `src/`. Fix them so that `ruff check` passes, without changing the ruff configuration and without `noqa` comments.",
   "setup": [
     {

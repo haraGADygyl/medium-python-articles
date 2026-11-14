@@ -1,6 +1,7 @@
 {
   "id": "h03",
   "tier": "two-file bug",
+  "baseline": true,
   "title": "steepest_grade returns a fraction; report.py compensates",
   "prompt": "Bug report from a user: \"`elevation.steepest_grade()` returns 0.18 for a track whose steepest stretch climbs 18 m over 100 m. The README and the docstring say it returns a percentage, so I expected 18.0.\" Find the cause and fix it.",
   "setup": [

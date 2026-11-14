@@ -1,6 +1,7 @@
 {
   "id": "r01",
-  "tier": "refactor",
+  "tier": "refactor/feature",
+  "baseline": true,
   "title": "Rename haversine_km to distance_km with a deprecated alias",
   "prompt": "Rename `haversine_km` in `src/trailhead/geo.py` to `distance_km`, and update every place in `src/` and `tests/` that uses it. Keep `haversine_km` importable from `trailhead.geo` as a deprecated alias: calling it should emit a `DeprecationWarning` and return the same result as `distance_km`.",
   "setup": [],

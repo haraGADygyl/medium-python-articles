@@ -1,0 +1,353 @@
+diff --git a/tests/test_track.py b/tests/test_track.py
+new file mode 100644
+index 0000000..964c5fd
+--- /dev/null
++++ b/tests/test_track.py
+@@ -0,0 +1,347 @@
++import pytest
++
++from trailhead.geo import haversine_km
++from trailhead.track import Point, Track, TrackError, load_track, parse_track
++
++README_EXAMPLE = """\
++# name: Seven Rila Lakes
++# units: m
++lat,lon,ele
++42.2031,23.3205,2140
++42.2049,23.3188,2196
++"""
++
++BODY = "lat,lon,ele\n0,0,1000\n0,0.01,1100\n"
++
++
++# --- the format -----------------------------------------------------------------------
++
++
++def test_readme_example():
++    track = parse_track(README_EXAMPLE)
++    assert track == Track(
++        "Seven Rila Lakes",
++        [Point(42.2031, 23.3205, 2140.0), Point(42.2049, 23.3188, 2196.0)],
++    )
++
++
++def test_points_keep_file_order_and_are_floats():
++    track = parse_track("lat,lon,ele\n1,2,3\n-4.5,-5.5,-6.5\n7,8,9\n")
++    assert track.points == [Point(1.0, 2.0, 3.0), Point(-4.5, -5.5, -6.5), Point(7.0, 8.0, 9.0)]
++    assert all(isinstance(value, float) for value in (track.points[0].lat, track.points[0].ele))
++
++
++def test_blank_lines_are_ignored():
++    text = "\n# name: Gaps\n\nlat,lon,ele\n\n0,0,1000\n   \n0,0.01,1100\n\n"
++    track = parse_track(text)
++    assert track.name == "Gaps"
++    assert track.points == [Point(0, 0, 1000), Point(0, 0.01, 1100)]
++
++
++def test_other_comments_are_ignored_wherever_they_are():
++    text = (
++        "# recorded with a phone\n"
++        "lat,lon,ele\n"
++        "# the hut\n"
++        "0,0,1000\n"
++        "# 1,2,3\n"
++        "0,0.01,1100\n"
++        "# the end\n"
++    )
++    track = parse_track(text)
++    assert track.name == "unnamed"
++    assert track.points == [Point(0, 0, 1000), Point(0, 0.01, 1100)]
++
++
++def test_windows_line_endings():
++    track = parse_track("# name: Ridge\r\nlat,lon,ele\r\n0,0,1000\r\n0,0.01,1100\r\n")
++    assert track.name == "Ridge"
++    assert track.points == [Point(0, 0, 1000), Point(0, 0.01, 1100)]
++
++
++def test_no_trailing_newline_is_needed():
++    assert len(parse_track("lat,lon,ele\n0,0,1000\n0,0.01,1100").points) == 2
++
++
++# --- names ----------------------------------------------------------------------------
++
++
++def test_name_line_sets_the_name():
++    assert parse_track("# name: Musala from Borovets\n" + BODY).name == "Musala from Borovets"
++
++
++def test_name_line_beats_default_name():
++    assert parse_track("# name: Ridge\n" + BODY, default_name="fallback").name == "Ridge"
++
++
++def test_default_name_is_used_without_a_name_line():
++    assert parse_track(BODY, default_name="fallback").name == "fallback"
++
++
++def test_unnamed_without_a_name_line_or_default_name():
++    assert parse_track(BODY).name == "unnamed"
++    assert parse_track(BODY, default_name=None).name == "unnamed"
++
++
++def test_name_may_contain_a_colon():
++    assert parse_track("# name: Day 2: the ridge\n" + BODY).name == "Day 2: the ridge"
++
++
++# --- units ----------------------------------------------------------------------------
++
++
++def test_metres_is_the_default():
++    assert [p.ele for p in parse_track(BODY).points] == [1000, 1100]
++
++
++def test_units_m_leaves_elevations_alone():
++    assert [p.ele for p in parse_track("# units: m\n" + BODY).points] == [1000, 1100]
++
++
++def test_units_ft_converts_elevations_to_metres():
++    track = parse_track("# units: ft\nlat,lon,ele\n10,20,1000\n10.5,20.5,-100\n")
++    assert [p.ele for p in track.points] == pytest.approx([304.8, -30.48])
++
++
++def test_units_ft_leaves_coordinates_alone():
++    track = parse_track("# units: ft\nlat,lon,ele\n10,20,1000\n10.5,20.5,-100\n")
++    assert [(p.lat, p.lon) for p in track.points] == [(10, 20), (10.5, 20.5)]
++
++
++@pytest.mark.xfail(
++    strict=True,
++    reason="track.py only converts the points below the units line, so a units line "
++    "that is not above the points gives a track with feet and metres mixed",
++)
++@pytest.mark.parametrize(
++    "text",
++    [
++        "lat,lon,ele\n0,0,1000\n# units: ft\n0,0.01,1100\n",
++        "lat,lon,ele\n0,0,1000\n0,0.01,1100\n# units: ft\n",
++    ],
++    ids=["between-points", "after-points"],
++)
++def test_units_ft_applies_to_the_whole_track(text):
++    # README: "With `# units: ft`, elevations are converted to metres ... Everything
++    # after parsing is in metres." -- a setting for the file, like `# name:`, which
++    # does work from anywhere in the file.
++    assert [p.ele for p in parse_track(text).points] == pytest.approx([304.8, 335.28])
++
++
++@pytest.mark.parametrize("value", ["km", "feet", "metres", "yd"])
++def test_other_units_are_an_error(value):
++    with pytest.raises(TrackError, match=r"^line 2: "):
++        parse_track(f"# name: Ridge\n# units: {value}\n" + BODY)
++
++
++# --- the header -----------------------------------------------------------------------
++
++
++@pytest.mark.parametrize(
++    "header",
++    ["lon,lat,ele", "lat,lon", "lat,lon,ele,time", "latitude,longitude,elevation", "lat;lon;ele"],
++)
++def test_wrong_header_is_an_error(header):
++    with pytest.raises(TrackError, match=r"^line 1: "):
++        parse_track(f"{header}\n0,0,1000\n0,0.01,1100\n")
++
++
++def test_missing_header_is_an_error_on_the_first_data_line():
++    with pytest.raises(TrackError, match=r"^line 3: "):
++        parse_track("# name: Ridge\n\n0,0,1000\n0,0.01,1100\n")
++
++
++# --- points ---------------------------------------------------------------------------
++
++
++@pytest.mark.parametrize("row", ["0,0", "0", "0,0,1000,12:30", "0 0 1000"])
++def test_a_point_needs_exactly_three_fields(row):
++    with pytest.raises(TrackError, match=r"^line 3: "):
++        parse_track(f"lat,lon,ele\n0,0,1000\n{row}\n0,0.01,1100\n")
++
++
++@pytest.mark.parametrize("row", ["north,0,1000", "0,east,1000", "0,0,high", "0,0,", "0,,1000"])
++def test_point_fields_must_be_numbers(row):
++    with pytest.raises(TrackError, match=r"^line 3: "):
++        parse_track(f"lat,lon,ele\n0,0,1000\n{row}\n0,0.01,1100\n")
++
++
++@pytest.mark.parametrize(
++    ("lat", "lon"),
++    [(90, 0), (-90, 0), (0, 180), (0, -180), (90, 180), (-90, -180)],
++)
++def test_coordinates_on_the_limits_are_allowed(lat, lon):
++    track = parse_track(f"lat,lon,ele\n0,0,1000\n{lat},{lon},1100\n")
++    assert track.points[1] == Point(lat, lon, 1100)
++
++
++@pytest.mark.parametrize(
++    ("lat", "lon"),
++    [(90.0001, 0), (-90.0001, 0), (91, 0), (0, 180.0001), (0, -180.0001), (0, 360), (120, 45)],
++)
++def test_coordinates_outside_the_limits_are_an_error(lat, lon):
++    with pytest.raises(TrackError, match=r"^line 3: "):
++        parse_track(f"lat,lon,ele\n0,0,1000\n{lat},{lon},1100\n")
++
++
++def test_elevation_has_no_limits():
++    track = parse_track("lat,lon,ele\n31.5,35.5,-430\n27.99,86.93,8848.86\n")
++    assert [p.ele for p in track.points] == [-430, 8848.86]
++
++
++@pytest.mark.parametrize(
++    "text",
++    [
++        "",
++        "\n\n",
++        "# name: Empty\n",
++        "lat,lon,ele\n",
++        "lat,lon,ele\n0,0,1000\n",
++        "# name: One\n# units: ft\nlat,lon,ele\n\n0,0,1000\n# 0,0.01,1100\n",
++    ],
++    ids=["empty", "blank", "comment-only", "header-only", "one-point", "one-point-and-comments"],
++)
++def test_a_track_needs_at_least_two_points(text):
++    with pytest.raises(TrackError) as caught:
++        parse_track(text)
++    # Not a problem with any one line, so no line number.
++    assert not str(caught.value).startswith("line ")
++
++
++def test_two_points_are_enough():
++    assert len(parse_track(BODY).points) == 2
++
++
++# --- errors ---------------------------------------------------------------------------
++
++
++def test_track_error_is_a_value_error():
++    assert issubclass(TrackError, ValueError)
++    with pytest.raises(ValueError):
++        parse_track("lat,lon,ele\n0,0,oops\n")
++
++
++def test_line_numbers_count_comments_and_blank_lines():
++    text = (
++        "# name: Ridge\n"  # 1
++        "\n"  # 2
++        "# units: m\n"  # 3
++        "lat,lon,ele\n"  # 4
++        "0,0,1000\n"  # 5
++        "\n"  # 6
++        "# halfway\n"  # 7
++        "0,0.01,oops\n"  # 8
++    )
++    with pytest.raises(TrackError, match=r"^line 8: "):
++        parse_track(text)
++
++
++def test_line_numbers_start_at_one():
++    with pytest.raises(TrackError, match=r"^line 1: "):
++        parse_track("# units: furlongs\n" + BODY)
++
++
++def test_line_numbers_with_windows_line_endings():
++    with pytest.raises(TrackError, match=r"^line 4: "):
++        parse_track("lat,lon,ele\r\n\r\n0,0,1000\r\n0,200,1100\r\n")
++
++
++def test_the_first_bad_line_is_the_one_reported():
++    with pytest.raises(TrackError, match=r"^line 2: "):
++        parse_track("lat,lon,ele\n0,0\n0,0,oops\n95,0,1000\n")
++
++
++# --- load_track -----------------------------------------------------------------------
++
++
++def test_load_track_reads_the_file(write_track):
++    track = load_track(write_track(README_EXAMPLE))
++    assert track.name == "Seven Rila Lakes"
++    assert track.points == [Point(42.2031, 23.3205, 2140), Point(42.2049, 23.3188, 2196)]
++
++
++def test_load_track_names_the_track_after_the_file(write_track):
++    assert load_track(write_track(BODY, "rila.csv")).name == "rila"
++
++
++def test_load_track_prefers_the_name_line(write_track):
++    assert load_track(write_track("# name: Ridge\n" + BODY, "rila.csv")).name == "Ridge"
++
++
++def test_load_track_accepts_a_string_path(write_track):
++    assert load_track(str(write_track(BODY, "rila.csv"))).name == "rila"
++
++
++def test_load_track_reads_utf8(write_track):
++    assert load_track(write_track("# name: Седемте езера – Рила\n" + BODY)).name == (
++        "Седемте езера – Рила"
++    )
++
++
++def test_load_track_reports_line_numbers(write_track):
++    with pytest.raises(TrackError, match=r"^line 3: "):
++        load_track(write_track("lat,lon,ele\n0,0,1000\n0,0.01\n"))
++
++
++def test_load_track_converts_feet(write_track):
++    track = load_track(write_track("# units: ft\n" + BODY))
++    assert [p.ele for p in track.points] == pytest.approx([304.8, 335.28])
++
++
++# --- Track ----------------------------------------------------------------------------
++
++
++def test_leg_lengths_are_great_circle_distances(make_track):
++    # 0.01 degrees along the equator on a sphere of radius 6371.0088 km.
++    track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0))
++    assert track.leg_lengths_km() == pytest.approx([1.111949, 2.223899], abs=1e-5)
++
++
++def test_one_leg_between_each_pair_of_consecutive_points(make_track):
++    points = [(42.20, 23.30, 2100), (42.21, 23.31, 2200), (42.22, 23.30, 2300), (42.20, 23.30, 0)]
++    legs = make_track(*points).leg_lengths_km()
++    assert legs == pytest.approx(
++        [haversine_km(*a[:2], *b[:2]) for a, b in zip(points, points[1:], strict=False)]
++    )
++    assert len(legs) == len(points) - 1
++
++
++def test_leg_lengths_ignore_elevation(make_track):
++    flat = make_track((42.20, 23.30, 0), (42.21, 23.31, 0))
++    steep = make_track((42.20, 23.30, 0), (42.21, 23.31, 900))
++    assert flat.leg_lengths_km() == steep.leg_lengths_km()
++
++
++def test_repeated_point_is_a_zero_length_leg(make_track):
++    assert make_track((42.2, 23.3, 0), (42.2, 23.3, 10)).leg_lengths_km() == [0]
++
++
++def test_length_is_the_sum_of_the_legs(make_track):
++    track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0), (0, 0.02, 0))
++    assert track.length_km() == pytest.approx(sum(track.leg_lengths_km()))
++    # Out 0.03 degrees and back 0.01: path length, not start-to-finish distance.
++    assert track.length_km() == pytest.approx(4 * 1.111949, abs=1e-5)
++
++
++def test_length_of_an_out_and_back_is_twice_the_way_out(make_track):
++    out = make_track((42.20, 23.30, 0), (42.25, 23.35, 0))
++    out_and_back = make_track((42.20, 23.30, 0), (42.25, 23.35, 0), (42.20, 23.30, 0))
++    assert out_and_back.length_km() == pytest.approx(2 * out.length_km())
++
++
++def test_tracks_without_legs_have_no_length():
++    assert Track("empty").leg_lengths_km() == []
++    assert Track("empty").length_km() == 0
++    assert Track("dot", [Point(42.2, 23.3, 0)]).length_km() == 0
++
++
++def test_points_cannot_be_changed():
++    point = Point(42.2, 23.3, 2140)
++    with pytest.raises(AttributeError):
++        point.ele = 0  # type: ignore[misc]
++
++
++def test_tracks_do_not_share_a_points_list():
++    first, second = Track("a"), Track("b")
++    first.points.append(Point(0, 0, 0))
++    assert second.points == []

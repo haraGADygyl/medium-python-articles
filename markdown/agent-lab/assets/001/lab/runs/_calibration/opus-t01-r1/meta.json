@@ -1,0 +1,108 @@
+{
+  "run_id": "opus-t01-r1",
+  "task": "t01",
+  "tier": "tests",
+  "repeat": 1,
+  "model_alias": "opus",
+  "prompt": "`src/trailhead/elevation.py` has no tests. Write `tests/test_elevation.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 48.1,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 5,
+  "duration_ms": 45080,
+  "duration_api_ms": 44596,
+  "api_equivalent_usd": 0.2314156,
+  "usage": {
+    "input_tokens": 8,
+    "cache_creation_input_tokens": 15290,
+    "cache_read_input_tokens": 76218,
+    "output_tokens": 4691,
+    "output_tokens_details": {
+      "thinking_tokens": 330
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 15290,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 657,
+        "cache_read_input_tokens": 24025,
+        "cache_creation_input_tokens": 3749,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 3749
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 8,
+      "outputTokens": 4691,
+      "cacheReadInputTokens": 76218,
+      "cacheCreationInputTokens": 15290,
+      "webSearchRequests": 0,
+      "costUSD": 0.2314156,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 330,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 15290,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 3,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git ls-files && cat README.md src/trailhead/elevation.py && ls tests 2>/dev/null; cat pyproject.toml",
+    "cat src/trailhead/track.py src/trailhead/geo.py tests/conftest.py tests/test_pace.py; grep -rn \"elevation\" src tests --include=*.py | grep -v \"^src/trailhead/elevation.py\"",
+    "python -m pytest -q 2>&1 | tail -20; ruff check tests 2>&1 | tail -5"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_elevation.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "................................                                         [100%]\n32 passed in 0.05s\n",
+    "src_changed": [],
+    "killed": [
+      "gain threshold exclusive",
+      "no hysteresis",
+      "loss sign flipped",
+      "default threshold 2 m",
+      "negative threshold clamped",
+      "steepest ignores descents",
+      "zero-length legs not skipped"
+    ],
+    "survived": [],
+    "kills": 7,
+    "mutants": 7,
+    "changed": [
+      "A tests/test_elevation.py"
+    ],
+    "lines_added": 210,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

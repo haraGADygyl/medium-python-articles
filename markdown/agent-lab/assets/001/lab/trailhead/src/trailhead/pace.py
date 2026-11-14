@@ -1,8 +1,8 @@
 """Walking-time estimates."""
 
-from itertools import pairwise
 from math import exp
 
+from trailhead.elevation import counted_changes
 from trailhead.track import Track
 
 FLAT_SPEED_KMH = 5.0
@@ -32,8 +32,14 @@ def tobler_kmh(grade: float) -> float:
 
 
 def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:
-    """Naismith time for every leg, counting only the leg's own climb."""
+    """Naismith time for every leg.
+
+    A leg's climb is the ascent the summary's rule credits to it
+    (`elevation.counted_changes` with the default threshold), so the legs of a
+    track add up to its summary time.
+    """
+    climbs = [max(change, 0.0) for change in counted_changes([p.ele for p in track.points])]
     return [
-        naismith_hours(km, max(b.ele - a.ele, 0.0), fitness)
-        for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True)
+        naismith_hours(km, climb, fitness)
+        for km, climb in zip(track.leg_lengths_km(), climbs, strict=True)
     ]

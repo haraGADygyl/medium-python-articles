@@ -34,15 +34,22 @@ def build() -> str:
     lines = [f"{len(runs)} graded runs", ""]
 
     lines.append("Passes by tier (passed / runs)")
-    lines.append(f"{'tier':<14}" + "".join(f"{m:>10}" for m in models))
+    lines.append(f"{'tier':<18}" + "".join(f"{m:>10}" for m in models))
     cells: dict[tuple[str, str], list[bool]] = defaultdict(list)
     for run in runs:
         cells[(run["tier"], run["model_alias"])].append(run["grade"]["outcome"] == "pass")
     for tier in [*TIERS, "all"]:
-        row = f"{tier:<14}"
+        row = f"{tier:<18}"
         for model in models:
             hits = (sum((cells[(t, model)] for t in TIERS), []) if tier == "all"
                     else cells[(tier, model)])
+            row += f"{f'{sum(hits)}/{len(hits)}':>10}"
+        lines.append(row)
+    for label, flag in (("baseline (5 tasks)", True), ("harder (10 tasks)", False)):
+        row = f"{label:<18}"
+        for model in models:
+            hits = [r["grade"]["outcome"] == "pass" for r in runs
+                    if r["model_alias"] == model and r.get("baseline") is flag]
             row += f"{f'{sum(hits)}/{len(hits)}':>10}"
         lines.append(row)
 

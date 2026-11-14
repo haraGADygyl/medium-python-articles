@@ -1,0 +1,140 @@
+{
+  "id": "r05",
+  "tier": "refactor/feature",
+  "baseline": false,
+  "title": "Add Tobler as a pace model across pace, plan, report and the CLI",
+  "prompt": "Add Tobler's hiking function as an alternative to Naismith's rule for walking time. Give `pace.leg_hours`, `plan.split_days` and `report.summarise` a keyword argument `pace: str = \"naismith\"` that accepts `\"naismith\"` or `\"tobler\"` (anything else is a `ValueError`), and give both CLI commands a `--pace {naismith,tobler}` option. Under Tobler, a leg takes its length divided by `tobler_kmh(grade)` hours, where grade is the leg's elevation change divided by its horizontal length (both in metres); a zero-length leg takes no time; fitness divides the time as it does for Naismith; and the summary time is the sum of the leg times. Naismith stays the default and existing output must not change. Update the README.",
+  "setup": [],
+  "grade": {
+    "kind": "hidden"
+  },
+  "reference": {
+    "edits": [
+      {
+        "file": "src/trailhead/pace.py",
+        "old": "from math import exp\n",
+        "new": "from itertools import pairwise\nfrom math import exp\n"
+      },
+      {
+        "file": "src/trailhead/pace.py",
+        "old": "def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:\n    \"\"\"Naismith time for every leg.\n\n    A leg's climb is the ascent the summary's rule credits to it\n    (`elevation.counted_changes` with the default threshold), so the legs of a\n    track add up to its summary time.\n    \"\"\"\n",
+        "new": "def tobler_leg_hours(track: Track, fitness: float = 1.0) -> list[float]:\n    \"\"\"Tobler time for every leg: length over Tobler speed at the leg's signed grade.\"\"\"\n    if fitness <= 0:\n        raise ValueError(\"fitness must be positive\")\n    hours = []\n    for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):\n        if km == 0:\n            hours.append(0.0)\n            continue\n        grade = (b.ele - a.ele) / (km * 1000)\n        hours.append(km / tobler_kmh(grade) / fitness)\n    return hours\n\n\ndef leg_hours(track: Track, fitness: float = 1.0, pace: str = \"naismith\") -> list[float]:\n    \"\"\"Walking time for every leg, by Naismith's rule (default) or Tobler's function.\n\n    Under Naismith, a leg's climb is the ascent the summary's rule credits to it\n    (`elevation.counted_changes` with the default threshold), so the legs of a\n    track add up to its summary time.\n    \"\"\"\n    if pace == \"tobler\":\n        return tobler_leg_hours(track, fitness)\n    if pace != \"naismith\":\n        raise ValueError(f\"unknown pace model {pace!r}\")\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "    track: Track, max_hours_per_day: float = DEFAULT_MAX_HOURS, fitness: float = 1.0\n",
+        "new": "    track: Track,\n    max_hours_per_day: float = DEFAULT_MAX_HOURS,\n    fitness: float = 1.0,\n    pace: str = \"naismith\",\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "leg_hours(track, fitness)",
+        "new": "leg_hours(track, fitness, pace)"
+      },
+      {
+        "file": "src/trailhead/report.py",
+        "old": "from trailhead.pace import naismith_hours\n",
+        "new": "from trailhead.pace import leg_hours, naismith_hours\n"
+      },
+      {
+        "file": "src/trailhead/report.py",
+        "old": "    track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M\n",
+        "new": "    track: Track,\n    fitness: float = 1.0,\n    threshold: float = DEFAULT_THRESHOLD_M,\n    pace: str = \"naismith\",\n"
+      },
+      {
+        "file": "src/trailhead/report.py",
+        "old": "    length = track.length_km()\n",
+        "new": "    length = track.length_km()\n    if pace == \"naismith\":\n        hours = naismith_hours(length, gain, fitness)\n    else:\n        hours = sum(leg_hours(track, fitness, pace))\n"
+      },
+      {
+        "file": "src/trailhead/report.py",
+        "old": "        hours=naismith_hours(length, gain, fitness),\n",
+        "new": "        hours=hours,\n"
+      },
+      {
+        "file": "src/trailhead/cli.py",
+        "old": "    summary.add_argument(\"--threshold\", type=float, default=DEFAULT_THRESHOLD_M)\n",
+        "new": "    summary.add_argument(\"--threshold\", type=float, default=DEFAULT_THRESHOLD_M)\n    summary.add_argument(\"--pace\", choices=[\"naismith\", \"tobler\"], default=\"naismith\")\n"
+      },
+      {
+        "file": "src/trailhead/cli.py",
+        "old": "    plan.add_argument(\"--fitness\", type=float, default=1.0)\n",
+        "new": "    plan.add_argument(\"--fitness\", type=float, default=1.0)\n    plan.add_argument(\"--pace\", choices=[\"naismith\", \"tobler\"], default=\"naismith\")\n"
+      },
+      {
+        "file": "src/trailhead/cli.py",
+        "old": "summarise(track, args.fitness, args.threshold)",
+        "new": "summarise(track, args.fitness, args.threshold, args.pace)"
+      },
+      {
+        "file": "src/trailhead/cli.py",
+        "old": "split_days(track, args.max_hours, args.fitness)",
+        "new": "split_days(track, args.max_hours, args.fitness, args.pace)"
+      }
+    ]
+  },
+  "bad": {
+    "kind": "grade taken as an absolute value",
+    "edits": [
+      {
+        "file": "src/trailhead/pace.py",
+        "old": "from math import exp\n",
+        "new": "from itertools import pairwise\nfrom math import exp\n"
+      },
+      {
+        "file": "src/trailhead/pace.py",
+        "old": "def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:\n    \"\"\"Naismith time for every leg.\n\n    A leg's climb is the ascent the summary's rule credits to it\n    (`elevation.counted_changes` with the default threshold), so the legs of a\n    track add up to its summary time.\n    \"\"\"\n",
+        "new": "def tobler_leg_hours(track: Track, fitness: float = 1.0) -> list[float]:\n    \"\"\"Tobler time for every leg: length over Tobler speed at the leg's signed grade.\"\"\"\n    if fitness <= 0:\n        raise ValueError(\"fitness must be positive\")\n    hours = []\n    for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):\n        if km == 0:\n            hours.append(0.0)\n            continue\n        grade = abs(b.ele - a.ele) / (km * 1000)\n        hours.append(km / tobler_kmh(grade) / fitness)\n    return hours\n\n\ndef leg_hours(track: Track, fitness: float = 1.0, pace: str = \"naismith\") -> list[float]:\n    \"\"\"Walking time for every leg, by Naismith's rule (default) or Tobler's function.\n\n    Under Naismith, a leg's climb is the ascent the summary's rule credits to it\n    (`elevation.counted_changes` with the default threshold), so the legs of a\n    track add up to its summary time.\n    \"\"\"\n    if pace == \"tobler\":\n        return tobler_leg_hours(track, fitness)\n    if pace != \"naismith\":\n        raise ValueError(f\"unknown pace model {pace!r}\")\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "    track: Track, max_hours_per_day: float = DEFAULT_MAX_HOURS, fitness: float = 1.0\n",
+        "new": "    track: Track,\n    max_hours_per_day: float = DEFAULT_MAX_HOURS,\n    fitness: float = 1.0,\n    pace: str = \"naismith\",\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "leg_hours(track, fitness)",
+        "new": "leg_hours(track, fitness, pace)"
+      },
+      {
+        "file": "src/trailhead/report.py",
+        "old": "from trailhead.pace import naismith_hours\n",
+        "new": "from trailhead.pace import leg_hours, naismith_hours\n"
+      },
+      {
+        "file": "src/trailhead/report.py",
+        "old": "    track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M\n",
+        "new": "    track: Track,\n    fitness: float = 1.0,\n    threshold: float = DEFAULT_THRESHOLD_M,\n    pace: str = \"naismith\",\n"
+      },
+      {
+        "file": "src/trailhead/report.py",
+        "old": "    length = track.length_km()\n",
+        "new": "    length = track.length_km()\n    if pace == \"naismith\":\n        hours = naismith_hours(length, gain, fitness)\n    else:\n        hours = sum(leg_hours(track, fitness, pace))\n"
+      },
+      {
+        "file": "src/trailhead/report.py",
+        "old": "        hours=naismith_hours(length, gain, fitness),\n",
+        "new": "        hours=hours,\n"
+      },
+      {
+        "file": "src/trailhead/cli.py",
+        "old": "    summary.add_argument(\"--threshold\", type=float, default=DEFAULT_THRESHOLD_M)\n",
+        "new": "    summary.add_argument(\"--threshold\", type=float, default=DEFAULT_THRESHOLD_M)\n    summary.add_argument(\"--pace\", choices=[\"naismith\", \"tobler\"], default=\"naismith\")\n"
+      },
+      {
+        "file": "src/trailhead/cli.py",
+        "old": "    plan.add_argument(\"--fitness\", type=float, default=1.0)\n",
+        "new": "    plan.add_argument(\"--fitness\", type=float, default=1.0)\n    plan.add_argument(\"--pace\", choices=[\"naismith\", \"tobler\"], default=\"naismith\")\n"
+      },
+      {
+        "file": "src/trailhead/cli.py",
+        "old": "summarise(track, args.fitness, args.threshold)",
+        "new": "summarise(track, args.fitness, args.threshold, args.pace)"
+      },
+      {
+        "file": "src/trailhead/cli.py",
+        "old": "split_days(track, args.max_hours, args.fitness)",
+        "new": "split_days(track, args.max_hours, args.fitness, args.pace)"
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+I added `tests/test_pace.py` with 31 tests covering `naismith_hours`, `tobler_kmh` and `leg_hours`. All 31 pass, the full suite passes (71 tests), and `ruff check` is clean on the new file. Nothing under `src/` changed, and the file is untracked, not committed.
+
+The tests check the behaviour the README and docstrings describe:
+
+- **Naismith's rule:** 5 km/h on the flat, one hour per 600 m of ascent, descent adds nothing, fitness divides the time (1.25 is 25% faster), results are not rounded, and negative distance/ascent and non-positive fitness raise `ValueError`.
+- **Tobler's function:** peak of 6 km/h at -5% grade, the documented formula, symmetry around the peak, and speed falling away from it.
+- **`leg_hours`:** one value per leg, each leg counting only its own climb, fitness applied per leg, and the per-leg total matching the whole-track estimate on a pure climb.
+
+I found no mismatch between the pace code and its documentation, so no test is marked as expected-to-fail. I did not cover `split_days` or the README's duration formatting, since those belong to `plan.py` and `report.py`, which the request did not name.

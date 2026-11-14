@@ -1,0 +1,10 @@
+**Cause:** `elevation.steepest_grade()` returned the gradient as a fraction (rise/run, so 18 m over 100 m gave `0.18`), even though its docstring and the README say percent. `report.py` multiplied by 100 to compensate, so the `summary` CLI output was correct, but the public function was wrong.
+
+**Fix:**
+- `src/trailhead/elevation.py`: `steepest_grade` now returns `round(steepest * 100, 1)`, so the 18 m / 100 m leg returns `18.0`.
+- `src/trailhead/report.py`: removed the compensating `* 100`, so it passes the function's value straight through. The printed report is unchanged.
+- `tests/test_elevation.py`: added two tests. One checks an 18 m climb over about 100 m returns `18.0`. The other checks that a flat leg returns `0.0` and a downhill leg returns the positive `18.0`.
+
+**Verification:** `pytest` passes (48 tests, including the existing `steepest  6.4%` report test), `ruff check` is clean, and `mypy` reports no issues.
+
+I haven't committed anything. Note that the function's return value changes from a fraction to a percent, so any external caller that multiplied by 100 themselves will now get a 100× value. Within this repo, `report.py` is the only caller.

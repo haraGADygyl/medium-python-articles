@@ -1,0 +1,1 @@
+I moved the duplicated formatting into `format_duration(hours: float) -> str` in the new `src/trailhead/timefmt.py`. `plan.py` (`describe_plan`) and `report.py` (`format_summary`) now both call it. The function body is the same `divmod(round(hours * 60), 60)` and `f"{whole}h {minutes:02d}m"` logic as before, so the output doesn't change. All 47 tests pass.

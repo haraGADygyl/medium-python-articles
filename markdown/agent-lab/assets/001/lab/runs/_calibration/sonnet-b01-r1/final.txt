@@ -1,0 +1,7 @@
+**Cause:** `gain_and_loss` in `src/trailhead/elevation.py` had an unconditional `reference = elevation` at the end of its loop. The docstring says a change counts once it reaches the threshold *from the last counted elevation*. The stray line moved the reference after every point instead. With a point every metre, each step was only 1 m, below the 3 m threshold, so nothing was ever counted and the ascent came out as +0 m. Tracks with larger gaps between points passed the threshold on single steps, which is why they looked fine.
+
+**Fix:** I removed that line, so the reference only moves when a change is counted.
+
+I added a regression test, `test_long_climb_in_small_steps_is_counted`, which uses a 0→300 m climb in 1 m steps and expects a gain of 300 m. All 47 tests pass.
+
+I haven't committed anything.

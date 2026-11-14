@@ -1,0 +1,114 @@
+{
+  "run_id": "sonnet-t03-r1",
+  "task": "t03",
+  "tier": "tests",
+  "repeat": 1,
+  "model_alias": "sonnet",
+  "prompt": "`src/trailhead/track.py` has no tests. Write `tests/test_track.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 46.7,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 7,
+  "duration_ms": 43775,
+  "duration_api_ms": 43230,
+  "api_equivalent_usd": 0.1494601,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 16756,
+    "cache_read_input_tokens": 130521,
+    "output_tokens": 6936,
+    "output_tokens_details": {
+      "thinking_tokens": 366
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 16756,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 375,
+        "cache_read_input_tokens": 29044,
+        "cache_creation_input_tokens": 196,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 196
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 6936,
+      "cacheReadInputTokens": 130521,
+      "cacheCreationInputTokens": 16756,
+      "webSearchRequests": 0,
+      "costUSD": 0.1494601,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 366,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 16756,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Read": 1,
+    "Bash": 4,
+    "Write": 1
+  },
+  "bash_commands": [
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/sonnet-t03-r1; git ls-files; cat README*",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/sonnet-t03-r1; cat tests/conftest.py; head -20 tests/test_geo.py; cat src/trailhead/geo.py",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/sonnet-t03-r1; cat > tests/test_track.py <<'EOF'\nimport pytest\n\nfrom trailhead.geo import haversine_km\nfrom trailhead.track import FEET_TO_METRES, Point, Track, TrackError, load_track, parse_track\n\nBASIC = \"lat,lon,ele\\n42.0,23.0,100\\n42.1,23.1,200\\n\"\n\n\ndef test_parses_the_readme_example():\n    text = (\n        \"# name: Seven Rila Lakes\\n# units: m\\nlat,lon,ele\\n\"\n        \"42.2031,23.3205,2140\\n42.2049,23.3188,2196\\n\"\n    )\n    track = parse_track(text)\n    assert track.name == \"Seven Rila Lakes\"\n    assert track.points == [Point(42.2031, 23.3205, 2140), Point(42.2049, 23.3188, 2196)]\n\n\ndef test_blank_lines_and_other_comments_are_ignored():\n    text = \"\\n# just a note\\n\\nlat,lon,ele\\n\\n42,23,1\\n# mid-file comment\\n42.1,23,2\\n\\n\"\n    assert len(parse_track(text).points) == 2\n\n\ndef test_name_defaults_to_unnamed():\n    assert parse_track(BASIC).name == \"unnamed\"\n\n\ndef test_name_uses_default_name_argument():\n    assert parse_track(BASIC, default_name=\"rila\").name == \"rila\"\n\n\ndef test_name_line_beats_default_name():\n    assert parse_track(\"# name: Lakes\\n\" + BASIC, default_name=\"rila\").name == \"Lakes\"\n\n\ndef test_name_may_contain_colons():\n    assert parse_track(\"# name: Day 1: up\\n\" + BASIC).name == \"Day 1: up\"\n\n\ndef test_load_track_names_after_the_file(write_track):\n    path = write_track(BASIC, \"rila.csv\")\n    assert load_track(path).name == \"rila\"\n    assert load_track(str(path)).name == \"rila\"\n\n\ndef test_load_track_prefers_name_line(write_track):\n    assert load_track(write_track(\"# name: Lakes\\n\" + BASIC, \"rila.csv\")).name == \"Lakes\"\n\n\ndef test_load_track_reads_utf8(write_track):\n    assert load_track(write_track(\"# name: \u0420\u0438\u043b\u0430\\n\" + BASIC)).name == \"\u0420\u0438\u043b\u0430\"\n\n\ndef test_metres_are_the_default_and_explicit_m_is_unchanged():\n    assert parse_track(BASIC).points[0].ele == 100\n    assert parse_track(\"# units: m\\n\" + BASIC).points[0].ele == 100\n\n\ndef test_feet_are_converted_to_metres():\n    track = parse_track(\"# units: ft\\n\" + BASIC)\n    assert FEET_TO_METRES == 0.3048\n    assert [p.ele for p in track.points] == pytest.approx([30.48, 60.96])\n\n\ndef test_units_line_between_header_and_points_applies():\n    track = parse_track(\"lat,lon,ele\\n# units: ft\\n42,23,100\\n42.1,23,100\\n\")\n    assert track.points[0].ele == pytest.approx(30.48)\n\n\n@pytest.mark.parametrize(\"value\", [\"km\", \"FT\", \"feet\", \"\"])\ndef test_unknown_units_is_an_error(value):\n    with pytest.raises(TrackError, match=r\"^line 1:\"):\n        parse_track(f\"# units: {value}\\n\" + BASIC)\n\n\ndef test_header_must_be_first_non_comment_line():\n    with pytest.raises(TrackError, match=r\"^line 2:\"):\n        parse_track(\"# c\\n42,23,1\\nlat,lon,ele\\n42.1,23,1\\n\")\n\n\n@pytest.mark.parametrize(\"header\", [\"lat,lon\", \"lon,lat,ele\", \"lat,lon,ele,x\", \"lat,lon,elevation\"])\ndef test_wrong_header_is_an_error(header):\n    with pytest.raises(TrackError, match=r\"^line 1:\"):\n        parse_track(f\"{header}\\n42,23,1\\n42.1,23,1\\n\")\n\n\ndef test_header_check_is_case_sensitive():\n    with pytest.raises(TrackError):\n        parse_track(\"Lat,Lon,Ele\\n42,23,1\\n42.1,23,1\\n\")\n\n\ndef test_missing_header_is_an_error():\n    with pytest.raises(TrackError):\n        parse_track(\"\")\n\n\n@pytest.mark.parametrize(\"row\", [\"42,23\", \"42,23,1,2\"])\ndef test_wrong_field_count_is_an_error(row):\n    with pytest.raises(TrackError, match=r\"^line 3:\"):\n        parse_track(f\"lat,lon,ele\\n42,23,1\\n{row}\\n\")\n\n\ndef test_non_numeric_field_is_an_error():\n    with pytest.raises(TrackError, match=r\"^line 3:\"):\n        parse_track(\"lat,lon,ele\\n42,23,1\\n42,abc,1\\n\")\n\n\n@pytest.mark.parametrize(\"lat,lon\", [(90.01, 0), (-90.01, 0), (0, 180.01), (0, -180.01)])\ndef test_out_of_range_coordinates_are_errors(lat, lon):\n    with pytest.raises(TrackError, match=r\"^line 3:\"):\n        parse_track(f\"lat,lon,ele\\n0,0,1\\n{lat},{lon},1\\n\")\n\n\ndef test_range_limits_are_inclusive():\n    track = parse_track(\"lat,lon,ele\\n90,180,1\\n-90,-180,1\\n\")\n    assert (track.points[0].lat, track.points[0].lon) == (90, 180)\n    assert (track.points[1].lat, track.points[1].lon) == (-90, -180)\n\n\ndef test_negative_elevation_is_allowed():\n    assert parse_track(\"lat,lon,ele\\n42,23,-10\\n42.1,23,-20\\n\").points[0].ele == -10\n\n\ndef test_whitespace_around_fields_is_tolerated():\n    track = parse_track(\"lat , lon , ele\\n 42 , 23 , 5 \\n42.1,23,6\\n\")\n    assert track.points[0] == Point(42, 23, 5)\n\n\ndef test_error_line_numbers_count_comments_and_blank_lines():\n    text = \"# name: x\\n\\n# units: m\\nlat,lon,ele\\n\\n42,23,1\\n# note\\n42,oops,1\\n\"\n    with pytest.raises(TrackError, match=r\"^line 8:\"):\n        parse_track(text)\n\n\n@pytest.mark.parametrize(\"body\", [\"\", \"42,23,1\\n\"])\ndef test_fewer_than_two_points_is_an_error(body):\n    with pytest.raises(TrackError, match=\"at least two points\"):\n        parse_track(\"lat,lon,ele\\n\" + body)\n\n\ndef test_track_error_is_a_value_error():\n    assert issubclass(TrackError, ValueError)\n\n\ndef test_leg_lengths_are_between_consecutive_points(make_track):\n    track = make_track((0, 0, 0), (0, 0.01, 0), (0.01, 0.01, 0))\n    legs = track.leg_lengths_km()\n    assert len(legs) == 2\n    assert legs[0] == pytest.approx(haversine_km(0, 0, 0, 0.01))\n    assert legs[1] == pytest.approx(haversine_km(0, 0.01, 0.01, 0.01))\n\n\ndef test_length_is_the_sum_of_legs(make_track):\n    track = make_track((0, 0, 0), (0, 0.01, 0), (0.01, 0.01, 0))\n    assert track.length_km() == pytest.approx(sum(track.leg_lengths_km()))\n    assert track.length_km() == pytest.approx(2.2239, abs=1e-3)\n\n\ndef test_single_point_or_empty_track_has_no_legs():\n    assert Track(\"t\").leg_lengths_km() == []\n    assert Track(\"t\", [Point(0, 0, 0)]).length_km() == 0\nEOF\npython -m pytest tests/test_track.py -q 2>&1 | tail -30; git status --short",
+    "python -m pytest tests/test_track.py -q 2>&1 | tail -30; git status --short"
+  ],
+  "permission_denials": [
+    {
+      "command": "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/sonnet-t03-r1; cat > tests/test_track.py <<'EOF'\nimport pytest\n\nfrom trailhead.geo import haversine_km\nfrom trailhead.track import FEET_TO_METRES, Point, Track, TrackError, load_track, parse_track\n\nBASIC = \"lat,lon,ele\\n42.0,23.0,100\\n42.1,23.1,200\\n\"\n\n\ndef test_parses_the_readme_example():\n    text = (\n        \"# name: Seven Rila Lakes\\n# units: m\\nlat,lon,ele\\n\"\n        \"42.2031,23.3205,2140\\n42.2049,23.3188,2196\\n\"\n    )\n    track = parse_track(text)\n    assert track.name == \"Seven Rila Lakes\"\n    assert track.points == [Point(42.2031, 23.3205, 2140), Point(42.2049, 23.3188, 2196)]\n\n\ndef test_blank_lines_and_other_comments_are_ignored():\n    text = \"\\n# just a note\\n\\nlat,lon,ele\\n\\n42,23,1\\n# mid-file comment\\n42.1,23,2\\n\\n\"\n    assert len(parse_track(text).points) == 2\n\n\ndef test_name_defaults_to_unnamed():\n    assert parse_track(BASIC).name == \"unnamed\"\n\n\ndef test_name_uses_default_name_argument():\n    assert parse_track(BASIC, default_name=\"rila\").name == \"rila\"\n\n\ndef test_name_line_beats_default_name():\n    assert parse_track(\"# name: Lakes\\n\" + BASIC, default_name=\"rila\").name == \"Lakes\"\n\n\ndef test_name_may_contain_colons():\n    assert parse_track(\"# name: Day 1: up\\n\" + BASIC).name == \"Day 1: up\"\n\n\ndef test_load_track_names_after_the_file(write_track):\n    path = write_track(BASIC, \"rila.csv\")\n    assert load_track(path).name == \"rila\"\n    assert load_track(str(path)).name == \"rila\"\n\n\ndef test_load_track_prefers_name_line(write_track):\n    assert load_track(write_track(\"# name: Lakes\\n\" + BASIC, \"rila.csv\")).name == \"Lakes\"\n\n\ndef test_load_track_reads_utf8(write_track):\n    assert load_track(write_track(\"# name: \u0420\u0438\u043b\u0430\\n\" + BASIC)).name == \"\u0420\u0438\u043b\u0430\"\n\n\ndef test_metres_are_the_default_and_explicit_m_is_unchanged():\n    assert parse_track(BASIC).points[0].ele == 100\n    assert parse_track(\"# units: m\\n\" + BASIC).points[0].ele == 100\n\n\ndef test_feet_are_converted_to_metres():\n    track = parse_track(\"# units: ft\\n\" + BASIC)\n    assert FEET_TO_METRES == 0.3048\n    assert [p.ele for p in track.points] == pytest.approx([30.48, 60.96])\n\n\ndef test_units_line_between_header_and_points_applies():\n    track = parse_track(\"lat,lon,ele\\n# units: ft\\n42,23,100\\n42.1,23,100\\n\")\n    assert track.points[0].ele == pytest.approx(30.48)\n\n\n@pytest.mark.parametrize(\"value\", [\"km\", \"FT\", \"feet\", \"\"])\ndef test_unknown_units_is_an_error(value):\n    with pytest.raises(TrackError, match=r\"^line 1:\"):\n        parse_track(f\"# units: {value}\\n\" + BASIC)\n\n\ndef test_header_must_be_first_non_comment_line():\n    with pytest.raises(TrackError, match=r\"^line 2:\"):\n        parse_track(\"# c\\n42,23,1\\nlat,lon,ele\\n42.1,23,1\\n\")\n\n\n@pytest.mark.parametrize(\"header\", [\"lat,lon\", \"lon,lat,ele\", \"lat,lon,ele,x\", \"lat,lon,elevation\"])\ndef test_wrong_header_is_an_error(header):\n    with pytest.raises(TrackError, match=r\"^line 1:\"):\n        parse_track(f\"{header}\\n42,23,1\\n42.1,23,1\\n\")\n\n\ndef test_header_check_is_case_sensitive():\n    with pytest.raises(TrackError):\n        parse_track(\"Lat,Lon,Ele\\n42,23,1\\n42.1,23,1\\n\")\n\n\ndef test_missing_header_is_an_error():\n    with pytest.raises(TrackError):\n        parse_track(\"\")\n\n\n@pytest.mark.parametrize(\"row\", [\"42,23\", \"42,23,1,2\"])\ndef test_wrong_field_count_is_an_error(row):\n    with pytest.raises(TrackError, match=r\"^line 3:\"):\n        parse_track(f\"lat,lon,ele\\n42,23,1\\n{row}\\n\")\n\n\ndef test_non_numeric_field_is_an_error():\n    with pytest.raises(TrackError, match=r\"^line 3:\"):\n        parse_track(\"lat,lon,ele\\n42,23,1\\n42,abc,1\\n\")\n\n\n@pytest.mark.parametrize(\"lat,lon\", [(90.01, 0), (-90.01, 0), (0, 180.01), (0, -180.01)])\ndef test_out_of_range_coordinates_are_errors(lat, lon):\n    with pytest.raises(TrackError, match=r\"^line 3:\"):\n        parse_track(f\"lat,lon,ele\\n0,0,1\\n{lat},{lon},1\\n\")\n\n\ndef test_range_limits_are_inclusive():\n    track = parse_track(\"lat,lon,ele\\n90,180,1\\n-90,-180,1\\n\")\n    assert (track.points[0].lat, track.points[0].lon) == (90, 180)\n    assert (track.points[1].lat, track.points[1].lon) == (-90, -180)\n\n\ndef test_negative_elevation_is_allowed():\n    assert parse_track(\"lat,lon,ele\\n42,23,-10\\n42.1,23,-20\\n\").points[0].ele == -10\n\n\ndef test_whitespace_around_fields_is_tolerated():\n    track = parse_track(\"lat , lon , ele\\n 42 , 23 , 5 \\n42.1,23,6\\n\")\n    assert track.points[0] == Point(42, 23, 5)\n\n\ndef test_error_line_numbers_count_comments_and_blank_lines():\n    text = \"# name: x\\n\\n# units: m\\nlat,lon,ele\\n\\n42,23,1\\n# note\\n42,oops,1\\n\"\n    with pytest.raises(TrackError, match=r\"^line 8:\"):\n        parse_track(text)\n\n\n@pytest.mark.parametrize(\"body\", [\"\", \"42,23,1\\n\"])\ndef test_fewer_than_two_points_is_an_error(body):\n    with pytest.raises(TrackError, match=\"at least two points\"):\n        parse_track(\"lat,lon,ele\\n\" + body)\n\n\ndef test_track_error_is_a_value_error():\n    assert issubclass(TrackError, ValueError)\n\n\ndef test_leg_lengths_are_between_consecutive_points(make_track):\n    track = make_track((0, 0, 0), (0, 0.01, 0), (0.01, 0.01, 0))\n    legs = track.leg_lengths_km()\n    assert len(legs) == 2\n    assert legs[0] == pytest.approx(haversine_km(0, 0, 0, 0.01))\n    assert legs[1] == pytest.approx(haversine_km(0, 0.01, 0.01, 0.01))\n\n\ndef test_length_is_the_sum_of_legs(make_track):\n    track = make_track((0, 0, 0), (0, 0.01, 0), (0.01, 0.01, 0))\n    assert track.length_km() == pytest.approx(sum(track.leg_lengths_km()))\n    assert track.length_km() == pytest.approx(2.2239, abs=1e-3)\n\n\ndef test_single_point_or_empty_track_has_no_legs():\n    assert Track(\"t\").leg_lengths_km() == []\n    assert Track(\"t\", [Point(0, 0, 0)]).length_km() == 0\nEOF\npython -m pytest tests/test_track.py -q 2>&1 | tail -30; git status --short"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_track.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "........................................                                 [100%]\n40 passed in 0.05s\n",
+    "src_changed": [],
+    "killed": [
+      "feet not converted",
+      "blank lines not skipped",
+      "range bounds exclusive",
+      "one point accepted",
+      "line numbers from 0",
+      "unknown units accepted",
+      "default name empty"
+    ],
+    "survived": [],
+    "kills": 7,
+    "mutants": 7,
+    "changed": [
+      "A tests/test_track.py"
+    ],
+    "lines_added": 161,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

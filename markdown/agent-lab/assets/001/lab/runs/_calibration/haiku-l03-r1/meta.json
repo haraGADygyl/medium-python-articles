@@ -1,0 +1,107 @@
+{
+  "run_id": "haiku-l03-r1",
+  "task": "l03",
+  "tier": "lint",
+  "repeat": 1,
+  "model_alias": "haiku",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "harness_timeout": false,
+  "wall_s": 20.9,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 10,
+  "duration_ms": 18226,
+  "duration_api_ms": 16763,
+  "api_equivalent_usd": 0.00542726,
+  "usage": {
+    "input_tokens": 14,
+    "cache_creation_input_tokens": 13359,
+    "cache_read_input_tokens": 144306,
+    "output_tokens": 2622,
+    "output_tokens_details": {
+      "thinking_tokens": 409
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 13359,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 300,
+        "cache_read_input_tokens": 25575,
+        "cache_creation_input_tokens": 268,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 268
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 14,
+      "outputTokens": 2622,
+      "cacheReadInputTokens": 144306,
+      "cacheCreationInputTokens": 13359,
+      "webSearchRequests": 0,
+      "costUSD": 0.00542726,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 409,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 13359,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4,
+    "Read": 2,
+    "Grep": 1,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "cat pyproject.toml && git status --short && (mypy src/ 2>&1 | tail -50)",
+    "cat pyproject.toml",
+    "mypy src/",
+    "mypy src/ && echo MYPY_OK; python -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [
+    {
+      "command": "cat pyproject.toml && git status --short && (mypy src/ 2>&1 | tail -50)",
+      "description": "Inspect config and run mypy on src"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/plan.py",
+      "M src/trailhead/track.py"
+    ],
+    "lines_added": 3,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  }
+}

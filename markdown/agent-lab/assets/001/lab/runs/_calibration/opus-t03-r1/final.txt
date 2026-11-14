@@ -1,0 +1,13 @@
+I wrote `tests/test_track.py` with 73 tests. The whole suite (111 tests) passes, and `ruff check` is clean. Nothing under `src/` was changed.
+
+**What the tests check:**
+- **Parsing:** the README example track, blank lines and comments anywhere in the file, surrounding whitespace, and Windows line endings.
+- **Names:** the fallback chain (`# name:` line, then `default_name`, then `unnamed`). Also a name containing colons, an empty `# name:` line, and a comment that mentions "name" without being a setting. For `load_track`, the name comes from the file (`rila.csv` → `rila`) unless there's a `# name:` line.
+- **Units:** metres by default, `# units: ft` converted at 0.3048 (elevation only, coordinates unchanged), and any other units value raising `TrackError` with the right line number.
+- **Header:** must be the first non-comment line and must be exactly `lat,lon,ele`. Wrong order, missing columns, extra columns, no header at all, or a second header are all rejected.
+- **Points:** each needs exactly three numeric fields. The ±90 / ±180 coordinate limits are allowed, values just past them are rejected, and elevation has no range limit.
+- **Point count:** two points is enough. Fewer raises `TrackError`, and that message has no `line N:` prefix.
+- **Line numbers:** comments and blank lines are counted, the first bad line is the one reported, and `load_track` reports the same numbers as the file.
+- **`Track` and `Point`:** leg and total distances match known great-circle values, a track has one leg fewer than it has points, elevation doesn't change distance, repeated points give a zero-length leg, an empty track has length 0, and `Point` can't be modified.
+
+**Possible bug, not tested:** a point with `nan` or `inf` as its elevation is accepted (for example `0,0,nan` becomes `Point(..., ele=nan)`). Latitude and longitude are safe because the range check rejects them, but elevation has no check. The README says each point has "three numbers", which arguably rules these out, but it doesn't say so outright, so I didn't write a test for it. If you agree they should be rejected, the fix in `_parse_point` is a `math.isfinite` check, and I can add a test for it.

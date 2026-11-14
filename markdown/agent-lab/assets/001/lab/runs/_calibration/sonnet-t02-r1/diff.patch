@@ -1,0 +1,108 @@
+diff --git a/tests/test_pace.py b/tests/test_pace.py
+new file mode 100644
+index 0000000..67f888f
+--- /dev/null
++++ b/tests/test_pace.py
+@@ -0,0 +1,102 @@
++from math import exp
++
++import pytest
++
++from trailhead.pace import leg_hours, naismith_hours, tobler_kmh
++
++STEP = 5 / 111.19508  # about 5 km of longitude on the equator
++
++
++class TestNaismith:
++    def test_flat(self):
++        assert naismith_hours(10, 0) == pytest.approx(2.0)
++
++    def test_ascent_only(self):
++        assert naismith_hours(0, 600) == pytest.approx(1.0)
++
++    def test_distance_and_ascent_add(self):
++        assert naismith_hours(15, 1200) == pytest.approx(5.0)
++
++    def test_zero(self):
++        assert naismith_hours(0, 0) == 0
++
++    def test_fitness_divides_time(self):
++        assert naismith_hours(10, 600, fitness=1.25) == pytest.approx(3.0 / 1.25)
++        assert naismith_hours(10, 600, fitness=0.8) == pytest.approx(3.0 / 0.8)
++
++    def test_faster_fitness_is_25_percent_faster(self):
++        base = naismith_hours(10, 300)
++        assert naismith_hours(10, 300, fitness=1.25) == pytest.approx(base * 0.8)
++
++    def test_not_rounded(self):
++        assert naismith_hours(1, 1) == pytest.approx(1 / 5 + 1 / 600, abs=1e-12)
++
++    @pytest.mark.parametrize("distance, ascent", [(-1, 0), (0, -1), (-0.1, -0.1)])
++    def test_negative_distance_or_ascent(self, distance, ascent):
++        with pytest.raises(ValueError):
++            naismith_hours(distance, ascent)
++
++    @pytest.mark.parametrize("fitness", [0, -1.0])
++    def test_non_positive_fitness(self, fitness):
++        with pytest.raises(ValueError):
++            naismith_hours(5, 100, fitness=fitness)
++
++
++class TestTobler:
++    def test_peak_is_six_kmh_on_five_percent_descent(self):
++        assert tobler_kmh(-0.05) == pytest.approx(6.0)
++
++    def test_flat(self):
++        assert tobler_kmh(0.0) == pytest.approx(6 * exp(-3.5 * 0.05))
++
++    def test_ten_percent_climb(self):
++        assert tobler_kmh(0.1) == pytest.approx(6 * exp(-3.5 * 0.15))
++
++    def test_ten_percent_descent(self):
++        assert tobler_kmh(-0.1) == pytest.approx(6 * exp(-3.5 * 0.05))
++
++    def test_symmetric_around_minus_five_percent(self):
++        assert tobler_kmh(-0.05 + 0.2) == pytest.approx(tobler_kmh(-0.05 - 0.2))
++
++    @pytest.mark.parametrize("grade", [-0.5, -0.2, -0.05, 0.0, 0.1, 0.3, 1.0])
++    def test_never_faster_than_six(self, grade):
++        assert 0 < tobler_kmh(grade) <= 6.0
++
++    def test_slower_on_steeper_climb(self):
++        assert tobler_kmh(0.3) < tobler_kmh(0.1) < tobler_kmh(0.0)
++
++
++class TestLegHours:
++    def test_one_value_per_leg(self, make_track):
++        track = make_track((0, 0, 0), (0, STEP, 0), (0, 2 * STEP, 0))
++        assert len(leg_hours(track)) == 2
++
++    def test_flat_legs(self, make_track):
++        track = make_track((0, 0, 0), (0, STEP, 0), (0, 2 * STEP, 0))
++        assert leg_hours(track) == pytest.approx([1.0, 1.0], rel=1e-4)
++
++    def test_each_leg_counts_only_its_own_climb(self, make_track):
++        track = make_track(
++            (0, 0, 0),
++            (0, STEP, 600),
++            (0, 2 * STEP, 600),
++            (0, 3 * STEP, 1200),
++        )
++        assert leg_hours(track) == pytest.approx([2.0, 1.0, 2.0], rel=1e-4)
++
++    def test_descent_adds_nothing(self, make_track):
++        track = make_track((0, 0, 600), (0, STEP, 0))
++        assert leg_hours(track) == pytest.approx([1.0], rel=1e-4)
++
++    def test_fitness_applies(self, make_track):
++        track = make_track((0, 0, 0), (0, STEP, 600))
++        assert leg_hours(track, fitness=2.0) == pytest.approx([1.0], rel=1e-4)
++
++    def test_invalid_fitness(self, make_track):
++        track = make_track((0, 0, 0), (0, STEP, 0))
++        with pytest.raises(ValueError):
++            leg_hours(track, fitness=0)
++
++    def test_repeated_point_is_zero_time(self, make_track):
++        track = make_track((1, 1, 10), (1, 1, 10))
++        assert leg_hours(track) == [0.0]

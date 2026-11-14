@@ -1,0 +1,42 @@
+diff --git a/src/trailhead/plan.py b/src/trailhead/plan.py
+index faa066e..326b6bc 100644
+--- a/src/trailhead/plan.py
++++ b/src/trailhead/plan.py
+@@ -20,7 +20,9 @@ def split_days(
+     days: list[tuple[int, int, int, float]] = []
+     first, used = 0, 0.0
+     for index, hours in enumerate(leg_hours(track, fitness)):
+-        if used > 0 and used > max_hours_per_day:
++        # Close the day before a leg that would push it over the limit (with a
++        # tiny tolerance so float noise doesn't split a day that fits exactly).
++        if used > 0 and used + hours > max_hours_per_day + 1e-6:
+             days.append((len(days) + 1, first, index, round(used, 2)))
+             first, used = index, 0.0
+         used += hours
+diff --git a/tests/test_plan.py b/tests/test_plan.py
+index 3ed4a06..50bb26c 100644
+--- a/tests/test_plan.py
++++ b/tests/test_plan.py
+@@ -20,6 +20,22 @@ def test_one_long_leg_is_a_day_on_its_own(make_track):
+     assert [(day, first, last) for day, first, last, _ in days] == [(1, 0, 1), (2, 1, 2)]
+ 
+ 
++def test_day_never_exceeds_limit(five_flat_hours):
++    # 2.5h max with 1h legs: days must stop at 2h rather than spill to 3h.
++    days = split_days(five_flat_hours, max_hours_per_day=2.5)
++    assert [(day, first, last) for day, first, last, _ in days] == [
++        (1, 0, 2),
++        (2, 2, 4),
++        (3, 4, 5),
++    ]
++    assert all(hours <= 2.5 for *_, hours in days)
++
++
++def test_day_that_fits_exactly_is_not_split(five_flat_hours):
++    days = split_days(five_flat_hours, max_hours_per_day=5)
++    assert [(day, first, last) for day, first, last, _ in days] == [(1, 0, 5)]
++
++
+ def test_invalid_limit(five_flat_hours):
+     with pytest.raises(ValueError):
+         split_days(five_flat_hours, max_hours_per_day=0)

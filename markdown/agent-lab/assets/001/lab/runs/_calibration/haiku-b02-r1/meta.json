@@ -1,0 +1,114 @@
+{
+  "run_id": "haiku-b02-r1",
+  "task": "b02",
+  "tier": "bug",
+  "repeat": 1,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"`trailhead summary` says the heading is N for my ridge walk, which runs due east from 42.20, 23.30 to 42.20, 23.45.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 40.4,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 14,
+  "duration_ms": 38391,
+  "duration_api_ms": 36820,
+  "api_equivalent_usd": 0.010847530000000001,
+  "usage": {
+    "input_tokens": 26,
+    "cache_creation_input_tokens": 20517,
+    "cache_read_input_tokens": 356303,
+    "output_tokens": 6357,
+    "output_tokens_details": {
+      "thinking_tokens": 1564
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 20517,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 600,
+        "cache_read_input_tokens": 33791,
+        "cache_creation_input_tokens": 1794,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1794
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 26,
+      "outputTokens": 6357,
+      "cacheReadInputTokens": 356303,
+      "cacheCreationInputTokens": 20517,
+      "webSearchRequests": 0,
+      "costUSD": 0.010847530000000001,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 1564,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 20517,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 10,
+    "Edit": 2,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git status --short && git ls-files | head -100 && grep -rn -i \"heading\\|trailhead\" --include=*.py . | head -80",
+    "cat src/trailhead/geo.py && sed -n 1,70p src/trailhead/report.py && cat tests/test_geo.py && sed -n 1,30p tests/test_report.py",
+    "cat src/trailhead/track.py && cat tests/conftest.py && cat tests/test_track.py && cat README.md",
+    "mkdir -p /tmp/claude-1000/repro && cd /tmp/claude-1000/repro && printf 'lat,lon,ele\\n42.20,23.30,1000\\n42.20,23.45,1100\\n' > ridge.csv && cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-b02-r1 && PYTHONPATH=src python3 -c \"\nfrom trailhead.track import load_track\nfrom trailhead.geo import initial_bearing, compass_point\nt=load_track('/tmp/claude-1000/repro/ridge.csv')\np=t.points\nprint(initial_bearing(p[0].lat,p[0].lon,p[-1].lat,p[-1].lon))\nprint(compass_point(initial_bearing(p[0].lat,p[0].lon,p[-1].lat,p[-1].lon)))\n\" && PYTHONPATH=src python3 -m trailhead summary /tmp/claude-1000/repro/ridge.csv; python3 -m pytest -q 2>&1 | tail -3",
+    "PYTHONPATH=src python3 -c \"\nfrom trailhead.geo import initial_bearing, compass_point\nb=initial_bearing(42.20,23.30,42.20,23.45)\nprint(b, compass_point(b))\nprint(initial_bearing(42.20,23.30,42.20,23.45)-90)\n\"",
+    "python3 - <<'EOF'\nimport re\np='tests/test_geo.py'\ns=open(p).read()\ns=s.replace(\"from trailhead.geo import compass_point, haversine_km\",\"from trailhead.geo import compass_point, haversine_km, initial_bearing\",1)\ns+='''\n\n@pytest.mark.parametrize(\n    (\"end\", \"expected\"),\n    [((43, 23), 0), ((42, 24), 90), ((41, 23), 180), ((42, 22), 270)],\n)\ndef test_initial_bearing_of_the_cardinal_directions(end, expected):\n    bearing = initial_bearing(42, 23, *end)\n    assert min(abs(bearing - expected), 360 - abs(bearing - expected)) < 1e-6 or (\n        abs(bearing - expected) < 0.5\n    )\n\n\ndef test_due_east_along_a_parallel_is_east_not_north():\n    # Short stretch at 42.20N, as in a real ridge walk: the great-circle bearing is ~90.\n    bearing = initial_bearing(42.20, 23.30, 42.20, 23.45)\n    assert 89 < bearing < 90.5\n    assert compass_point(bearing) == \"E\"\n'''\nopen(p,'w').write(s)\nEOF\necho done",
+    "python3 -m pytest -q 2>&1 | tail -5; python3 -m ruff check 2>&1 | tail -2; python3 -m mypy 2>&1 | tail -1",
+    "git stash push -q -- src/trailhead/geo.py && python3 -m pytest -q tests/test_geo.py 2>&1 | tail -8; git stash pop -q && git diff --stat && python3 -m pytest -q 2>&1 | tail -1 && PYTHONPATH=src python3 -m trailhead summary /tmp/claude-1000/repro/ridge.csv | tail -1",
+    "python3 -c \"\nfrom math import *\ndef old(lat1,lon1,lat2,lon2):\n    phi1,phi2=radians(lat1),radians(lat2); dl=radians(lon2-lon1)\n    x=sin(dl)*cos(phi2); y=cos(phi1)*sin(phi2)-sin(phi1)*cos(phi2)*cos(dl)\n    return (degrees(atan2(y,x))+360)%360\nfor end in [(43,23),(42,24),(41,23),(42,22)]: print(end, round(old(42,23,*end),3))\nprint('ridge old', old(42.20,23.30,42.20,23.45))\n\" && PYTHONPATH=src python3 -m trailhead summary /tmp/claude-1000/repro/ridge.csv | tail -1",
+    "PYTHONPATH=src python3 -m trailhead summary /tmp/claude-1000/repro/ridge.csv; git diff"
+  ],
+  "permission_denials": [
+    {
+      "command": "mkdir -p /tmp/claude-1000/repro && cd /tmp/claude-1000/repro && printf 'lat,lon,ele\\n42.20,23.30,1000\\n42.20,23.45,1100\\n' > ridge.csv && cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-b02-r1 && PYTHONPATH=src python3 -c \"\nfrom trailhead.track import load_track\nfrom trailhead.geo import initial_bearing, compass_point\nt=load_track('/tmp/claude-1000/repro/ridge.csv')\np=t.points\nprint(initial_bearing(p[0].lat,p[0].lon,p[-1].lat,p[-1].lon))\nprint(compass_point(initial_bearing(p[0].lat,p[0].lon,p[-1].lat,p[-1].lon)))\n\" && PYTHONPATH=src python3 -m trailhead summary /tmp/claude-1000/repro/ridge.csv; python3 -m pytest -q 2>&1 | tail -3",
+      "description": "Reproduce the heading bug and run the test suite"
+    },
+    {
+      "command": "git stash push -q -- src/trailhead/geo.py && python3 -m pytest -q tests/test_geo.py 2>&1 | tail -8; git stash pop -q && git diff --stat && python3 -m pytest -q 2>&1 | tail -1 && PYTHONPATH=src python3 -m trailhead summary /tmp/claude-1000/repro/ridge.csv | tail -1",
+      "description": "Check new tests fail on old code, then restore fix"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".......................................................                  [100%]\n55 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py",
+      "M tests/test_geo.py"
+    ],
+    "lines_added": 21,
+    "lines_removed": 4,
+    "own_suite_pass_as_left": true
+  }
+}

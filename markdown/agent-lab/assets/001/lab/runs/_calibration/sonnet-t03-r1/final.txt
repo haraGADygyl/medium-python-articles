@@ -1,0 +1,12 @@
+I added `tests/test_track.py` with 40 tests, and they all pass. `git status` shows `src/` is untouched.
+
+The tests cover these parts of `track.py`, as the README and docstrings describe them:
+- **Parsing:** the README example, ignored blank lines and comments, and whitespace around fields.
+- **Naming:** `# name:` beats the default, which beats `unnamed`. `load_track` names the track after the file and reads UTF-8.
+- **Units:** metres by default, feet converted at 0.3048, and an unknown units value is an error.
+- **Errors:** wrong or missing header, wrong field count, non-numeric fields, out-of-range coordinates (with inclusive limits), and fewer than two points. Error line numbers count comments and blank lines. `TrackError` is a `ValueError`.
+- **Track methods:** `leg_lengths_km` and `length_km`, including tracks with no legs.
+
+Because the tests are written from the docs, a failure would have meant a bug. None turned up.
+
+I left one thing untested because the README doesn't define it. A `# units:` line placed after some points only affects the points that follow it.

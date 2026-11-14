@@ -1,0 +1,11 @@
+I fixed it. The bug was in `initial_bearing` (`src/trailhead/geo.py:24`): it called `atan2(y, x)`, but the arguments belong the other way round, `atan2(x, y)`. In this function `x` is the east–west part of the direction and `y` is the north–south part.
+
+With the arguments swapped, every bearing came out mirrored across the NE–SW diagonal, so east read as north, south as west, and so on. For the reported walk (42.20, 23.30 → 42.20, 23.45), `x` is large and `y` is close to zero. The bad call therefore gave about 0°, which shows as **N**, when the right answer is about 90°, **E**. The existing report test didn't catch it because its track runs NE, and 45° sits on that diagonal, so it looks the same either way round.
+
+**Change:** I swapped the `atan2` arguments back. The function now uses the standard initial-bearing formula.
+
+**Tests:** I added these to `tests/test_geo.py`:
+- A check of all four cardinal directions from the user's starting point, including their exact due-east walk.
+- A check that a course mostly east and slightly north gives a bearing between 60° and 90°. This catches the mirroring on tracks that aren't on the diagonal.
+
+The full suite passes (48 tests). I didn't run the new tests against the old code to watch them fail; I'm going by the arithmetic, which puts the old due-east result near 0°, outside the tests' 0.1° tolerance.
