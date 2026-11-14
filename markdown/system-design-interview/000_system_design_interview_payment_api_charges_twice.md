@@ -42,6 +42,7 @@ Then the handler: look the key up, and if it's new, charge and save a row.
 def handle_purchase(conn, KEY: str) -> str:
     with conn.cursor() as cur:
         cur.execute("SELECT payment_id FROM ride_payment WHERE idempotency_key = %s", (KEY,))
+
         if cur.fetchone():
             return already_charged()
 
@@ -51,7 +52,9 @@ def handle_purchase(conn, KEY: str) -> str:
         cur.execute(
             "INSERT INTO ride_payment (idempotency_key, rider_id, amount_cents, provider_ref)"
             " VALUES (%s, %s, %s, %s)", (KEY, 4471, 350, ref))
+
     conn.commit()
+
     return "confirmed"
 ```
 
@@ -165,6 +168,7 @@ def handle_purchase(cur, KEY: str) -> str:
 
     cur.execute("UPDATE ride_payment SET status='charged', provider_ref=%s"
                 " WHERE payment_id=%s", (ref, claimed[0]))
+
     return "confirmed"
 ```
 
@@ -232,6 +236,7 @@ def sweep(cur) -> None:
     cur.execute("SELECT payment_id, idempotency_key FROM ride_payment"
                 " WHERE status='pending' AND created_at < now() - interval '5 seconds'"
                 " FOR UPDATE SKIP LOCKED")
+
     for payment_id, key in cur.fetchall():
         ref = charge_provider(key)      # safe: the provider dedupes on this key
         cur.execute("UPDATE ride_payment SET status='charged', provider_ref=%s"

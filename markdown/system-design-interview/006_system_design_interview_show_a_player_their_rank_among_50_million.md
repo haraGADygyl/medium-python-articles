@@ -155,8 +155,10 @@ the 231 players on score 250,000:
 def competition_rank(player_id: int) -> int | None:
     """Rank that gives every tied player the same number, like SQL rank()."""
     score = pool.zscore(KEY, f"p{player_id}")
+
     if score is None:
         return None
+
     return pool.zcount(KEY, f"({score}", "+inf") + 1
 ```
 
@@ -209,6 +211,7 @@ def page_after(cursor_score: float | str, seen_at_score: set[str],
     rows = pool.zrevrangebyscore(KEY, cursor_score, "-inf",
                                  start=0, num=page + len(seen_at_score),
                                  withscores=True)
+
     return [(m, s) for m, s in rows if m not in seen_at_score][:page]
 ```
 

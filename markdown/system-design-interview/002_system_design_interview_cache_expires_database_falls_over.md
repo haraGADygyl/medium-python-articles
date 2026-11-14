@@ -59,6 +59,7 @@ LIMIT 20
 def query_origin() -> str:
     """The 265 ms aggregate over three million postings, as JSON."""
     conn = psycopg2.connect(PG)
+
     try:
         with conn.cursor() as cur:
             cur.execute(TRENDING_SQL)
@@ -72,10 +73,13 @@ def query_origin() -> str:
 ```python
 def naive_reader():
     hit = R.get(KEY)
+
     if hit is not None:
         return hit
+
     value = query_origin()
     R.set(KEY, value, ex=TTL)
+
     return value
 ```
 
@@ -138,8 +142,10 @@ plain cache-aside, TTL=5s, 50 readers, 20s
 ```python
 def locked_reader():
     hit = R.get(KEY)
+
     if hit is not None:
         return hit
+
     if R.set(LOCK, "1", nx=True, ex=30):        # I won the right to rebuild
         try:
             R.set(KEY, query_origin(), ex=TTL)
@@ -148,6 +154,7 @@ def locked_reader():
     else:
         while R.get(KEY) is None:               # everyone else waits for it
             time.sleep(0.02)
+
     return R.get(KEY)
 ```
 
@@ -208,6 +215,7 @@ def refresh() -> None:
     """Rebuild the value. One caller at a time; the rest simply skip it."""
     if not R.set(LOCK, "1", nx=True, ex=30):
         return
+
     try:
         started = time.perf_counter()
         payload = query_origin()
@@ -223,6 +231,7 @@ def refresh() -> None:
 ```python
 def swr_reader():
     raw = R.get(KEY)
+
     if raw is None:                          # cold start: nothing to serve yet
         refresh()
         return json.loads(R.get(KEY))["payload"]

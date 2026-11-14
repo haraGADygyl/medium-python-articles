@@ -111,6 +111,7 @@ async def online_by_window(r: aioredis.Redis, users: list[str], now: float,
                            window: float) -> dict[str, bool]:
     """Online = last heartbeat inside the window. One round trip."""
     scores = await r.zmscore("presence:online", users)
+
     return {u: s is not None and s > now - window
             for u, s in zip(users, scores)}
 ```
@@ -221,6 +222,7 @@ class Gateway:
 
     async def pinger(self) -> None:
         await asyncio.sleep(random.uniform(0, PING_S))  # gateways out of phase
+
         while True:
             for uid, (writer, missed) in list(self.conns.items()):
                 if missed[0] >= MISSES:
@@ -229,6 +231,7 @@ class Gateway:
                 else:
                     missed[0] += 1
                     writer.write(b"PING\n")
+
             await asyncio.sleep(PING_S)
 
     async def lease(self) -> None:
@@ -251,6 +254,7 @@ async def online_by_gateway(r: aioredis.Redis,
     distinct = sorted({g for g in gateways if g})
     leases = await r.mget([f"gw:{g}:alive" for g in distinct])
     alive = dict(zip(distinct, leases))
+
     return {u: bool(g and alive.get(g)) for u, g in zip(users, gateways)}
 ```
 

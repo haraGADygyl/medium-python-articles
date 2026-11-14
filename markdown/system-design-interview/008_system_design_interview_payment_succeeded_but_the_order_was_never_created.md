@@ -57,15 +57,19 @@ def checkout_in_transaction(conn: psycopg.Connection, key: str, sku: str,
     with conn.transaction():
         if conn.execute(RESERVE, (sku,)).fetchone() is None:
             return "sold out"
+
         conn.execute(
             "INSERT INTO orders (checkout_key, sku, amount) "
             "VALUES (%s, %s, %s)", (key, sku, amount))
         result = charge(key, amount, card)
+
         if result["status"] != "succeeded":
             raise Declined(key)               # rolls back stock and order
+
         conn.execute(
             "UPDATE orders SET charge_id = %s WHERE checkout_key = %s",
             (result["id"], key))
+
     return "completed"
 ```
 
@@ -134,9 +138,11 @@ def begin_checkout(conn: psycopg.Connection, key: str, sku: str,
     with conn.transaction():
         if conn.execute(RESERVE, (sku,)).fetchone() is None:
             return False
+
         conn.execute(
             "INSERT INTO checkout (key, sku, amount, card, state) "
             "VALUES (%s, %s, %s, %s, 'pending')", (key, sku, amount, card))
+
     return True
 
 
@@ -150,6 +156,7 @@ def finish_checkout(conn: psycopg.Connection, key: str, result: dict,
                 "resolved_by = %s, resolved_at = clock_timestamp() "
                 "WHERE key = %s AND state = 'pending' RETURNING sku, amount",
                 (result["id"], by, key)).fetchone()
+
             if row:
                 conn.execute(
                     "INSERT INTO orders (checkout_key, sku, amount, "
@@ -161,10 +168,12 @@ def finish_checkout(conn: psycopg.Connection, key: str, result: dict,
                 "resolved_at = clock_timestamp() "
                 "WHERE key = %s AND state = 'pending' RETURNING sku",
                 (by, key)).fetchone()
+
             if row:                           # compensate: release the stock
                 conn.execute(
                     "UPDATE stock SET qty = qty + 1 WHERE sku = %s",
                     (row[0],))
+
     return row is not None
 
 
@@ -173,9 +182,12 @@ def checkout_saga(conn: psycopg.Connection, key: str, sku: str,
     """Intent, then the charge under the checkout's key, then the outcome."""
     if not begin_checkout(conn, key, sku, amount, card):
         return "sold out"
+
     result = charge(key, amount, card)       # step 2
+
     if not finish_checkout(conn, key, result, "worker"):
         return "already resolved"
+
     return "completed" if result["status"] == "succeeded" else "declined"
 ```
 

@@ -26,11 +26,15 @@ Everything below ran on PostgreSQL 17.6 against a 234,000-seat schema (50 shows)
 def buy_seat(conn, seat_id: int, order_ref: str) -> str:
     with conn.cursor() as cur:
         cur.execute("SELECT status FROM seat WHERE seat_id = %s", (seat_id,))
+
         if cur.fetchone()[0] != "free":
             return "sold out"
+
         cur.execute("UPDATE seat SET status='sold', order_ref=%s WHERE seat_id=%s",
                     (order_ref, seat_id))
+
     conn.commit()
+
     return "confirmed"
 ```
 
@@ -75,6 +79,7 @@ def buy_seat(cur, seat_id: int, order_ref: str) -> str:
     cur.execute(
         "UPDATE seat SET status='sold', order_ref=%s"
         " WHERE seat_id=%s AND status='free'", (order_ref, seat_id))
+
     return "confirmed" if cur.rowcount == 1 else "sold out"
 ```
 

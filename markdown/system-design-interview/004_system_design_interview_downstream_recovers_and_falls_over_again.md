@@ -47,11 +47,13 @@ class SlotPool:
     async def acquire(self) -> None:
         async with self.gate:
             self.waiting += 1
+
             try:
                 while self.in_use >= self.capacity:
                     await self.gate.wait()
             finally:
                 self.waiting -= 1
+
             self.in_use += 1
 
     async def release(self) -> None:
@@ -69,6 +71,7 @@ class SlotPool:
 async def quote(pool: SlotPool) -> str:
     """One rate lookup: queue for a slot, then do the work."""
     await pool.acquire()
+
     try:
         await asyncio.sleep(WORK_SECONDS)
         return "ok"
@@ -110,8 +113,10 @@ async def fetch_rate(session: aiohttp.ClientSession) -> bool:
     for attempt in range(1, MAX_ATTEMPTS + 1):
         if await call_once(session):
             return True
+
         if attempt < MAX_ATTEMPTS:
             await asyncio.sleep(backoff(attempt))
+
     return False
 ```
 
@@ -182,6 +187,7 @@ import random
 def backoff_jittered(attempt: int) -> float:
     """Full jitter: sleep somewhere inside the window, not on its edge."""
     window = min(BACKOFF_CAP, BACKOFF_BASE * (2 ** (attempt - 1)))
+
     return random.uniform(0, window)
 ```
 
@@ -237,7 +243,9 @@ class RetryBudget:
         """A retry costs a whole token, or it does not happen."""
         if self.tokens < 1.0:
             return False
+
         self.tokens -= 1.0
+
         return True
 
 
@@ -247,11 +255,14 @@ async def fetch_rate_budgeted(session: aiohttp.ClientSession,
     for attempt in range(1, MAX_ATTEMPTS + 1):
         if attempt > 1 and not budget.withdraw():
             return False
+
         if await call_once(session):
             budget.deposit()
             return True
+
         if attempt < MAX_ATTEMPTS:
             await asyncio.sleep(backoff_jittered(attempt))
+
     return False
 ```
 
@@ -324,35 +335,45 @@ class Breaker:
     def wait_time(self) -> float:
         """Cool-off doubles on every consecutive trip, up to a ceiling."""
         base = self.cool_off * (2 ** min(self.strikes, self.doublings))
+
         return base * (0.5 + random.random())
 
     def allow(self) -> bool:
         """False means: fail this call now, without touching the network."""
         if self.state == "closed":
             return True
+
         if self.state == "open":
             if time.monotonic() - self.opened_at < self.wait_time():
                 return False
+
             self.state = "half-open"
             self.probing = False
+
         if self.probing:
             return False
+
         self.probing = True
+
         return True
 
     def record(self, ok: bool) -> None:
         """In half-open, one probe decides — not the rolling window."""
         if self.state == "half-open":
             self.probing = False
+
             if ok:
                 self.state, self.strikes = "closed", 0
                 self.outcomes.clear()
             else:
                 self.state, self.opened_at = "open", time.monotonic()
                 self.strikes += 1
+
             return
+
         self.outcomes.append(1 if ok else 0)
         del self.outcomes[:-self.size]
+
         if len(self.outcomes) == self.size:
             if (self.size - sum(self.outcomes)) / self.size > self.threshold:
                 self.state, self.opened_at = "open", time.monotonic()
@@ -368,15 +389,20 @@ async def fetch_rate_protected(session: aiohttp.ClientSession,
     for attempt in range(1, MAX_ATTEMPTS + 1):
         if attempt > 1 and not budget.withdraw():
             return False
+
         if not breaker.allow():
             return False
+
         ok = await call_once(session)
         breaker.record(ok)
+
         if ok:
             budget.deposit()
             return True
+
         if attempt < MAX_ATTEMPTS:
             await asyncio.sleep(backoff_jittered(attempt))
+
     return False
 ```
 

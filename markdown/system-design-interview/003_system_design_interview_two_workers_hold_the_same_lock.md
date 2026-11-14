@@ -42,6 +42,7 @@ def connect_db():
     """One autocommit connection per worker process."""
     conn = psycopg2.connect(PG)
     conn.autocommit = True
+
     return conn
 
 
@@ -49,8 +50,10 @@ def render_tiles(scene_id: str, worker_id: str, seconds: float) -> str:
     """Stands in for tiling a scene: roughly `seconds` of hashing."""
     digest = hashlib.sha256(f"{scene_id}:{worker_id}".encode())
     block = bytes(65536)
+
     for _ in range(int(seconds * ROUNDS_PER_SECOND)):
         digest.update(hashlib.sha256(block).digest())
+
     return digest.hexdigest()[:16]
 ```
 
@@ -63,11 +66,15 @@ def process_naive(scene_id: str, worker_id: str, work_seconds: float) -> bool:
     """Take the lock, tile the scene, write the result, release."""
     key = f"lock:scene:{scene_id}"
     me = str(uuid.uuid4())
+
     if not pool.set(key, me, nx=True, px=LOCK_TTL_MS):
         return False
+
     conn = connect_db()
+
     try:
         checksum = render_tiles(scene_id, worker_id, work_seconds)
+
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO scene_product (scene_id, checksum, written_by)
@@ -77,6 +84,7 @@ def process_naive(scene_id: str, worker_id: str, work_seconds: float) -> bool:
                     written_by = EXCLUDED.written_by,
                     updated_at = now()
                 """, (scene_id, checksum, worker_id))
+
         return True
     finally:
         conn.close()
@@ -254,15 +262,19 @@ def process_fenced(scene_id: str, worker_id: str, work_seconds: float) -> bool:
     """Same lock, plus a token the write has to justify itself with."""
     key = f"lock:scene:{scene_id}"
     me = str(uuid.uuid4())
+
     if not pool.set(key, me, nx=True, px=LOCK_TTL_MS):
         return False
+
     token = pool.incr(f"fence:scene:{scene_id}")
     stop = threading.Event()
     beat = threading.Thread(target=heartbeat, args=(key, me, stop), daemon=True)
     beat.start()
     conn = connect_db()
+
     try:
         checksum = render_tiles(scene_id, worker_id, work_seconds)
+
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO scene_product (scene_id, checksum, written_by,

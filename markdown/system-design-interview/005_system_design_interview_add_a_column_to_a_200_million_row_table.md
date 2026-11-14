@@ -159,9 +159,11 @@ def add_column_with_retry(sql: str, timeout_ms: int = 250,
                 with conn.cursor() as cur:
                     cur.execute(f"SET lock_timeout = {timeout_ms}")
                     cur.execute(sql)
+
             return attempt
         except psycopg.errors.LockNotAvailable:
             time.sleep(0.5)
+
     return None
 ```
 
