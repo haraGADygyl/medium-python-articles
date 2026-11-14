@@ -1,0 +1,13 @@
+The cause is a swapped-argument bug in `initial_bearing`, and I've fixed it. I could not run the test suite: shell commands needed approval that wasn't granted, so the fix and tests are verified by reading only.
+
+**Cause:** `src/trailhead/geo.py`, `initial_bearing`. Its `x` is the eastward component and `y` the northward one. A compass bearing is `atan2(east, north)`, but the code computed `atan2(y, x)`, which is the angle from east, not from north. For a leg running due east, the north component is almost zero, so the result is about 0°, which `compass_point` reports as **N**. That matches the report exactly.
+
+**Fix:** `src/trailhead/geo.py:24` now returns `degrees(atan2(x, y))`, normalised to 0–360, with a comment explaining the order.
+
+**Why the existing tests missed it:** the only heading test uses a 45° leg, where the wrong formula happens to give the same answer as the right one. No test called `initial_bearing` directly.
+
+**Tests added:**
+- `tests/test_geo.py`: `initial_bearing` on the equator for N/E/S/W, plus a regression test that 42.20, 23.30 → 42.20, 23.45 gives a bearing between 89° and 90° and maps to `E`.
+- `tests/test_report.py`: a `summarise` test that the due-east ridge reports heading `E`.
+
+I checked the existing `NE` test by hand: it still yields 45° → `NE`. Please run `pytest` to confirm the suite passes.

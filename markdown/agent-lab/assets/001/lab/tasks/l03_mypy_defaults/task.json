@@ -1,0 +1,43 @@
+{
+  "id": "l03",
+  "tier": "lint",
+  "title": "Make mypy pass (two None defaults hide documented defaults)",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "setup": [
+    {
+      "file": "src/trailhead/track.py",
+      "old": "    name = default_name or \"unnamed\"\n",
+      "new": "    name = default_name\n"
+    },
+    {
+      "file": "src/trailhead/plan.py",
+      "old": "    track: Track, max_hours_per_day: float = DEFAULT_MAX_HOURS, fitness: float = 1.0\n",
+      "new": "    track: Track, max_hours_per_day: float | None = None, fitness: float = 1.0\n"
+    },
+    {
+      "file": "tests/test_plan.py",
+      "old": "def test_everything_fits_in_one_day(five_flat_hours):\n    assert split_days(five_flat_hours) == [(1, 0, 5, 1.0 * 5)]\n\n\n",
+      "new": ""
+    }
+  ],
+  "grade": {
+    "kind": "lint",
+    "checks": [
+      "mypy"
+    ]
+  },
+  "reference": {
+    "restore_src": true
+  },
+  "bad": {
+    "kind": "empty-string name",
+    "restore_src": true,
+    "edits": [
+      {
+        "file": "src/trailhead/track.py",
+        "old": "    name = default_name or \"unnamed\"\n",
+        "new": "    name = default_name or \"\"\n"
+      }
+    ]
+  }
+}

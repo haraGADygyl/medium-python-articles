@@ -1,0 +1,98 @@
+{
+  "run_id": "haiku-b02-r1",
+  "task": "b02",
+  "tier": "bug",
+  "repeat": 1,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"`trailhead summary` says the heading is N for my ridge walk, which runs due east from 42.20, 23.30 to 42.20, 23.45.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 22.5,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 7,
+  "duration_ms": 20404,
+  "duration_api_ms": 19464,
+  "api_equivalent_usd": 0.00542561,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 11860,
+    "cache_read_input_tokens": 128791,
+    "output_tokens": 3529,
+    "output_tokens_details": {
+      "thinking_tokens": 1189
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 11860,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 572,
+        "cache_read_input_tokens": 25650,
+        "cache_creation_input_tokens": 1278,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1278
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 3529,
+      "cacheReadInputTokens": 128791,
+      "cacheCreationInputTokens": 11860,
+      "webSearchRequests": 0,
+      "costUSD": 0.00542561,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 1189,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 11860,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && grep -rn -i \"heading\\|trailhead\" --include=*.py . | head -80",
+    "cat src/trailhead/report.py && cat src/trailhead/geo.py && cat tests/test_geo.py && sed -n 1,30p tests/test_report.py",
+    "PYTHONPATH=src python3 -c \"\nfrom trailhead.geo import initial_bearing as b, compass_point as c\nfor name,args in [('east',(42.20,23.30,42.20,23.45)),('north',(42.20,23.30,42.35,23.30)),('south',(42.35,23.30,42.20,23.30)),('west',(42.20,23.45,42.20,23.30))]:\n    v=b(*args); print(name, round(v,3), c(v))\n\" && python3 -m pytest -q 2>&1 | tail -3",
+    "cat >> tests/test_geo.py <<'EOF'\n\n\n@pytest.mark.parametrize(\n    (\"end\", \"expected\"),\n    [((42.35, 23.30), 0), ((42.20, 23.45), 90), ((42.05, 23.30), 180), ((42.20, 23.15), 270)],\n)\ndef test_initial_bearing_of_cardinal_directions(end, expected):\n    bearing = initial_bearing(42.20, 23.30, *end)\n    assert min(abs(bearing - expected), 360 - abs(bearing - expected)) < 0.5\n\n\ndef test_ridge_running_due_east_is_east(make_track):\n    from trailhead.report import summarise\n\n    track = make_track((42.20, 23.30, 1000), (42.20, 23.45, 1000), name=\"Ridge\")\n    assert summarise(track).heading == \"E\"\nEOF\npython3 -m pytest -q 2>&1 | tail -3 && PYTHONPATH=src python3 -c \"\nfrom trailhead.geo import initial_bearing as b, compass_point as c\nfor a in [(42.20,23.30,42.20,23.45),(42.20,23.30,42.35,23.30),(42.35,23.30,42.20,23.30),(42.20,23.45,42.20,23.30)]: print(c(b(*a)))\""
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".......................................................                  [100%]\n55 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py",
+      "M tests/test_geo.py"
+    ],
+    "lines_added": 18,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

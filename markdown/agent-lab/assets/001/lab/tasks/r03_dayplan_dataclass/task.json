@@ -1,0 +1,82 @@
+{
+  "id": "r03",
+  "tier": "refactor",
+  "title": "Replace split_days tuples with a frozen DayPlan dataclass",
+  "prompt": "`plan.split_days` returns plain tuples `(day, first_point, last_point, hours)` that callers unpack by position. Make it return instances of a frozen dataclass `DayPlan` instead, defined in `src/trailhead/plan.py`, with the fields `day`, `first_point`, `last_point` and `hours` in that order, and update every caller and test. Behaviour and command output must stay the same.",
+  "setup": [],
+  "grade": {
+    "kind": "hidden",
+    "regression_exclude": [
+      "tests/test_plan.py"
+    ]
+  },
+  "reference": {
+    "edits": [
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "from trailhead.pace import leg_hours\n",
+        "new": "from dataclasses import dataclass\n\nfrom trailhead.pace import leg_hours\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "DEFAULT_MAX_HOURS = 7.0\n",
+        "new": "DEFAULT_MAX_HOURS = 7.0\n\n\n@dataclass(frozen=True, slots=True)\nclass DayPlan:\n    day: int\n    first_point: int\n    last_point: int\n    hours: float\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": ") -> list[tuple[int, int, int, float]]:\n",
+        "new": ") -> list[DayPlan]:\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "    days: list[tuple[int, int, int, float]] = []\n",
+        "new": "    days: list[DayPlan] = []\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "            days.append((len(days) + 1, first, index, round(used, 2)))\n",
+        "new": "            days.append(DayPlan(len(days) + 1, first, index, round(used, 2)))\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "    days.append((len(days) + 1, first, len(track.points) - 1, round(used, 2)))\n",
+        "new": "    days.append(DayPlan(len(days) + 1, first, len(track.points) - 1, round(used, 2)))\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "def describe_plan(days: list[tuple[int, int, int, float]]) -> list[str]:\n",
+        "new": "def describe_plan(days: list[DayPlan]) -> list[str]:\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "    for day, first, last, hours in days:\n        whole, minutes = divmod(round(hours * 60), 60)\n        lines.append(f\"Day {day}: points {first}-{last}, {whole}h {minutes:02d}m\")\n",
+        "new": "    for plan in days:\n        whole, minutes = divmod(round(plan.hours * 60), 60)\n        lines.append(\n            f\"Day {plan.day}: points {plan.first_point}-{plan.last_point}, \"\n            f\"{whole}h {minutes:02d}m\"\n        )\n"
+      }
+    ]
+  },
+  "bad": {
+    "kind": "split_days changed, describe_plan still unpacks tuples",
+    "edits": [
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "from trailhead.pace import leg_hours\n",
+        "new": "from dataclasses import dataclass\n\nfrom trailhead.pace import leg_hours\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "DEFAULT_MAX_HOURS = 7.0\n",
+        "new": "DEFAULT_MAX_HOURS = 7.0\n\n\n@dataclass(frozen=True, slots=True)\nclass DayPlan:\n    day: int\n    first_point: int\n    last_point: int\n    hours: float\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "            days.append((len(days) + 1, first, index, round(used, 2)))\n",
+        "new": "            days.append(DayPlan(len(days) + 1, first, index, round(used, 2)))\n"
+      },
+      {
+        "file": "src/trailhead/plan.py",
+        "old": "    days.append((len(days) + 1, first, len(track.points) - 1, round(used, 2)))\n",
+        "new": "    days.append(DayPlan(len(days) + 1, first, len(track.points) - 1, round(used, 2)))\n"
+      }
+    ]
+  }
+}

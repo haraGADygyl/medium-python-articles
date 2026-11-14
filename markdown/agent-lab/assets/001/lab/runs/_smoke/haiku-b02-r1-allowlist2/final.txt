@@ -1,0 +1,13 @@
+The cause was a swapped argument order in `initial_bearing`, and it's fixed. A due-east ridge now reports `E`.
+
+**Cause:** In `src/trailhead/geo.py`, the bearing was computed as `atan2(y, x)`, where `x` is the east component and `y` is the north component. The correct call is `atan2(x, y)`. The swap turned north into east, east into north, and so on. Your ridge's east offset was reported as N.
+
+The existing `NE` test passed by coincidence: a 45° bearing is unchanged by swapping the axes, so the bug never showed up in the test suite.
+
+**Fix:**
+- `src/trailhead/geo.py`: changed `atan2(y, x)` to `atan2(x, y)`.
+- `tests/test_geo.py`: added a test that checks N, E, S and W bearings, and a test that a ridge running due east from 42.20, 23.30 to 42.20, 23.45 summarises as `E`.
+
+**Verification:** The full suite passes (48 tests, up from 43). Before the fix, the cardinal bearings came out as N→E, E→N, S→W, W→S. After the fix they come out as N, E, S, W.
+
+I haven't committed anything.

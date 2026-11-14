@@ -1,0 +1,34 @@
+{
+  "id": "b01",
+  "tier": "bug",
+  "title": "A long climb in small steps shows no ascent",
+  "prompt": "Bug report from a user: \"I recorded a long, steady climb with a point for every metre of height, about 300 m up in total. `trailhead summary` shows the ascent as +0 m. Tracks with bigger gaps between points look fine.\" Find the cause and fix it.",
+  "setup": [
+    {
+      "file": "src/trailhead/elevation.py",
+      "old": "            loss -= change\n            reference = elevation\n    return",
+      "new": "            loss -= change\n            reference = elevation\n        reference = elevation\n    return"
+    },
+    {
+      "file": "tests/test_elevation.py",
+      "old": "def test_long_climb_in_small_steps_still_counts():\n    assert gain_and_loss([float(step) for step in range(1000, 1301)]) == (300.0, 0.0)\n\n\n",
+      "new": ""
+    }
+  ],
+  "grade": {
+    "kind": "hidden"
+  },
+  "reference": {
+    "restore_src": true
+  },
+  "bad": {
+    "kind": "lowered the threshold to 1 m",
+    "edits": [
+      {
+        "file": "src/trailhead/elevation.py",
+        "old": "DEFAULT_THRESHOLD_M = 3.0",
+        "new": "DEFAULT_THRESHOLD_M = 1.0"
+      }
+    ]
+  }
+}

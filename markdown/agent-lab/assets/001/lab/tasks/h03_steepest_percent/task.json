@@ -1,0 +1,54 @@
+{
+  "id": "h03",
+  "tier": "two-file bug",
+  "title": "steepest_grade returns a fraction; report.py compensates",
+  "prompt": "Bug report from a user: \"`elevation.steepest_grade()` returns 0.18 for a track whose steepest stretch climbs 18 m over 100 m. The README and the docstring say it returns a percentage, so I expected 18.0.\" Find the cause and fix it.",
+  "setup": [
+    {
+      "file": "src/trailhead/elevation.py",
+      "old": "abs(b.ele - a.ele) / (km * 1000) * 100",
+      "new": "abs(b.ele - a.ele) / (km * 1000)"
+    },
+    {
+      "file": "src/trailhead/elevation.py",
+      "old": "    return round(steepest, 1)\n",
+      "new": "    return round(steepest, 3)\n"
+    },
+    {
+      "file": "src/trailhead/report.py",
+      "old": "steepest_pct=steepest_grade(track),",
+      "new": "steepest_pct=round(steepest_grade(track) * 100, 1),"
+    },
+    {
+      "file": "tests/test_elevation.py",
+      "old": "\n\ndef test_steepest_grade_in_percent(make_track):\n    # 0.01 degrees of longitude on the equator is about 1112 m.\n    track = make_track((0, 0, 1000), (0, 0.01, 1100), (0, 0.02, 1050))\n    assert steepest_grade(track) == pytest.approx(9.0, abs=0.05)\n",
+      "new": ""
+    },
+    {
+      "file": "tests/test_elevation.py",
+      "old": "from trailhead.elevation import gain_and_loss, highest_and_lowest, steepest_grade\n",
+      "new": "from trailhead.elevation import gain_and_loss, highest_and_lowest\n"
+    }
+  ],
+  "grade": {
+    "kind": "hidden"
+  },
+  "reference": {
+    "restore_src": true
+  },
+  "bad": {
+    "kind": "fixed elevation.py only",
+    "edits": [
+      {
+        "file": "src/trailhead/elevation.py",
+        "old": "abs(b.ele - a.ele) / (km * 1000)",
+        "new": "abs(b.ele - a.ele) / (km * 1000) * 100"
+      },
+      {
+        "file": "src/trailhead/elevation.py",
+        "old": "    return round(steepest, 3)\n",
+        "new": "    return round(steepest, 1)\n"
+      }
+    ]
+  }
+}

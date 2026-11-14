@@ -1,0 +1,53 @@
+{
+  "id": "l02",
+  "tier": "lint",
+  "title": "Make mypy pass (a None heading should be 'loop')",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "setup": [
+    {
+      "file": "src/trailhead/geo.py",
+      "old": "def initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:\n",
+      "new": "def initial_bearing(lat1, lon1, lat2, lon2):\n"
+    },
+    {
+      "file": "src/trailhead/report.py",
+      "old": "def _heading(track: Track) -> str:\n",
+      "new": "def _heading(track: Track) -> str | None:\n"
+    },
+    {
+      "file": "src/trailhead/report.py",
+      "old": "        return \"loop\"\n",
+      "new": "        return None\n"
+    }
+  ],
+  "grade": {
+    "kind": "lint",
+    "checks": [
+      "mypy"
+    ]
+  },
+  "reference": {
+    "restore_src": true
+  },
+  "bad": {
+    "kind": "made the heading optional",
+    "restore_src": true,
+    "edits": [
+      {
+        "file": "src/trailhead/report.py",
+        "old": "def _heading(track: Track) -> str:\n",
+        "new": "def _heading(track: Track) -> str | None:\n"
+      },
+      {
+        "file": "src/trailhead/report.py",
+        "old": "        return \"loop\"\n",
+        "new": "        return None\n"
+      },
+      {
+        "file": "src/trailhead/report.py",
+        "old": "    heading: str\n",
+        "new": "    heading: str | None\n"
+      }
+    ]
+  }
+}

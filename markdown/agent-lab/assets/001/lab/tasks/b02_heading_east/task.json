@@ -1,0 +1,39 @@
+{
+  "id": "b02",
+  "tier": "bug",
+  "title": "A trail running due east is reported as heading N",
+  "prompt": "Bug report from a user: \"`trailhead summary` says the heading is N for my ridge walk, which runs due east from 42.20, 23.30 to 42.20, 23.45.\" Find the cause and fix it.",
+  "setup": [
+    {
+      "file": "src/trailhead/geo.py",
+      "old": "    return (degrees(atan2(x, y)) + 360) % 360\n",
+      "new": "    return (degrees(atan2(y, x)) + 360) % 360\n"
+    },
+    {
+      "file": "tests/test_geo.py",
+      "old": "@pytest.mark.parametrize(\n    (\"end\", \"expected\"),\n    [((1, 0), 0), ((0, 1), 90), ((-1, 0), 180), ((0, -1), 270)],\n)\ndef test_bearing_along_the_axes(end, expected):\n    assert initial_bearing(0, 0, *end) == pytest.approx(expected)\n\n\n",
+      "new": ""
+    },
+    {
+      "file": "tests/test_geo.py",
+      "old": "from trailhead.geo import compass_point, haversine_km, initial_bearing\n",
+      "new": "from trailhead.geo import compass_point, haversine_km\n"
+    }
+  ],
+  "grade": {
+    "kind": "hidden"
+  },
+  "reference": {
+    "restore_src": true
+  },
+  "bad": {
+    "kind": "rotated by 90 degrees",
+    "edits": [
+      {
+        "file": "src/trailhead/geo.py",
+        "old": "    return (degrees(atan2(y, x)) + 360) % 360\n",
+        "new": "    return (degrees(atan2(y, x)) + 90) % 360\n"
+      }
+    ]
+  }
+}

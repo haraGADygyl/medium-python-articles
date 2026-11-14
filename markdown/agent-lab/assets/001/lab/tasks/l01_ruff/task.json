@@ -1,0 +1,48 @@
+{
+  "id": "l01",
+  "tier": "lint",
+  "title": "Make ruff pass (an 'unused' variable is the fitness bug)",
+  "prompt": "`ruff check` reports problems in `src/`. Fix them so that `ruff check` passes, without changing the ruff configuration and without `noqa` comments.",
+  "setup": [
+    {
+      "file": "src/trailhead/track.py",
+      "old": "from trailhead.geo import haversine_km\n",
+      "new": "from trailhead.geo import haversine_km\nimport os\n"
+    },
+    {
+      "file": "src/trailhead/track.py",
+      "old": "    except ValueError:\n        raise TrackError(f\"line {number}: not a number\") from None\n",
+      "new": "    except:\n        raise TrackError(f\"line {number}: not a number\")\n"
+    },
+    {
+      "file": "src/trailhead/pace.py",
+      "old": "    return (distance_km / FLAT_SPEED_KMH + ascent_m / CLIMB_M_PER_HOUR) / fitness\n",
+      "new": "    hours = (distance_km / FLAT_SPEED_KMH + ascent_m / CLIMB_M_PER_HOUR) / fitness\n    return distance_km / FLAT_SPEED_KMH + ascent_m / CLIMB_M_PER_HOUR\n"
+    },
+    {
+      "file": "tests/test_pace.py",
+      "old": "def test_fitness_scales_time():\n    assert naismith_hours(10, 600, fitness=1.5) == pytest.approx(2.0)\n\n\n",
+      "new": ""
+    }
+  ],
+  "grade": {
+    "kind": "lint",
+    "checks": [
+      "ruff"
+    ]
+  },
+  "reference": {
+    "restore_src": true
+  },
+  "bad": {
+    "kind": "deleted the unused variable",
+    "restore_src": true,
+    "edits": [
+      {
+        "file": "src/trailhead/pace.py",
+        "old": "    return (distance_km / FLAT_SPEED_KMH + ascent_m / CLIMB_M_PER_HOUR) / fitness\n",
+        "new": "    return distance_km / FLAT_SPEED_KMH + ascent_m / CLIMB_M_PER_HOUR\n"
+      }
+    ]
+  }
+}

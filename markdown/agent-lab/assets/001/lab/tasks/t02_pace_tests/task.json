@@ -1,0 +1,109 @@
+{
+  "id": "t02",
+  "tier": "tests",
+  "title": "Write tests for pace.py",
+  "prompt": "`src/trailhead/pace.py` has no tests. Write `tests/test_pace.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "setup": [
+    {
+      "delete": "tests/test_pace.py"
+    }
+  ],
+  "grade": {
+    "kind": "mutants",
+    "test_file": "tests/test_pace.py",
+    "min_kills": 7,
+    "mutants": [
+      {
+        "name": "flat speed 4 km/h",
+        "edits": [
+          {
+            "file": "src/trailhead/pace.py",
+            "old": "FLAT_SPEED_KMH = 5.0",
+            "new": "FLAT_SPEED_KMH = 4.0"
+          }
+        ]
+      },
+      {
+        "name": "500 m per hour climb",
+        "edits": [
+          {
+            "file": "src/trailhead/pace.py",
+            "old": "CLIMB_M_PER_HOUR = 600.0",
+            "new": "CLIMB_M_PER_HOUR = 500.0"
+          }
+        ]
+      },
+      {
+        "name": "fitness multiplies",
+        "edits": [
+          {
+            "file": "src/trailhead/pace.py",
+            "old": "/ CLIMB_M_PER_HOUR) / fitness",
+            "new": "/ CLIMB_M_PER_HOUR) * fitness"
+          }
+        ]
+      },
+      {
+        "name": "zero fitness allowed",
+        "edits": [
+          {
+            "file": "src/trailhead/pace.py",
+            "old": "if fitness <= 0:",
+            "new": "if fitness < 0:"
+          }
+        ]
+      },
+      {
+        "name": "negative ascent allowed",
+        "edits": [
+          {
+            "file": "src/trailhead/pace.py",
+            "old": "if distance_km < 0 or ascent_m < 0:",
+            "new": "if distance_km < 0:"
+          }
+        ]
+      },
+      {
+        "name": "tobler peak on the wrong side",
+        "edits": [
+          {
+            "file": "src/trailhead/pace.py",
+            "old": "abs(grade + 0.05)",
+            "new": "abs(grade - 0.05)"
+          }
+        ]
+      },
+      {
+        "name": "leg descent counted",
+        "edits": [
+          {
+            "file": "src/trailhead/pace.py",
+            "old": "max(b.ele - a.ele, 0.0)",
+            "new": "abs(b.ele - a.ele)"
+          }
+        ]
+      },
+      {
+        "name": "leg fitness dropped",
+        "edits": [
+          {
+            "file": "src/trailhead/pace.py",
+            "old": "naismith_hours(km, max(b.ele - a.ele, 0.0), fitness)",
+            "new": "naismith_hours(km, max(b.ele - a.ele, 0.0))"
+          }
+        ]
+      }
+    ]
+  },
+  "reference": {
+    "files": {
+      "tests/test_pace.py": "reference_test.py"
+    }
+  },
+  "bad": {
+    "kind": "happy-path tests only",
+    "files": {
+      "tests/test_pace.py": "weak_test.py"
+    }
+  }
+}

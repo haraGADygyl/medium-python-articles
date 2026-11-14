@@ -1,0 +1,26 @@
+[project]
+name = "trailhead"
+version = "0.3.0"
+description = "Plan hikes from recorded tracks: distance, ascent, walking time and days"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+trailhead = "trailhead.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I", "UP"]
+
+[tool.mypy]
+strict = true
+files = ["src"]
+mypy_path = "src"
