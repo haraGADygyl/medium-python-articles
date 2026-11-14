@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    participant A as App
+    participant P as Primary
+    participant R as Replica
+    A->>P: INSERT, COMMIT
+    A->>P: pg_current_wal_lsn()
+    P-->>A: 0/9A3F2C8
+    Note over A: token saved<br/>in the session
+    A->>R: pg_last_wal_replay_lsn()
+    R-->>A: 0/9A1B000, behind
+    A->>P: SELECT order
+    P-->>A: order found
+    Note over R: once replay passes<br/>the token, reads<br/>go back here

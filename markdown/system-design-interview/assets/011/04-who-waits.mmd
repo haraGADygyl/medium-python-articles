@@ -1,0 +1,15 @@
+flowchart TB
+    pause["Replay paused 30 s<br/>by a report on the replica"]
+    pause --> ra["synchronous_commit<br/>= remote_apply"]
+    pause --> fb["hot_standby_feedback<br/>= on"]
+    pause --> tk["LSN token<br/>per customer"]
+    ra --> ra2["the writer waits:<br/>checkouts take up<br/>to 30.8 s"]
+    fb --> fb2["the primary keeps<br/>100,000 dead rows<br/>VACUUM can't remove"]
+    tk --> tk2["the primary takes<br/>every own-order read<br/>until replay resumes"]
+    classDef ok fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef warn fill:#fff3cd,stroke:#a07a10,stroke-width:2px,color:#4d3a05
+    classDef bad fill:#f8d7da,stroke:#a33a43,stroke-width:2px,color:#5c1a20
+    class pause bad
+    class ra2 bad
+    class fb2 warn
+    class tk2 ok

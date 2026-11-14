@@ -1,0 +1,27 @@
+idle: 16 customers, 20 s, 39,951 orders placed and read back
+  stale reads (order not found on replica): 35,517 (88.9%)
+  time until it appeared: p50 1.46 ms, p99 3.63 ms, max 14.71 ms
+  replica behind, sampled every 100 ms: p50 0 KB, max 1 KB
+bulk import: 91 batches of 50,000 rows
+busy: 16 customers, 20 s, 7,820 orders placed and read back
+  stale reads (order not found on replica): 7,566 (96.8%)
+  time until it appeared: p50 6.85 ms, p99 1077.04 ms, max 2041.84 ms
+  replica behind, sampled every 100 ms: p50 2469 KB, max 36573 KB
+idle: 16 customers, 20 s, 17,309 orders placed and read back
+  stale reads (order not found on replica): 17,281 (99.8%)
+  time until it appeared: p50 5.55 ms, p99 37.37 ms, max 82.37 ms
+  replica behind, sampled every 100 ms: p50 1 KB, max 5 KB
+bulk import: 40 batches of 50,000 rows
+busy: 16 customers, 20 s, 549 orders placed and read back
+  stale reads (order not found on replica): 549 (100.0%)
+  time until it appeared: p50 116.64 ms, p99 1873.97 ms, max 1890.22 ms
+  replica behind, sampled every 100 ms: p50 20353 KB, max 44100 KB
+idle: 16 customers, 20 s, 15,728 orders placed and read back
+  stale reads (order not found on replica): 15,550 (98.9%)
+  time until it appeared: p50 5.60 ms, p99 37.89 ms, max 44.09 ms
+  replica behind, sampled every 100 ms: p50 1 KB, max 5 KB
+bulk import: 41 batches of 50,000 rows
+busy: 16 customers, 20 s, 675 orders placed and read back
+  stale reads (order not found on replica): 672 (99.6%)
+  time until it appeared: p50 108.08 ms, p99 1778.88 ms, max 1780.72 ms
+  replica behind, sampled every 100 ms: p50 15337 KB, max 36422 KB

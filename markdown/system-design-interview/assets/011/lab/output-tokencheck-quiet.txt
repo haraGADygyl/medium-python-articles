@@ -1,0 +1,6 @@
+token early, busy: 331 reads the replica said were safe, 0 could not find the order (0.00%)
+token after, busy: 509 reads the replica said were safe, 0 could not find the order (0.00%)
+token early, busy: 373 reads the replica said were safe, 0 could not find the order (0.00%)
+token after, busy: 467 reads the replica said were safe, 0 could not find the order (0.00%)
+token early, busy: 507 reads the replica said were safe, 0 could not find the order (0.00%)
+token after, busy: 219 reads the replica said were safe, 0 could not find the order (0.00%)

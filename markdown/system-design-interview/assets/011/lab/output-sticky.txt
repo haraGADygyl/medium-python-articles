@@ -1,0 +1,28 @@
+mode sticky: 24 customers placing orders, 24 browsing, 60 s
+  t= 10.5 s  report: 13 months summed, transaction held open
+  t= 12.2 s  cleanup: deleted 100,000 abandoned carts, VACUUM done
+  t= 12.2 s  vacuum tuples: 100000 removed, 100000 remain, 0 are dead but not yet removable
+  t= 42.4 s  report cancelled: canceling statement due to conflict with recovery
+  replica behind: worst 30.27 s
+  own-order reads: 5,285, sent to primary 1,402 (26.5%), stale 1,832 (34.7%)
+  orders viewed for the full 8 s: 153; shown then gone: 87; never shown: 0
+  stale reads came 4.8 s (median) to 7.8 s (max) after the customer's own order
+  own-order read latency: p50 0.23 ms, p99 0.52 ms
+  orders placed: 177, commit p50 0.83 ms, p99 1.78 ms, max 9.5 ms
+
+   t (s)  replica behind   writer reads  primary  stale  commit max ms  browser reads
+   0-4         0.16 s           67       59      0            1.7            384
+   4-8         0.11 s          234       89      0            9.5            384
+   8-12        0.12 s          382      103      0            1.0            384
+  12-16        3.85 s          384       89     13            1.1            384
+  16-20        7.80 s          384      103    203            1.1            384
+  20-24       11.85 s          384       89    295            1.1            384
+  24-28       15.80 s          384      103    281            1.1            384
+  28-32       19.84 s          382       89    293            1.3            384
+  32-36       23.79 s          383      102    281            0.9            384
+  36-40       27.84 s          383       88    295            1.1            384
+  40-44       30.27 s          384      104    171            1.0            384
+  44-48        0.10 s          383       87      0            1.5            384
+  48-52        0.11 s          384      105      0            1.0            384
+  52-56        0.10 s          384       87      0            1.0            384
+  56-60        0.10 s          383      105      0            0.9            371

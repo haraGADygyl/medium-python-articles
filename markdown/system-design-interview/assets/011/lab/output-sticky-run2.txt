@@ -1,0 +1,28 @@
+mode sticky: 24 customers placing orders, 24 browsing, 60 s
+  t= 10.6 s  report: 13 months summed, transaction held open
+  t= 12.2 s  cleanup: deleted 100,000 abandoned carts, VACUUM done
+  t= 12.2 s  vacuum tuples: 100000 removed, 100000 remain, 0 are dead but not yet removable
+  t= 42.6 s  report cancelled: canceling statement due to conflict with recovery
+  replica behind: worst 30.47 s
+  own-order reads: 5,397, sent to primary 1,430 (26.5%), stale 1,803 (33.4%)
+  orders viewed for the full 8 s: 158; shown then gone: 85; never shown: 0
+  stale reads came 4.8 s (median) to 7.8 s (max) after the customer's own order
+  own-order read latency: p50 0.22 ms, p99 0.49 ms
+  orders placed: 181, commit p50 2.24 ms, p99 4.58 ms, max 5.0 ms
+
+   t (s)  replica behind   writer reads  primary  stale  commit max ms  browser reads
+   0-4         0.13 s          127       88      0            5.0            384
+   4-8         0.11 s          285       75      0            4.6            384
+   8-12        0.11 s          383      117      0            4.2            384
+  12-16        3.80 s          383       74     10            3.4            384
+  16-20        7.80 s          383      117    168            3.8            384
+  20-24       11.80 s          383       75    308            2.8            384
+  24-28       15.80 s          384      117    267            4.4            384
+  28-32       19.81 s          384       75    309            2.5            384
+  32-36       23.81 s          383      117    266            3.9            384
+  36-40       27.81 s          384       75    309            2.5            384
+  40-44       30.47 s          383      117    166            2.9            384
+  44-48        0.11 s          384       74      0            2.4            384
+  48-52        0.11 s          384      118      0            4.9            384
+  52-56        0.11 s          384       74      0            2.4            381
+  56-60        0.11 s          383      117      0            4.0            384

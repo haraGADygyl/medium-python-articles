@@ -1,0 +1,27 @@
+mode token: 24 customers placing orders, 24 browsing, 60 s
+  t= 10.5 s  report: 13 months summed, transaction held open
+  t= 12.2 s  cleanup: deleted 100,000 abandoned carts, VACUUM done
+  t= 12.2 s  vacuum tuples: 100000 removed, 100000 remain, 0 are dead but not yet removable
+  t= 43.1 s  report cancelled: canceling statement due to conflict with recovery
+  replica behind: worst 30.86 s
+  own-order reads: 5,370, sent to primary 2,658 (49.5%), stale 0 (0.0%)
+  orders viewed for the full 8 s: 156; shown then gone: 0; never shown: 0
+  own-order read latency: p50 0.36 ms, p99 0.84 ms
+  orders placed: 180, commit p50 2.38 ms, p99 4.49 ms, max 6.4 ms
+
+   t (s)  replica behind   writer reads  primary  stale  commit max ms  browser reads
+   0-4         0.14 s          102       12      0            3.5            384
+   4-8         0.11 s          289       12      0            4.5            384
+   8-12        0.11 s          384       12      0            2.7            384
+  12-16        3.80 s          384       82      0            5.8            384
+  16-20        7.80 s          383      277      0            2.5            384
+  20-24       11.80 s          384      384      0            2.5            384
+  24-28       15.79 s          383      383      0            3.1            384
+  28-32       19.79 s          384      384      0            2.6            384
+  32-36       23.78 s          384      384      0            6.4            384
+  36-40       27.78 s          383      383      0            2.4            384
+  40-44       30.86 s          379      297      0            3.1            384
+  44-48        0.11 s          383       12      0            2.9            384
+  48-52        0.11 s          380       12      0            2.5            384
+  52-56        0.11 s          384       12      0            2.9            384
+  56-60        0.11 s          384       12      0            2.5            384

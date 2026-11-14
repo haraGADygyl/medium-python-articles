@@ -1,0 +1,15 @@
+gantt
+    title One report on the replica, one cleanup job, one customer
+    dateFormat HH:mm:ss
+    axisFormat %M:%S
+    tickInterval 10second
+    section Replica
+    report holds its snapshot      :active, r1, 00:00:10, 00:00:42
+    replay paused, 30 s            :crit, r2, 00:00:12, 00:00:42
+    report cancelled               :milestone, r3, 00:00:42, 0s
+    section Primary
+    cleanup VACUUMs carts          :milestone, p1, 00:00:12, 0s
+    section Customer
+    order placed                   :milestone, c0, 00:00:20, 0s
+    sticky, primary                :done, c1, 00:00:20, 00:00:22
+    order gone                     :crit, c2, 00:00:22, 00:00:28

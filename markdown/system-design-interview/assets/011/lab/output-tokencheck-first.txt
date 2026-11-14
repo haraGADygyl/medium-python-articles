@@ -1,0 +1,5 @@
+# First run of tokencheck.py, 15:2x, fresh drive (console output, copied verbatim)
+token early, idle: 59,011 reads the replica said were safe, 0 could not find the order (0.00%)
+token early, busy: 36,748 reads the replica said were safe, 6 could not find the order (0.02%)
+token after, idle: 51,431 reads the replica said were safe, 0 could not find the order (0.00%)
+token after, busy: 7,631 reads the replica said were safe, 0 could not find the order (0.00%)

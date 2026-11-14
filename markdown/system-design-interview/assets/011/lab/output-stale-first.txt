@@ -1,0 +1,10 @@
+# First run of stale.py, 15:15, fresh drive (console output, copied verbatim)
+idle: 16 customers, 20 s, 39,941 orders placed and read back
+  stale reads (order not found on replica): 36,065 (90.3%)
+  time until it appeared: p50 1.44 ms, p99 3.70 ms, max 17.23 ms
+  replica behind, sampled every 100 ms: p50 0 KB, max 4 KB
+bulk import: 141 batches of 50,000 rows
+busy: 16 customers, 20 s, 12,138 orders placed and read back
+  stale reads (order not found on replica): 11,988 (98.8%)
+  time until it appeared: p50 9.44 ms, p99 92.25 ms, max 218.14 ms
+  replica behind, sampled every 100 ms: p50 723 KB, max 16104 KB

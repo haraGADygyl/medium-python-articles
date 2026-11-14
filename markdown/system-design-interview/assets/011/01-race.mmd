@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    participant C as Customer
+    participant A as App
+    participant P as Primary
+    participant R as Replica
+    C->>A: place order
+    A->>P: INSERT, COMMIT
+    P-->>A: order 1000042
+    A->>R: SELECT order 1000042
+    R-->>A: no rows
+    A-->>C: "order not found"
+    P-)R: WAL with the commit
+    Note over R: replayed ~1.5 ms<br/>after the COMMIT
