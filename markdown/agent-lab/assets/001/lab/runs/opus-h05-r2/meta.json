@@ -1,0 +1,119 @@
+{
+  "run_id": "opus-h05-r2",
+  "task": "h05",
+  "tier": "two-file bug",
+  "baseline": false,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "opus",
+  "prompt": "Bug report from a user: \"On my GPS track, which has a lot of small up-and-down noise, the days from `trailhead plan` add up to 9h 40m, but `trailhead summary` says 7h 05m for the same file. The README says the two should agree.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 46.7,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 8,
+  "duration_ms": 44601,
+  "duration_api_ms": 41560,
+  "api_equivalent_usd": 0.23724420000000002,
+  "usage": {
+    "input_tokens": 15,
+    "cache_creation_input_tokens": 17529,
+    "cache_read_input_tokens": 196661,
+    "output_tokens": 2881,
+    "output_tokens_details": {
+      "thinking_tokens": 444
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 17529,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 1,
+        "output_tokens": 653,
+        "cache_read_input_tokens": 29263,
+        "cache_creation_input_tokens": 1029,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1029
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 15,
+      "outputTokens": 2881,
+      "cacheReadInputTokens": 196661,
+      "cacheCreationInputTokens": 17529,
+      "webSearchRequests": 0,
+      "costUSD": 0.23724420000000002,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 444,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 17529,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 7
+  },
+  "bash_commands": [
+    "git ls-files; cat README* | head -80",
+    "cat src/trailhead/plan.py src/trailhead/elevation.py src/trailhead/pace.py; grep -n \"gain\\|naismith\\|split_days\" src/trailhead/report.py src/trailhead/cli.py",
+    "grep -rn \"leg_hours\\|threshold\" src tests | grep -v \"elevation.py\"; sed -n 30,55p src/trailhead/report.py",
+    "sed -n 20,40p tests/test_pace.py; cat tests/conftest.py; cat tests/test_plan.py | head -40",
+    "python - <<'EOF'\nimport re,pathlib\np=pathlib.Path(\"src/trailhead/pace.py\"); s=p.read_text()\ns=s.replace(\"from trailhead.track import Track\\n\",\"from trailhead.elevation import counted_changes\\nfrom trailhead.track import Track\\n\")\nold=s[s.index(\"def leg_hours\"):]\nnew='''def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:\n    \"\"\"Naismith time for every leg.\n\n    A leg's climb is the ascent ``elevation.counted_changes`` credits to it (with the\n    default threshold), so small GPS jitter is ignored and the legs add up to the\n    summary's walking time for the same track and fitness.\n    \"\"\"\n    changes = counted_changes([point.ele for point in track.points])\n    return [\n        naismith_hours(km, max(change, 0.0), fitness)\n        for km, change in zip(track.leg_lengths_km(), changes, strict=True)\n    ]\n'''\np.write_text(s.replace(old,new))\nEOF\ncat >> tests/test_plan.py <<'EOF'\n\n\ndef test_days_add_up_to_the_summary_on_a_noisy_track(make_track):\n    from trailhead.report import summarise\n\n    # 1 m up-and-down jitter on every leg, plus a real 300 m climb in 2 m steps.\n    elevations = [1000 + (index % 2) for index in range(40)]\n    elevations += [elevations[-1] + 2 * step for step in range(1, 151)]\n    track = make_track(*[(0, index * 0.01, ele) for index, ele in enumerate(elevations)])\n    for fitness in (1.0, 1.3):\n        days = split_days(track, max_hours_per_day=1.5, fitness=fitness)\n        assert len(days) > 1\n        total = sum(hours for *_, hours in days)\n        assert total == pytest.approx(summarise(track, fitness).hours, abs=0.01 * len(days))\nEOF\npython -m pytest -q 2>&1 | tail -3; ruff check; mypy 2>&1 | tail -1",
+    "ruff check --fix -q && ruff check && git stash push src -q && python -m pytest -q tests/test_plan.py 2>&1 | tail -2; git stash pop -q && python -m pytest -q 2>&1 | tail -1; git diff --stat",
+    "python - <<'EOF'\nimport pathlib\np=pathlib.Path(\"tests/test_plan.py\"); s=p.read_text()\ns=s.replace(\"\"\"    elevations = [1000 + (index % 2) for index in range(40)]\n    elevations += [elevations[-1] + 2 * step for step in range(1, 151)]\n    track = make_track(*[(0, index * 0.01, ele) for index, ele in enumerate(elevations)])\"\"\",\n\"\"\"    elevations = [1000 + (index % 2) for index in range(300)]\n    elevations += [elevations[-1] + 2 * step for step in range(1, 151)]\n    track = make_track(*[(0, index * 0.001, ele) for index, ele in enumerate(elevations)])\"\"\")\ns=s.replace(\"# 1 m up-and-down jitter on every leg\",\"# 1 m up-and-down jitter on 300 legs (150 m of noise)\")\np.write_text(s)\nEOF\ngit stash push src -q && python -m pytest -q tests/test_plan.py 2>&1 | grep -E \"assert|passed|failed\"; git stash pop -q && python -m pytest -q 2>&1 | tail -1; ruff check -q; mypy | tail -1"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 24,
+    "lines_removed": 4,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 24,
+    "lines_removed": 4,
+    "own_suite_pass_as_left": true
+  }
+}

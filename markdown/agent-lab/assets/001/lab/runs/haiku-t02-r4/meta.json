@@ -1,0 +1,145 @@
+{
+  "run_id": "haiku-t02-r4",
+  "task": "t02",
+  "tier": "tests",
+  "baseline": true,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "`src/trailhead/pace.py` has no tests. Write `tests/test_pace.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 52.5,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 11,
+  "duration_ms": 49163,
+  "duration_api_ms": 47201,
+  "api_equivalent_usd": 0.01337115,
+  "usage": {
+    "input_tokens": 22,
+    "cache_creation_input_tokens": 26601,
+    "cache_read_input_tokens": 346925,
+    "output_tokens": 9159,
+    "output_tokens_details": {
+      "thinking_tokens": 3935
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 26601,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 513,
+        "cache_read_input_tokens": 38811,
+        "cache_creation_input_tokens": 553,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 553
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 22,
+      "outputTokens": 9159,
+      "cacheReadInputTokens": 346925,
+      "cacheCreationInputTokens": 26601,
+      "webSearchRequests": 0,
+      "costUSD": 0.01337115,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 3935,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 26601,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 7,
+    "Write": 2,
+    "Edit": 1
+  },
+  "bash_commands": [
+    "git status --short && ls -la && cat src/trailhead/pace.py && echo ---README--- && cat README* && echo ---TESTS--- && ls tests 2>/dev/null; cat pyproject.toml setup.cfg pytest.ini tox.ini 2>/dev/null",
+    "ls src/trailhead && cat src/trailhead/track.py src/trailhead/elevation.py && echo ---CONFTEST--- && cat tests/conftest.py && echo ---GEO--- && head -60 tests/test_geo.py && echo ---ELEV--- && head -40 tests/test_elevation.py",
+    "grep -rn \"naismith\\|leg_hours\\|tobler\" src tests | grep -v \"^src/trailhead/pace.py\"; python3 --version; python3 -m pytest --version 2>&1 | head -2",
+    "python3 -m pytest tests/test_pace.py -q 2>&1 | tail -30; (ruff check tests/test_pace.py 2>&1 || python3 -m ruff check tests/test_pace.py 2>&1) | tail -5",
+    "ruff check tests/test_pace.py --diff 2>&1 | head -20",
+    "ruff check --fix tests/test_pace.py && ruff format --check tests/test_pace.py; python3 -m pytest -q 2>&1 | tail -3",
+    "ruff format tests/test_pace.py && ruff check tests/test_pace.py && ruff format --check tests/test_pace.py && python3 -m pytest tests/test_pace.py -q 2>&1 | tail -2 && git status --short -- src tests"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_pace.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "..........................                                               [100%]\n26 passed in 0.04s\n",
+    "src_changed": [],
+    "killed": [
+      "flat speed 4 km/h",
+      "500 m per hour climb",
+      "fitness multiplies",
+      "zero fitness allowed",
+      "negative ascent allowed",
+      "tobler peak on the wrong side",
+      "leg descent counted",
+      "leg fitness dropped"
+    ],
+    "survived": [],
+    "kills": 8,
+    "mutants": 8,
+    "changed": [
+      "A tests/test_pace.py"
+    ],
+    "lines_added": 141,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_pace.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "..........................                                               [100%]\n26 passed in 0.04s\n",
+    "src_changed": [],
+    "killed": [
+      "flat speed 4 km/h",
+      "500 m per hour climb",
+      "fitness multiplies",
+      "zero fitness allowed",
+      "negative ascent allowed",
+      "tobler peak on the wrong side",
+      "leg descent counted",
+      "leg fitness dropped"
+    ],
+    "survived": [],
+    "kills": 8,
+    "mutants": 8,
+    "changed": [
+      "A tests/test_pace.py"
+    ],
+    "lines_added": 141,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

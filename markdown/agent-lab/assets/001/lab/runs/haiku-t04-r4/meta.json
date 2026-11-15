@@ -1,0 +1,149 @@
+{
+  "run_id": "haiku-t04-r4",
+  "task": "t04",
+  "tier": "tests",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "`src/trailhead/plan.py` has no tests. Write `tests/test_plan.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 71.2,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 12,
+  "duration_ms": 67665,
+  "duration_api_ms": 66789,
+  "api_equivalent_usd": 0.01584315,
+  "usage": {
+    "input_tokens": 16,
+    "cache_creation_input_tokens": 32241,
+    "cache_read_input_tokens": 242685,
+    "output_tokens": 13933,
+    "output_tokens_details": {
+      "thinking_tokens": 8919
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 32241,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 945,
+        "cache_read_input_tokens": 44526,
+        "cache_creation_input_tokens": 478,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 478
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 16,
+      "outputTokens": 13933,
+      "cacheReadInputTokens": 242685,
+      "cacheCreationInputTokens": 32241,
+      "webSearchRequests": 0,
+      "costUSD": 0.01584315,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 8919,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 32241,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 3,
+    "Read": 6,
+    "Grep": 1,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git status --short && ls -la && find . -path ./.git -prune -o -type f -print | head -100 && cat src/trailhead/plan.py && echo ---- && cat README* 2>/dev/null; echo ----; cat pyproject.toml setup.cfg pytest.ini tox.ini 2>/dev/null",
+    "for f in src/trailhead/pace.py src/trailhead/track.py src/trailhead/elevation.py tests/conftest.py tests/test_pace.py; do echo \"==== $f\"; cat \"$f\"; done",
+    "python -m pytest tests/test_plan.py -q 2>&1 | tail -30; echo \"--- full suite\"; python -m pytest -q 2>&1 | tail -5; echo \"--- ruff\"; (ruff check tests/test_plan.py 2>&1 || python -m ruff check tests/test_plan.py 2>&1) | tail -15"
+  ],
+  "permission_denials": [
+    {
+      "command": "for f in src/trailhead/pace.py src/trailhead/track.py src/trailhead/elevation.py tests/conftest.py tests/test_pace.py; do echo \"==== $f\"; cat \"$f\"; done",
+      "description": "Read pace, track, elevation modules and test conventions"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_plan.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "..................                                                       [100%]\n18 passed in 0.03s\n",
+    "src_changed": [],
+    "killed": [
+      "a day that exactly fills the limit is closed early",
+      "days numbered from 0",
+      "last day stops one point short",
+      "hours rounded to 0.1",
+      "zero limit allowed",
+      "fitness dropped",
+      "minutes not zero-padded",
+      "minutes truncated",
+      "next day starts one point late"
+    ],
+    "survived": [],
+    "kills": 9,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_plan.py"
+    ],
+    "lines_added": 135,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_plan.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "..................                                                       [100%]\n18 passed in 0.03s\n",
+    "src_changed": [],
+    "killed": [
+      "a day that exactly fills the limit is closed early",
+      "days numbered from 0",
+      "last day stops one point short",
+      "hours rounded to 0.1",
+      "zero limit allowed",
+      "fitness dropped",
+      "minutes not zero-padded",
+      "minutes truncated",
+      "next day starts one point late"
+    ],
+    "survived": [],
+    "kills": 9,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_plan.py"
+    ],
+    "lines_added": 135,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

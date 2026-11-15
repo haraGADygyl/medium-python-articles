@@ -1,0 +1,25 @@
+mypy now passes with no errors, and all 50 tests pass, including two new ones. The only remaining complaint is a `ruff format` line in `track.py` that I didn't touch; I've left it alone.
+
+## What was wrong
+
+`Point.ele` is `float | None` because the README says a blank elevation means the GPS lost it. The code passed those `None` values straight into arithmetic, `max`/`min`, and `counted_changes`, which expects floats. The README also defines what should happen in that case (take the nearest earlier elevation, or else the nearest later one), but nothing implemented it.
+
+## The fix
+
+- **`track.py`**: new `Track.elevations()` method. It applies the README rule and returns `list[float]`. If no point has an elevation, it raises `TrackError`.
+- **`elevation.py`**: `highest_and_lowest` and `steepest_grade` now use `track.elevations()`.
+- **`report.py`** and **`pace.py`**: pass `track.elevations()` instead of the raw `ele` values.
+
+No `# type: ignore`, `cast`, `Any`, or config changes were used.
+
+## Choices to check
+
+- **All-missing tracks now fail.** A track with no elevations at all raises `TrackError`. Before, it would have crashed with an unclear error. The README doesn't say what should happen here, so tell me if you'd prefer a different behaviour.
+- **Tests added** in `tests/test_track.py` for the gap-filling rule and the all-missing case.
+
+## Verification
+
+- `mypy src`: "Success: no issues found in 9 source files"
+- `pytest`: 50 passed
+- `ruff check src tests`: all checks passed
+- `ruff format --check`: flags `src/trailhead/track.py` lines 66–68, which I didn't change. Running `ruff format` would fix it.

@@ -1,0 +1,20 @@
+I added `tests/test_plan.py` with 31 tests. The full suite passes (76 tests), and `ruff check` and `ruff format --check` are clean on the new file. I didn't touch anything under `src/`.
+
+They cover the behaviour in the README and docstrings:
+
+- **`split_days`:**
+  - A short track is one day, and days split between legs.
+  - Day numbers start at 1, point indexes start at 0, and consecutive days share a boundary point.
+  - Hours are rounded to 0.01, and no day goes over the limit unless a single leg does.
+  - A leg that is over the limit on its own gets its own day, including when it is the first leg.
+  - Climbs count toward a day's time and descents add nothing.
+  - GPS jitter under the 3 m threshold adds no climb, and a 600 m climb in 1 m steps still counts in full.
+  - `fitness` changes the number of days.
+  - A limit of zero or less, or a fitness of zero or less, raises `ValueError`.
+  - The days of a plan add up to the Naismith time for the whole track, within rounding, at several fitness levels.
+- **`describe_plan`:**
+  - It gives one line per day, in the docstring format.
+  - The README durations come out as `5h 07m`, `0h 45m` and `12h 00m`.
+  - Minutes round to the nearest and carry into the hour (`1.999` gives `2h 00m`), and an empty plan gives no lines.
+
+My first run had three failures, all mistakes in my tests rather than in `plan.py`. I had a wrong expected fitness value, a wrong expected minute count, and an exact-limit test that tripped on floating-point noise. I fixed the tests, and I found no bugs in `plan.py`.

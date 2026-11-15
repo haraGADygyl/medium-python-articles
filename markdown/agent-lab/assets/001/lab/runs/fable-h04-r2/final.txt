@@ -1,0 +1,7 @@
+Fixed: the duration was being truncated, not rounded. `format_summary` computed minutes with `int(summary.hours * 60)`, which drops the fraction, so 44.88 minutes displayed as `0h 44m`; it now shows `0h 45m`.
+
+The same truncation was in `describe_plan` (the `trailhead plan` day lines), so I fixed both by routing them through one new helper, `format_duration` in `src/trailhead/pace.py`. It rounds the total minutes before splitting into hours and minutes, so 11.999 hours shows as `12h 00m` rather than `11h 60m`. Exact half-minutes round up.
+
+I added tests for the helper, including the 3.74 km case from the report; the full suite, `ruff check` and `mypy` pass.
+
+One thing I left alone: `split_days` rounds each day's hours to 0.01 (0.6 of a minute) before they are displayed, as its docstring says. That means a plan day can still occasionally show a minute off from the unrounded time — for example a true 44.7 minutes becomes 0.74 h and shows as `0h 44m`. Fixing that means changing what `split_days` returns, which existing tests pin, so say if you want it.

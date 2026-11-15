@@ -1,0 +1,13 @@
+The plan and summary now agree on your kind of track. The cause was in `pace.leg_hours`: it gave each leg its raw elevation rise, while the summary only counts changes of at least 3 m. Every ±1–2 m jitter step on the way up or down was therefore added to the plan's climb time.
+
+**Reproduction:** I built a synthetic track with a 0.2 m-per-step climb and ±2 m noise. The summary said 23h 01m, and the plan's days summed to about 24h 43m.
+
+**Fix** (`src/trailhead/pace.py`): `leg_hours` now takes each leg's climb from `elevation.counted_changes`, the same function `gain_and_loss` uses. Because Naismith's rule is linear, the legs now add up to the summary time. On the same track the days come to 23h 00m against the summary's 23h 01m, a difference from rounding only.
+
+**Choices I made beyond the bug itself:**
+- `split_days` and `leg_hours` take a `threshold` argument that defaults to 3 m.
+- `plan` gained a `--threshold` flag to match `summary`. Without it, a user who changed the threshold on `summary` would get disagreeing numbers again. Say if you'd rather not have the flag.
+
+**Tests:** I added `test_days_add_up_to_the_summary_on_a_jittery_track` to `tests/test_plan.py`. It fails on the old source and passes on the fix. The full suite passes (48 tests), and `ruff check` and `mypy` are clean.
+
+Nothing is committed. The changes are in `src/trailhead/{pace,plan,cli}.py` and `tests/test_plan.py`.

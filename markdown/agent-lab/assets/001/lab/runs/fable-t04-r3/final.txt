@@ -1,0 +1,25 @@
+I wrote `tests/test_plan.py` with 44 tests; the full suite (88 tests) passes, `ruff check` is clean on `tests/`, and nothing under `src/` was touched.
+
+The tests found no bug in `plan.py`: every documented behaviour I checked holds.
+
+What the tests cover:
+
+- **Grouping:**
+  - a short track is one day, and a two-point track works;
+  - a new day starts when the next leg would go over the limit;
+  - days count from 1 and share their boundary points;
+  - the default limit is 7 hours;
+  - a day may reach the limit exactly;
+  - no day goes over the limit;
+  - a leg over the limit is a day by itself, whether first, in the middle, or every leg.
+- **Timing:**
+  - climbing adds an hour per 600 m and descent adds nothing;
+  - jitter under 3 m adds no time;
+  - a climb in 1 m steps is credited where it counts;
+  - the days add up to the summary time across several fitness values and limits;
+  - fitness divides the time and moves the split points;
+  - hours are rounded to 0.01.
+- **Errors:** a zero or negative limit and a zero or negative fitness raise `ValueError`.
+- **`describe_plan`:** the docstring example, the README's duration examples, minutes never showing as 60, one line per day in order, and an empty plan.
+
+One thing the tests deliberately do not assert: the plan and the summary can display different times for the same walk. `split_days` rounds each day to 0.01 h, as its docstring says, before `describe_plan` rounds to minutes. For a flat 222 m single-leg track, the plan shows `0h 02m` and the summary shows `0h 03m`. That follows from the documented rounding, so it is not a code bug, but it sits awkwardly with the README's "rounded to the nearest minute". The "add up to the summary time" tests therefore allow 0.005 h of tolerance per day.

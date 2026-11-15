@@ -1,0 +1,6 @@
+`mypy` now passes with no issues in 9 source files, and all 47 tests pass. I made two changes:
+
+- **`src/trailhead/geo.py`:** I annotated `initial_bearing` as `(lat1: float, lon1: float, lat2: float, lon2: float) -> float`. That fixed the missing-annotation error and the untyped-call error in `report.py`.
+- **`src/trailhead/report.py`:** I changed `Summary.heading` from `str` to `str | None`. `_heading()` returns `None` on purpose when the start and finish are within `LOOP_RADIUS_KM`, so the field type was wrong.
+
+`format_summary` prints `heading   None` for loop tracks. I left that alone because it's outside the mypy fix and no test covers it. You might want it to print something like "loop" instead.

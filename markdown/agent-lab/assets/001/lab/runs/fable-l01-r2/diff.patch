@@ -1,0 +1,36 @@
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index 6a09b90..8f75e8b 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -20,7 +20,7 @@ def naismith_hours(distance_km: float, ascent_m: float, fitness: float = 1.0) ->
+     if fitness <= 0:
+         raise ValueError("fitness must be positive")
+     hours = (distance_km / FLAT_SPEED_KMH + ascent_m / CLIMB_M_PER_HOUR) / fitness
+-    return distance_km / FLAT_SPEED_KMH + ascent_m / CLIMB_M_PER_HOUR
++    return hours
+ 
+ 
+ def tobler_kmh(grade: float) -> float:
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index 3a66870..b128fa8 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -5,7 +5,6 @@ from itertools import pairwise
+ from pathlib import Path
+ 
+ from trailhead.geo import haversine_km
+-import os
+ 
+ FEET_TO_METRES = 0.3048
+ HEADER = ["lat", "lon", "ele"]
+@@ -74,8 +73,8 @@ def _parse_point(line: str, number: int) -> Point:
+         raise TrackError(f"line {number}: expected 3 fields, got {len(fields)}")
+     try:
+         lat, lon, ele = (float(part) for part in fields)
+-    except:
+-        raise TrackError(f"line {number}: not a number")
++    except ValueError as err:
++        raise TrackError(f"line {number}: not a number") from err
+     if not -90 <= lat <= 90 or not -180 <= lon <= 180:
+         raise TrackError(f"line {number}: coordinates out of range")
+     return Point(lat, lon, ele)

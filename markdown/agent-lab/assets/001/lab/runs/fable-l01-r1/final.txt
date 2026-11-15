@@ -1,0 +1,5 @@
+`ruff check` now passes and the 46 tests still pass. One of the fixes changes behaviour, so check that one.
+
+- **`src/trailhead/pace.py` (unused `hours`)**: `naismith_hours` computed the fitness-scaled time and then returned the unscaled one, so `fitness` was silently ignored. I made it return the scaled value, as the docstring and README describe. This means `--fitness` now actually changes `summary` and `plan` output for any value other than 1.0. No existing test covers a non-default fitness, and I didn't add one.
+- **`src/trailhead/track.py` (unused `import os`)**: removed, which also clears the import-order complaint.
+- **`src/trailhead/track.py` (bare `except`)**: narrowed to `except ValueError as err` and re-raised with `from err`. The `TrackError` message is unchanged.

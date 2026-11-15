@@ -1,0 +1,115 @@
+diff --git a/src/trailhead/cli.py b/src/trailhead/cli.py
+index 0312f0a..33c2c25 100644
+--- a/src/trailhead/cli.py
++++ b/src/trailhead/cli.py
+@@ -23,6 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
+     plan.add_argument("file")
+     plan.add_argument("--max-hours", type=float, default=DEFAULT_MAX_HOURS)
+     plan.add_argument("--fitness", type=float, default=1.0)
++    plan.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD_M)
+     return parser
+ 
+ 
+@@ -36,6 +37,7 @@ def main(argv: Sequence[str] | None = None) -> int:
+     if args.command == "summary":
+         print(format_summary(summarise(track, args.fitness, args.threshold)))
+     else:
+-        for line in describe_plan(split_days(track, args.max_hours, args.fitness)):
++        days = split_days(track, args.max_hours, args.fitness, args.threshold)
++        for line in describe_plan(days):
+             print(line)
+     return 0
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index e36d18e..4885e86 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -1,8 +1,8 @@
+ """Walking-time estimates."""
+ 
+-from itertools import pairwise
+ from math import exp
+ 
++from trailhead.elevation import DEFAULT_THRESHOLD_M, counted_changes
+ from trailhead.track import Track
+ 
+ FLAT_SPEED_KMH = 5.0
+@@ -31,9 +31,16 @@ def tobler_kmh(grade: float) -> float:
+     return 6.0 * exp(-3.5 * abs(grade + 0.05))
+ 
+ 
+-def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:
+-    """Naismith time for every leg, counting the leg's own climb."""
++def leg_hours(
++    track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M
++) -> list[float]:
++    """Naismith time for every leg, counting the climb the summary credits to it.
++
++    The climb is the one ``elevation.counted_changes`` assigns to the leg, so the
++    legs add up to the summary's time for the same track, threshold and fitness.
++    """
++    changes = counted_changes([point.ele for point in track.points], threshold)
+     return [
+-        naismith_hours(km, max(b.ele - a.ele, 0.0), fitness)
+-        for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True)
++        naismith_hours(km, max(change, 0.0), fitness)
++        for km, change in zip(track.leg_lengths_km(), changes, strict=True)
+     ]
+diff --git a/src/trailhead/plan.py b/src/trailhead/plan.py
+index d5cf5b1..64dc698 100644
+--- a/src/trailhead/plan.py
++++ b/src/trailhead/plan.py
+@@ -1,5 +1,6 @@
+ """Splitting a track into days of walking."""
+ 
++from trailhead.elevation import DEFAULT_THRESHOLD_M
+ from trailhead.pace import leg_hours
+ from trailhead.track import Track
+ 
+@@ -7,19 +8,23 @@ DEFAULT_MAX_HOURS = 7.0
+ 
+ 
+ def split_days(
+-    track: Track, max_hours_per_day: float = DEFAULT_MAX_HOURS, fitness: float = 1.0
++    track: Track,
++    max_hours_per_day: float = DEFAULT_MAX_HOURS,
++    fitness: float = 1.0,
++    threshold: float = DEFAULT_THRESHOLD_M,
+ ) -> list[tuple[int, int, int, float]]:
+     """Group consecutive legs into days of walking.
+ 
+     Returns ``(day, first_point, last_point, hours)`` tuples: days count from 1,
+     point indexes from 0, hours rounded to 0.01. A day never goes over
+-    ``max_hours_per_day`` unless a single leg on its own does.
++    ``max_hours_per_day`` unless a single leg on its own does. ``threshold`` is the
++    ascent threshold of the summary, so the days add up to the summary's time.
+     """
+     if max_hours_per_day <= 0:
+         raise ValueError("max_hours_per_day must be positive")
+     days: list[tuple[int, int, int, float]] = []
+     first, used = 0, 0.0
+-    for index, hours in enumerate(leg_hours(track, fitness)):
++    for index, hours in enumerate(leg_hours(track, fitness, threshold)):
+         if used > 0 and used + hours > max_hours_per_day:
+             days.append((len(days) + 1, first, index, round(used, 2)))
+             first, used = index, 0.0
+diff --git a/tests/test_plan.py b/tests/test_plan.py
+index 03b3f5d..a1d1dd1 100644
+--- a/tests/test_plan.py
++++ b/tests/test_plan.py
+@@ -28,6 +28,16 @@ def test_one_long_leg_is_a_day_on_its_own(make_track):
+     assert [(day, first, last) for day, first, last, _ in days] == [(1, 0, 1), (2, 1, 2)]
+ 
+ 
++def test_jitter_is_not_counted_per_leg(make_track):
++    # Points wobble by +/-1 m (2 m swings, under the 3 m threshold) around a flat
++    # line. The summary's rule ignores that jitter, so the plan must not add up
++    # each leg's raw rise instead.
++    wobble = [1.0, -1.0] * 20
++    track = make_track(*[(0, index * 0.001, 1000 + w) for index, w in enumerate(wobble)])
++    total = sum(hours for *_, hours in split_days(track, max_hours_per_day=100))
++    assert total == pytest.approx(track.length_km() / 5, abs=0.01)
++
++
+ def test_invalid_limit(five_flat_hours):
+     with pytest.raises(ValueError):
+         split_days(five_flat_hours, max_hours_per_day=0)

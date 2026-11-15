@@ -1,0 +1,9 @@
+I've fixed it, and all 46 tests pass.
+
+**Cause:** `steepest_grade()` in `src/trailhead/elevation.py` returned the gradient as a fraction (rise over run, rounded to 3 places), so 18 m over 100 m came out as `0.18`. The docstring and README both say percent. The bug stayed hidden because `report.py` multiplied the result by 100 itself, which is why the report output looked right.
+
+**Fix:**
+- `elevation.py`: `steepest_grade()` now returns `round(steepest * 100, 1)`, which is a percentage rounded to 0.1 as documented.
+- `report.py`: I removed the `* 100` and the extra `round`, so the report doesn't scale the value twice.
+
+I didn't add a test that calls `steepest_grade()` directly. The existing report test (`6.0%`) still passes, but it only covers the report path. A direct test for the 18 m over 100 m case would be worth adding.

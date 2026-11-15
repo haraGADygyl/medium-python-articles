@@ -1,0 +1,15 @@
+You can now pick Tobler's hiking function instead of Naismith's rule, in the library and on the command line. All 59 tests pass (47 old, 12 new), `ruff check`, `ruff format` and `mypy` are clean, and with Naismith the output is the same as before. Nothing is committed.
+
+**What changed**
+- **`pace.py`**: added `PACES`, `DEFAULT_PACE`, a `check_pace` helper that raises the `ValueError`, and `tobler_hours(distance_km, rise_m, fitness)`. That function implements your rule, a zero-length leg returns 0, and it rejects negative distance or fitness ≤ 0 just like `naismith_hours`. `leg_hours` now takes `pace`.
+- **`split_days`** and **`summarise`** take `pace` and check it first. Under Tobler the summary time is the sum of the leg times, so a Tobler plan adds up to the Tobler summary.
+- **CLI**: both commands accept `--pace {naismith,tobler}`, defaulting to `naismith`.
+- **README**: added a usage example and a "Choosing the pace" section.
+
+`pace` is an ordinary argument placed after the existing ones, so it can be passed by keyword or by position.
+
+**Decisions for you**
+- **Elevation change:** for Tobler I use each leg's actual change (end minus start). Naismith instead uses the 3 m-threshold "counted" climb. This matches how `steepest_grade` measures grade, and the README says so. As a result, `--threshold` only changes the ascent and descent figures under Tobler, not the time.
+- **Noisy GPS data:** Tobler blows up on very short legs with a big elevation change. For example, 1 cm across and 3 m up is a grade of 300. The speed then comes out as 0 and you get a `ZeroDivisionError`, or else an absurdly long time. I followed your spec as written and didn't add a cap or skip such legs, but you may want to handle this.
+
+On the 2.2 km test ridge, the summary time drops from 0h 36m (Naismith) to 0h 29m (Tobler).

@@ -1,0 +1,127 @@
+{
+  "run_id": "haiku-h05-r3",
+  "task": "h05",
+  "tier": "two-file bug",
+  "baseline": false,
+  "repeat": 3,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"On my GPS track, which has a lot of small up-and-down noise, the days from `trailhead plan` add up to 9h 40m, but `trailhead summary` says 7h 05m for the same file. The README says the two should agree.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 40.4,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 12,
+  "duration_ms": 38305,
+  "duration_api_ms": 35589,
+  "api_equivalent_usd": 0.011047620000000001,
+  "usage": {
+    "input_tokens": 22,
+    "cache_creation_input_tokens": 23952,
+    "cache_read_input_tokens": 318302,
+    "output_tokens": 6144,
+    "output_tokens_details": {
+      "thinking_tokens": 1366
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 23952,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 902,
+        "cache_read_input_tokens": 36159,
+        "cache_creation_input_tokens": 556,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 556
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 22,
+      "outputTokens": 6144,
+      "cacheReadInputTokens": 318302,
+      "cacheCreationInputTokens": 23952,
+      "webSearchRequests": 0,
+      "costUSD": 0.011047620000000001,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 1366,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 23952,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 9,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && cat README* 2>/dev/null | head -200",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h05-r3/src/trailhead && cat elevation.py plan.py && grep -n \"gain_and_loss\\|ascent\\|naismith\" -n *.py",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h05-r3 && cat src/trailhead/pace.py && sed -n 1,70p src/trailhead/report.py && cat tests/test_plan.py && grep -n \"leg_hours\" -r src tests",
+    "cat src/trailhead/cli.py && sed -n 20,40p tests/test_pace.py && cat tests/conftest.py && python -m pytest -q 2>&1 | tail -3",
+    "mkdir -p $TMPDIR/jitter && python3 -c \"\nimport random\nrandom.seed(1)\nlines=['# name: jitter','# units: m','lat,lon,ele']\nstep=0.0005\nfor i in range(4000):\n    ele=1000+ (i/4000)*300 + random.uniform(-1.5,1.5)\n    lines.append(f'0,{i*step:.6f},{ele:.2f}')\nopen('$TMPDIR/jitter/walk.csv','w').write('\\n'.join(lines)+'\\n')\n\" && PYTHONPATH=src python3 -m trailhead summary $TMPDIR/jitter/walk.csv && PYTHONPATH=src python3 -m trailhead plan $TMPDIR/jitter/walk.csv",
+    "python3 - <<'EOF'\np='src/trailhead/pace.py'\ns=open(p).read()\ns=s.replace(\"from itertools import pairwise\\nfrom math import exp\",\"from math import exp\")\ns=s.replace(\"    climbs = [max(change, 0.0) for change in counted_changes([p.ele for p in track.points], threshold)]\\n\",\n\"    changes = counted_changes([point.ele for point in track.points], threshold)\\n    climbs = [max(change, 0.0) for change in changes]\\n\")\nopen(p,'w').write(s)\nEOF\ncat >> tests/test_pace.py <<'EOF'\n\n\ndef test_leg_hours_ignores_jitter_like_the_summary(make_track):\n    # Up and down 1 m every leg, then a real 10 m climb: only the climb counts.\n    track = make_track(\n        (0, 0, 1000), (0, 0.001, 1001), (0, 0.002, 1000), (0, 0.003, 1001), (0, 0.004, 1010)\n    )\n    hours = leg_hours(track)\n    km = track.leg_lengths_km()\n    assert sum(hours) == pytest.approx(sum(km) / 5 + 10 / 600, abs=1e-9)\nEOF\npython -m pytest -q 2>&1 | tail -3; ruff check 2>&1 | tail -3; mypy 2>&1 | tail -2; PYTHONPATH=src python3 -m trailhead summary $TMPDIR/jitter/walk.csv | grep time; PYTHONPATH=src python3 -m trailhead plan $TMPDIR/jitter/walk.csv | python3 -c \"\nimport sys,re\nt=0\nfor l in sys.stdin:\n    h,m=map(int,re.search(r'(\\d+)h (\\d+)m',l).groups()); t+=h*60+m\nprint('plan total', t//60, 'h', t%60, 'm')\"",
+    "echo $TMPDIR; ls $TMPDIR/jitter",
+    "python3 - <<'EOF'\np='src/trailhead/pace.py'\ns=open(p).read()\ns=s.replace(\"from itertools import pairwise\\nfrom math import exp\",\"from math import exp\")\ns=s.replace(\"    climbs = [max(change, 0.0) for change in counted_changes([p.ele for p in track.points], threshold)]\\n\",\n\"    changes = counted_changes([point.ele for point in track.points], threshold)\\n    climbs = [max(change, 0.0) for change in changes]\\n\")\nopen(p,'w').write(s)\nEOF\ncat >> tests/test_pace.py <<'EOF'\n\n\ndef test_leg_hours_ignores_jitter_like_the_summary(make_track):\n    # Up and down 1 m every leg, then a real 10 m climb: only the climb counts.\n    track = make_track(\n        (0, 0, 1000), (0, 0.001, 1001), (0, 0.002, 1000), (0, 0.003, 1001), (0, 0.004, 1010)\n    )\n    hours = leg_hours(track)\n    km = track.leg_lengths_km()\n    assert sum(hours) == pytest.approx(sum(km) / 5 + 10 / 600, abs=1e-9)\nEOF\npython -m pytest -q 2>&1 | tail -3; ruff check 2>&1 | tail -3; mypy 2>&1 | tail -2",
+    "PYTHONPATH=src python3 -m trailhead summary /tmp/claude-1000/walk.csv 2>/dev/null; PYTHONPATH=src python3 -m trailhead summary /tmp/claude-1000/jitter/walk.csv | grep time; PYTHONPATH=src python3 -m trailhead plan /tmp/claude-1000/jitter/walk.csv"
+  ],
+  "permission_denials": [
+    {
+      "command": "python3 - <<'EOF'\np='src/trailhead/pace.py'\ns=open(p).read()\ns=s.replace(\"from itertools import pairwise\\nfrom math import exp\",\"from math import exp\")\ns=s.replace(\"    climbs = [max(change, 0.0) for change in counted_changes([p.ele for p in track.points], threshold)]\\n\",\n\"    changes = counted_changes([point.ele for point in track.points], threshold)\\n    climbs = [max(change, 0.0) for change in changes]\\n\")\nopen(p,'w').write(s)\nEOF\ncat >> tests/test_pace.py <<'EOF'\n\n\ndef test_leg_hours_ignores_jitter_like_the_summary(make_track):\n    # Up and down 1 m every leg, then a real 10 m climb: only the climb counts.\n    track = make_track(\n        (0, 0, 1000), (0, 0.001, 1001), (0, 0.002, 1000), (0, 0.003, 1001), (0, 0.004, 1010)\n    )\n    hours = leg_hours(track)\n    km = track.leg_lengths_km()\n    assert sum(hours) == pytest.approx(sum(km) / 5 + 10 / 600, abs=1e-9)\nEOF\npython -m pytest -q 2>&1 | tail -3; ruff check 2>&1 | tail -3; mypy 2>&1 | tail -2; PYTHONPATH=src python3 -m trailhead summary $TMPDIR/jitter/walk.csv | grep time; PYTHONPATH=src python3 -m trailhead plan $TMPDIR/jitter/walk.csv | python3 -c \"\nimport sys,re\nt=0\nfor l in sys.stdin:\n    h,m=map(int,re.search(r'(\\d+)h (\\d+)m',l).groups()); t+=h*60+m\nprint('plan total', t//60, 'h', t%60, 'm')\"",
+      "description": "Tidy imports, add regression test, run checks"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M tests/test_pace.py"
+    ],
+    "lines_added": 23,
+    "lines_removed": 5,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M tests/test_pace.py"
+    ],
+    "lines_added": 23,
+    "lines_removed": 5,
+    "own_suite_pass_as_left": true
+  }
+}

@@ -1,0 +1,11 @@
+`Track.leg_lengths_km()` now caches its result, so a summary computes each leg's distance once instead of twice (`length_km()` and `steepest_grade()` both call it). All 49 tests pass, including two new ones, and ruff and mypy are clean on `src` and `tests`.
+
+The change is in `src/trailhead/track.py`:
+
+- **Invalidation:** `Track` is mutable, so the cache stores a copy of the points it was computed for and recomputes if `points` differs in any way (append, item replacement, reassignment). That check is a cheap list comparison per call, with no trigonometry.
+- **Return value:** each call still returns a fresh list, so a caller mutating the result cannot corrupt the cache.
+- **Dataclass surface:** the cache is a private field excluded from `__init__`, `repr` and equality, so constructing, printing and comparing tracks behave as before.
+
+The new tests in `tests/test_track.py` check that a summary calls `haversine_km` exactly once per leg with an unchanged result, and that the lengths follow changes to the points.
+
+Nothing is committed.

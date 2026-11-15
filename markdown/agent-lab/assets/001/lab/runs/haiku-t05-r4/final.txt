@@ -1,0 +1,9 @@
+I wrote `tests/test_report.py` with 31 tests covering `src/trailhead/report.py`. They pass, `ruff check` is clean, and the full suite passes (76 tests). Nothing under `src/` changed, and I did not commit.
+
+The tests check:
+- **`summarise` numbers:** name, distance, ascent and descent, altitude, steepest grade, and the Naismith time with fitness applied. The expected values are worked out by hand from the README rules.
+- **Threshold and units:** the ascent threshold is passed through, a negative threshold raises, feet tracks come out in metres, and the default name `unnamed` and the file-stem name from `load_track` both work.
+- **Heading:** all eight compass points, a loop when the finish is within 0.1 km, and a heading when it is beyond that. Heading depends only on the start and finish points.
+- **`format_summary`:** the exact seven-line layout, and the `Xh MMm` time format, including the README examples, a minute carry (59.994 min shows as `1h 00m`), and rounding to the nearest minute.
+
+One thing I left out on purpose: the README says durations are rounded to the nearest minute, but `format_summary` uses Python's `round`, which rounds exact halves to the even minute. So 4.5 minutes shows as `04m` rather than `05m`. Nothing documents the tie case, so I did not write a test for it. If you want half-up rounding, that is a one-line change in `format_summary`, and I can add the test then.

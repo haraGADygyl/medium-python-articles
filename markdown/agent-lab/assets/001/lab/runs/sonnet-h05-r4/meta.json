@@ -1,0 +1,117 @@
+{
+  "run_id": "sonnet-h05-r4",
+  "task": "h05",
+  "tier": "two-file bug",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "sonnet",
+  "prompt": "Bug report from a user: \"On my GPS track, which has a lot of small up-and-down noise, the days from `trailhead plan` add up to 9h 40m, but `trailhead summary` says 7h 05m for the same file. The README says the two should agree.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 36.3,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 16,
+  "duration_ms": 34045,
+  "duration_api_ms": 28344,
+  "api_equivalent_usd": 0.1266666,
+  "usage": {
+    "input_tokens": 16,
+    "cache_creation_input_tokens": 18363,
+    "cache_read_input_tokens": 198226,
+    "output_tokens": 3336,
+    "output_tokens_details": {
+      "thinking_tokens": 125
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 18363,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 489,
+        "cache_read_input_tokens": 30751,
+        "cache_creation_input_tokens": 375,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 375
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 16,
+      "outputTokens": 3336,
+      "cacheReadInputTokens": 198226,
+      "cacheCreationInputTokens": 18363,
+      "webSearchRequests": 0,
+      "costUSD": 0.1266666,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 125,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 18363,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 3,
+    "Read": 7,
+    "Edit": 3,
+    "Bash": 2
+  },
+  "bash_commands": [
+    "python -m pytest -q 2>&1 | tail -15",
+    "cat >> tests/test_pace.py <<'EOF'\n\n\ndef test_leg_hours_ignore_jitter_and_match_summary(make_track):\n    from trailhead.report import summarise\n\n    eles = [1000, 1002, 1000, 1002, 1000, 1002, 1000, 1005, 1010]\n    track = make_track(*[(0, 0.01 * i, e) for i, e in enumerate(eles)])\n    assert sum(leg_hours(track)) == pytest.approx(summarise(track).hours)\nEOF\npython -m pytest -q 2>&1 | tail -5; git stash -q -- src; python -m pytest -q 2>&1 | tail -3; git stash pop -q"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M tests/test_pace.py"
+    ],
+    "lines_added": 21,
+    "lines_removed": 5,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M tests/test_pace.py"
+    ],
+    "lines_added": 21,
+    "lines_removed": 5,
+    "own_suite_pass_as_left": true
+  }
+}

@@ -1,0 +1,54 @@
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index e36d18e..59189b2 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -1,8 +1,8 @@
+ """Walking-time estimates."""
+ 
+-from itertools import pairwise
+ from math import exp
+ 
++from trailhead.elevation import DEFAULT_THRESHOLD_M, counted_changes
+ from trailhead.track import Track
+ 
+ FLAT_SPEED_KMH = 5.0
+@@ -31,9 +31,17 @@ def tobler_kmh(grade: float) -> float:
+     return 6.0 * exp(-3.5 * abs(grade + 0.05))
+ 
+ 
+-def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:
+-    """Naismith time for every leg, counting the leg's own climb."""
++def leg_hours(
++    track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M
++) -> list[float]:
++    """Naismith time for every leg, counting the leg's own climb.
++
++    The climb is the one ``elevation.gain_and_loss`` credits to that leg, so the
++    legs add up to the summary's time for the same track and fitness.
++    """
++    changes = counted_changes([point.ele for point in track.points], threshold)
++    climbs = [max(change, 0.0) for change in changes]
+     return [
+-        naismith_hours(km, max(b.ele - a.ele, 0.0), fitness)
+-        for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True)
++        naismith_hours(km, climb, fitness)
++        for km, climb in zip(track.leg_lengths_km(), climbs, strict=True)
+     ]
+diff --git a/tests/test_pace.py b/tests/test_pace.py
+index 6aec825..9ed3d9f 100644
+--- a/tests/test_pace.py
++++ b/tests/test_pace.py
+@@ -28,3 +28,13 @@ def test_leg_hours(make_track):
+     climb, descent = leg_hours(track)
+     assert climb == pytest.approx(1.11195 / 5 + 0.5, abs=1e-4)
+     assert descent == pytest.approx(1.11195 / 5, abs=1e-4)
++
++
++def test_leg_hours_ignores_jitter_like_the_summary(make_track):
++    # Up and down 1 m every leg, then a real 10 m climb: only the climb counts.
++    track = make_track(
++        (0, 0, 1000), (0, 0.001, 1001), (0, 0.002, 1000), (0, 0.003, 1001), (0, 0.004, 1010)
++    )
++    hours = leg_hours(track)
++    km = track.leg_lengths_km()
++    assert sum(hours) == pytest.approx(sum(km) / 5 + 10 / 600, abs=1e-9)

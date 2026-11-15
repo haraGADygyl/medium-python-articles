@@ -1,0 +1,9 @@
+I found and fixed the cause: `plan` was counting every metre of GPS noise as climbing, while `summary` filters it out.
+
+**Cause:** `leg_hours` in `src/trailhead/pace.py` is what `split_days` uses to time each leg. It credited every leg with its raw climb, `max(b.ele - a.ele, 0)`. So on a noisy track, all the small ups were added as ascent, and the descents between them did nothing to cancel them out. `summary` works the ascent out with the 3 m threshold (`elevation.counted_changes`), which ignores jitter. The README says each leg's climb should be "the ascent the summary's rule (with the default 3 m threshold) credits to it", and the code didn't do that.
+
+**Fix:** `leg_hours` now gets each leg's climb from `counted_changes` with the default threshold. Because both commands now use the same rule, the days of a plan add up to the summary time. I also removed an import that was no longer used.
+
+**Test:** I added `test_days_add_up_to_the_summary_on_a_noisy_track` to `tests/test_plan.py`. It builds a track with 150 m of 1 m up-and-down jitter followed by a real 300 m climb, then checks that the days add up to the summary time at two fitness values. My first version of the test passed even on the old code because the jitter was too small to show up, so I made it bigger. Now it fails on the old code (10.74 h from the plan vs 10.48 h from the summary) and passes with the fix. All 48 tests pass, and `ruff` and `mypy` are clean.
+
+One limitation: `summary --threshold` lets you set a different threshold, but `plan` has no matching option and always uses 3 m. The two outputs only match when the summary is run with the default threshold, which is what the README promises. If you want, I can add a `--threshold` option to `plan` as well.

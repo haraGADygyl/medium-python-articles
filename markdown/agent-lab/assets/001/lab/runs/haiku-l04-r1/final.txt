@@ -1,0 +1,11 @@
+`mypy` now passes on `src/` with no ignores, casts, `Any`, or config changes. All 48 tests still pass and `ruff` is clean.
+
+The errors all came from `Point.ele` being `float | None`, where `None` means the GPS lost the elevation. The README defines how to handle that: a missing elevation takes the nearest earlier known elevation, or the nearest later one if there is none. Rather than patch each caller, I added one method that implements that rule and routed every elevation consumer through it:
+
+- **`src/trailhead/track.py`**: new `Track.elevations()` returns a `list[float]` with gaps filled per the README. `parse_track` now raises `TrackError` when no point has an elevation, so the CLI reports it cleanly instead of crashing.
+- **`src/trailhead/elevation.py`**: `highest_and_lowest` and `steepest_grade` use `track.elevations()`.
+- **`src/trailhead/pace.py`** and **`src/trailhead/report.py`**: pass `track.elevations()` instead of the raw `ele` values.
+
+Before this change, a track with a missing elevation would have crashed at runtime with a `TypeError`, so the fix also corrects that. A smoke check confirmed the fill behaviour (leading gaps take the first known value, later gaps take the previous one).
+
+I did not commit anything.

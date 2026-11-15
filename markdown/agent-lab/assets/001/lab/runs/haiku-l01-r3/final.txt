@@ -1,0 +1,9 @@
+`ruff check` now passes with no config changes and no `noqa` comments. All 46 tests still pass.
+
+Five issues were fixed in two files:
+
+- **`src/trailhead/pace.py`** (F841): `naismith_hours` computed `hours` with `fitness` applied, then returned an expression that ignored it. I changed the return to `hours`, as the docstring describes.
+- **`src/trailhead/track.py`** (I001, F401): removed the unused `import os`. The import block was also unsorted, and the removal fixed that.
+- **`src/trailhead/track.py`** (E722, B904): the bare `except:` is now `except ValueError as err:` with `raise TrackError(...) from err`. `float()` only raises `ValueError` here, so the narrower catch is safe.
+
+**Behavior change to check:** `fitness` now actually scales the result. Before, `naismith_hours(10, 0, 2.0)` returned 2.0 hours; it now returns 1.0. The existing tests only use the default `fitness=1.0`, so they didn't catch the bug. If you want to, I can add a test covering non-default fitness. I haven't committed anything.

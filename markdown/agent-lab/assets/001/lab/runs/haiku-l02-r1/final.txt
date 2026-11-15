@@ -1,0 +1,11 @@
+`mypy` now passes in strict mode with no errors across the 9 source files. The test suite still passes (47 tests).
+
+I made three edits, with no `# type: ignore`, `cast`, `Any`, or config changes:
+
+1. **`src/trailhead/geo.py:18`**: `initial_bearing` had no annotations. I added `float` types to its four parameters and its return value. It already returned a float, so this only documents what the code does.
+2. **`src/trailhead/report.py:28`**: `Summary.heading` was typed `str`, but `_heading()` returns `None` for loop tracks. I changed the field to `str | None`, which matches the code.
+3. The `untyped-call` error in `report.py:35` went away once `initial_bearing` was annotated.
+
+One thing to be aware of: for a loop track, `format_summary` prints `heading   None`. That was already the runtime behaviour before my change. I left it alone because changing it would change output. If you want it to print something like `loop` instead, that is a one-line change in `format_summary`.
+
+I did not commit anything.

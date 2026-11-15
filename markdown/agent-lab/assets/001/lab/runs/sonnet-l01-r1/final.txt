@@ -1,0 +1,6 @@
+`ruff check` now passes and the 46 tests pass. I changed no ruff config and added no `noqa` comments.
+
+- **`src/trailhead/pace.py`:** `naismith_hours` computed `hours` with the `fitness` scaling but then returned the unscaled value. I made it `return hours`, which is what its docstring says it does. This changes behavior: results for `fitness != 1.0` are now scaled. No existing test covered that, so the tests passing doesn't confirm it.
+- **`src/trailhead/track.py`:**
+  - I removed the unused `import os`, which also cleared the import-sorting error.
+  - I changed the bare `except:` to `except ValueError as err:` and raised `TrackError(...) from err`.

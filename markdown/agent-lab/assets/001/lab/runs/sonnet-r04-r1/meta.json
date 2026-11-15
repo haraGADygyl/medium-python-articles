@@ -1,0 +1,115 @@
+{
+  "run_id": "sonnet-r04-r1",
+  "task": "r04",
+  "tier": "refactor/feature",
+  "baseline": false,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "sonnet",
+  "prompt": "`Track.leg_lengths_km()` recomputes every great-circle distance each time it is called, and summarising a track calls it more than once. Cache the leg lengths so that a summary computes each leg's distance only once, without changing any results.",
+  "harness_timeout": false,
+  "wall_s": 27.8,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 9,
+  "duration_ms": 25430,
+  "duration_api_ms": 24633,
+  "api_equivalent_usd": 0.0997784,
+  "usage": {
+    "input_tokens": 14,
+    "cache_creation_input_tokens": 14678,
+    "cache_read_input_tokens": 156084,
+    "output_tokens": 2543,
+    "output_tokens_details": {
+      "thinking_tokens": 449
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 14678,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 396,
+        "cache_read_input_tokens": 26929,
+        "cache_creation_input_tokens": 512,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 512
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 14,
+      "outputTokens": 2543,
+      "cacheReadInputTokens": 156084,
+      "cacheCreationInputTokens": 14678,
+      "webSearchRequests": 0,
+      "costUSD": 0.0997784,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 449,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 14678,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 2,
+    "Read": 3,
+    "Edit": 1,
+    "Bash": 2
+  },
+  "bash_commands": [
+    "python -m pytest -q 2>&1 | tail -5",
+    "python -I - <<'EOF'\nimport sys; sys.path.insert(0,'src')\nfrom unittest import mock\nimport trailhead.track as t\nfrom trailhead.track import Track, Point\nfrom trailhead.report import summarise\ntr = Track(\"x\",[Point(0,0,0),Point(0,1,10),Point(0,2,30)])\nreal=t.haversine_km\nwith mock.patch.object(t,\"haversine_km\",side_effect=real) as m:\n    summarise(tr); print(\"calls\", m.call_count)\n    tr.points.append(Point(0,3,5)); print(len(tr.leg_lengths_km()), m.call_count)\n    tr.points[1]=Point(1,1,10); print(tr.length_km()==sum(real(a.lat,a.lon,b.lat,b.lon) for a,b in zip(tr.points,tr.points[1:])))\nEOF"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "......................................................                   [100%]\n54 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py"
+    ],
+    "lines_added": 14,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "......................................................                   [100%]\n54 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py"
+    ],
+    "lines_added": 14,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  }
+}

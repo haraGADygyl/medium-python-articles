@@ -1,0 +1,52 @@
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index e147dce..8ad8e35 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -26,9 +26,19 @@ class Track:
+     name: str
+     points: list[Point] = field(default_factory=list)
+ 
++    # Cache of (snapshot of points, leg lengths). `points` is a mutable list, so the
++    # snapshot is compared on every call and the cache is dropped when it differs.
++    _legs_cache: tuple[tuple[Point, ...], list[float]] | None = field(
++        default=None, init=False, repr=False, compare=False
++    )
++
+     def leg_lengths_km(self) -> list[float]:
+         """Length of each leg, the stretch between two consecutive points."""
+-        return [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]
++        snapshot = tuple(self.points)
++        if self._legs_cache is None or self._legs_cache[0] != snapshot:
++            legs = [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(snapshot)]
++            self._legs_cache = (snapshot, legs)
++        return list(self._legs_cache[1])  # a copy, so callers cannot corrupt the cache
+ 
+     def length_km(self) -> float:
+         return sum(self.leg_lengths_km())
+diff --git a/tests/test_track.py b/tests/test_track.py
+index ba1bbad..5efd48a 100644
+--- a/tests/test_track.py
++++ b/tests/test_track.py
+@@ -59,3 +59,22 @@ def test_track_length_is_the_sum_of_legs(make_track):
+     track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0))
+     assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)
+     assert track.length_km() == pytest.approx(3.33585, abs=1e-3)
++
++
++def test_leg_lengths_are_cached_and_follow_mutation(monkeypatch):
++    import trailhead.track as module
++    from trailhead.track import Point, Track
++
++    calls = []
++    real = module.haversine_km
++    monkeypatch.setattr(module, "haversine_km", lambda *a: calls.append(a) or real(*a))
++    track = Track("t", [Point(0, 0, 0), Point(0, 1, 0), Point(0, 3, 0)])
++    first = track.leg_lengths_km()
++    first.append(99.0)
++    assert track.leg_lengths_km() == pytest.approx([111.195, 222.39], abs=0.01)
++    track.length_km()
++    assert len(calls) == 2
++    track.points.append(Point(0, 4, 0))
++    assert len(track.leg_lengths_km()) == 3
++    track.points[0] = Point(0, 0.5, 0)
++    assert track.leg_lengths_km()[0] == pytest.approx(55.6, abs=0.1)

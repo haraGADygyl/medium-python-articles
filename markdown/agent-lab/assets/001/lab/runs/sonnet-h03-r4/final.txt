@@ -1,0 +1,9 @@
+`steepest_grade()` now returns a percentage, so your 18 m over 100 m track gives 18.0. The existing tests pass (46 passed), but I didn't add a test for this case or run it on that track.
+
+**Cause:** `steepest_grade()` in `src/trailhead/elevation.py` returned rise over run as a fraction (0.18) and rounded it to 3 decimals. Its docstring and the README both say percent. The only caller, `report.py`, hid the mismatch by multiplying the result by 100 itself, so the report output looked right.
+
+**Fix:**
+- **`elevation.py`:** the function now multiplies by 100 and rounds to 0.1, as the docstring says.
+- **`report.py`:** I removed the extra `* 100` and `round`, so the report doesn't scale the value twice.
+
+`tobler_kmh` in `pace.py` takes a fractional grade by design, and its docstring says so. I didn't touch it.

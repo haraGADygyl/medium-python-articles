@@ -1,0 +1,67 @@
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index e36d18e..d687f2e 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -1,8 +1,8 @@
+ """Walking-time estimates."""
+ 
+-from itertools import pairwise
+ from math import exp
+ 
++from trailhead.elevation import counted_changes
+ from trailhead.track import Track
+ 
+ FLAT_SPEED_KMH = 5.0
+@@ -32,8 +32,14 @@ def tobler_kmh(grade: float) -> float:
+ 
+ 
+ def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:
+-    """Naismith time for every leg, counting the leg's own climb."""
++    """Naismith time for every leg.
++
++    A leg's climb is the ascent the summary credits to it (``counted_changes`` with
++    the default threshold), so the legs add up to the summary's walking time and GPS
++    jitter is not counted as climbing.
++    """
++    changes = counted_changes([point.ele for point in track.points])
+     return [
+-        naismith_hours(km, max(b.ele - a.ele, 0.0), fitness)
+-        for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True)
++        naismith_hours(km, max(change, 0.0), fitness)
++        for change, km in zip(changes, track.leg_lengths_km(), strict=True)
+     ]
+diff --git a/tests/test_pace.py b/tests/test_pace.py
+index 6aec825..6b30e43 100644
+--- a/tests/test_pace.py
++++ b/tests/test_pace.py
+@@ -28,3 +28,10 @@ def test_leg_hours(make_track):
+     climb, descent = leg_hours(track)
+     assert climb == pytest.approx(1.11195 / 5 + 0.5, abs=1e-4)
+     assert descent == pytest.approx(1.11195 / 5, abs=1e-4)
++
++
++def test_leg_hours_ignore_jitter(make_track):
++    # 1 m up-and-down noise is below the 3 m threshold, so it is not climbing.
++    track = make_track(*[(0, i * 0.001, 1000 + i % 2) for i in range(11)])
++    hours = leg_hours(track)
++    assert sum(hours) == pytest.approx(track.length_km() / 5)
+diff --git a/tests/test_plan.py b/tests/test_plan.py
+index 03b3f5d..74515d6 100644
+--- a/tests/test_plan.py
++++ b/tests/test_plan.py
+@@ -38,3 +38,15 @@ def test_describe_plan():
+         "Day 1: points 0-14, 6h 04m",
+         "Day 2: points 14-31, 0h 45m",
+     ]
++
++
++def test_plan_adds_up_to_summary_on_a_noisy_track(make_track):
++    from trailhead.report import summarise
++
++    # A steady climb with 2 m of GPS noise on every point.
++    points = [(0, i * 0.002, 1000 + i * 2 + (2 if i % 2 else -2)) for i in range(200)]
++    track = make_track(*points)
++    days = split_days(track, max_hours_per_day=2.0)
++    assert len(days) > 1
++    total = sum(hours for *_, hours in days)
++    assert total == pytest.approx(summarise(track).hours, abs=0.01 * len(days))

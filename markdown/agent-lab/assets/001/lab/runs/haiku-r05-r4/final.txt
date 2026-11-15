@@ -1,0 +1,9 @@
+Tobler's hiking function is now available as `pace="tobler"` on `pace.leg_hours`, `plan.split_days` and `report.summarise`, and as `--pace {naismith,tobler}` on both CLI commands. Naismith stays the default and its output is unchanged. All 64 tests pass (47 existing, 17 new), and ruff and mypy are clean. I haven't committed anything.
+
+- **`pace.py`**: `check_pace` rejects anything other than `"naismith"` or `"tobler"` with a `ValueError`. `leg_hours` gains the `pace` keyword. The Tobler branch uses each leg's raw elevation change over its horizontal length as the grade, gives zero-length legs no time, and divides by fitness.
+- **`report.py`**: under Tobler the summary time is the sum of the leg times. Under Naismith it is the original formula, untouched.
+- **`plan.py`**: `split_days` passes `pace` through to `leg_hours`.
+- **`cli.py`**: both subcommands take `--pace`, restricted by argparse to the two choices, so a bad value exits with code 2 and a usage message rather than a `ValueError` traceback.
+- **README**: the walking-time, Tobler and day-plan sections now describe both rules, and there is a `--pace` example.
+
+I checked the CLI by hand on a small three-point track. Naismith gave `0h 36m` and Tobler gave `0h 29m`, which matches the hand calculation.

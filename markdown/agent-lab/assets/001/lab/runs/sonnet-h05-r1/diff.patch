@@ -1,0 +1,101 @@
+diff --git a/src/trailhead/cli.py b/src/trailhead/cli.py
+index 0312f0a..934d9eb 100644
+--- a/src/trailhead/cli.py
++++ b/src/trailhead/cli.py
+@@ -23,6 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
+     plan.add_argument("file")
+     plan.add_argument("--max-hours", type=float, default=DEFAULT_MAX_HOURS)
+     plan.add_argument("--fitness", type=float, default=1.0)
++    plan.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD_M)
+     return parser
+ 
+ 
+@@ -36,6 +37,6 @@ def main(argv: Sequence[str] | None = None) -> int:
+     if args.command == "summary":
+         print(format_summary(summarise(track, args.fitness, args.threshold)))
+     else:
+-        for line in describe_plan(split_days(track, args.max_hours, args.fitness)):
++        for line in describe_plan(split_days(track, args.max_hours, args.fitness, args.threshold)):
+             print(line)
+     return 0
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index e36d18e..adf4661 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -1,8 +1,8 @@
+ """Walking-time estimates."""
+ 
+-from itertools import pairwise
+ from math import exp
+ 
++from trailhead.elevation import DEFAULT_THRESHOLD_M, counted_changes
+ from trailhead.track import Track
+ 
+ FLAT_SPEED_KMH = 5.0
+@@ -31,9 +31,16 @@ def tobler_kmh(grade: float) -> float:
+     return 6.0 * exp(-3.5 * abs(grade + 0.05))
+ 
+ 
+-def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:
+-    """Naismith time for every leg, counting the leg's own climb."""
++def leg_hours(
++    track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M
++) -> list[float]:
++    """Naismith time for every leg, counting the climb credited to that leg.
++
++    Climb is the thresholded ascent from ``counted_changes``, the same figure the
++    summary uses, so the legs add up to the summary's time.
++    """
++    changes = counted_changes([point.ele for point in track.points], threshold)
+     return [
+-        naismith_hours(km, max(b.ele - a.ele, 0.0), fitness)
+-        for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True)
++        naismith_hours(km, max(change, 0.0), fitness)
++        for change, km in zip(changes, track.leg_lengths_km(), strict=True)
+     ]
+diff --git a/src/trailhead/plan.py b/src/trailhead/plan.py
+index d5cf5b1..cf049c2 100644
+--- a/src/trailhead/plan.py
++++ b/src/trailhead/plan.py
+@@ -1,5 +1,6 @@
+ """Splitting a track into days of walking."""
+ 
++from trailhead.elevation import DEFAULT_THRESHOLD_M
+ from trailhead.pace import leg_hours
+ from trailhead.track import Track
+ 
+@@ -7,7 +8,8 @@ DEFAULT_MAX_HOURS = 7.0
+ 
+ 
+ def split_days(
+-    track: Track, max_hours_per_day: float = DEFAULT_MAX_HOURS, fitness: float = 1.0
++    track: Track, max_hours_per_day: float = DEFAULT_MAX_HOURS, fitness: float = 1.0,
++    threshold: float = DEFAULT_THRESHOLD_M,
+ ) -> list[tuple[int, int, int, float]]:
+     """Group consecutive legs into days of walking.
+ 
+@@ -19,7 +21,7 @@ def split_days(
+         raise ValueError("max_hours_per_day must be positive")
+     days: list[tuple[int, int, int, float]] = []
+     first, used = 0, 0.0
+-    for index, hours in enumerate(leg_hours(track, fitness)):
++    for index, hours in enumerate(leg_hours(track, fitness, threshold)):
+         if used > 0 and used + hours > max_hours_per_day:
+             days.append((len(days) + 1, first, index, round(used, 2)))
+             first, used = index, 0.0
+diff --git a/tests/test_plan.py b/tests/test_plan.py
+index 03b3f5d..5866f31 100644
+--- a/tests/test_plan.py
++++ b/tests/test_plan.py
+@@ -38,3 +38,11 @@ def test_describe_plan():
+         "Day 1: points 0-14, 6h 04m",
+         "Day 2: points 14-31, 0h 45m",
+     ]
++
++
++def test_plan_hours_match_summary_on_noisy_track(make_track):
++    from trailhead.report import summarise
++
++    track = make_track(*[(0, i * 0.01, 1000 + (2 if i % 2 else 0)) for i in range(40)])
++    days = split_days(track, max_hours_per_day=100)
++    assert sum(d[3] for d in days) == pytest.approx(summarise(track).hours, abs=0.01)

@@ -1,0 +1,9 @@
+I fixed the bug in `src/trailhead/elevation.py`, in `counted_changes`. The full suite passes (47 tests), including a new regression test.
+
+**Cause:** the loop ended with an unconditional `reference = elevation`, so the baseline moved to the latest point on every step. The code is meant to count a change once it reaches the 3 m threshold from the last *counted* elevation. With a point every metre, no single step reached 3 m, so the whole 300 m climb counted as 0. Tracks with bigger gaps between points had steps above the threshold, so they looked fine.
+
+**Fix:** I removed that line. The reference now only moves when a change is counted, which is what the docstring describes.
+
+**Test:** I added `test_long_climb_in_small_steps_is_counted` in `tests/test_elevation.py`. It checks that a 0→300 m climb in 1 m steps gives +300 m, and that the reverse gives −300 m.
+
+`pace.py` uses `counted_changes` for per-leg climb, so the fix should correct those times as well. I didn't test that path directly.

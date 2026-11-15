@@ -1,0 +1,50 @@
+agent-lab/001 — second-pass analysis (hand review of every failure, 2026-11-15)
+
+Grid: 4 models x 15 tasks x 4 repeats = 240 runs, Claude Code 2.1.325, sandboxed
+(bubblewrap + socat), no aborted runs. Calibration 1 (old task set, no sandbox) is in
+runs/_calibration/ and excluded. Repeat 1 of the ten harder tasks is calibration 2,
+run under the final conditions and kept.
+
+Grader v2 (regrade.py, from saved diffs, no agent re-run; v1 grades kept in meta.json):
+  - l02: the hidden test required Summary.heading == "loop". Opus r2 and Sonnet r3 made
+    the printed summary say "heading   loop" but kept the field None. The README says
+    "heading in the summary", so the printed output decides. Both now pass.
+  - t05: removed two mutants testing behaviour no README line or docstring states
+    (summary distance rounded to 0.1; altitude printed low-high). Fable r1 and
+    Haiku r3 now pass (they missed the undocumented distance rounding).
+  4 outcomes changed, all fail -> pass; no other run moved.
+
+Failures after v2 (10), all read by hand:
+  l02 (mypy; README: a loop's heading is `loop`)
+    Haiku 4/4 and Sonnet 3/4 widened Summary.heading to `str | None` and left loops
+    printing "heading   None". Every one of the 7 said so in its final message and
+    offered "loop" as a follow-up instead of doing it:
+      Sonnet r1: "I left that alone because it's outside the mypy fix and no test covers it."
+      Haiku r2:  "the `None` for loops is intentional."
+      Sonnet r4: "I left that alone because you asked only for the type errors."
+    Opus 4/4 and Fable 4/4 printed `loop` (Opus r2 and Sonnet r3 citing the README).
+  l04 (mypy after elevations became optional; README: fill gaps from the previous point)
+    Sonnet r1, r2 skipped legs touching a gap instead of filling; steepest grade 0.0
+    where the README gives 9.0. Sonnet r2: "The gap-handling rules are my choice, not
+    something the repo specified." The README specified them. Haiku 4/4 passed with a
+    `Track.elevations()` helper that follows the README text closely.
+  t05 (tests for report.py, 7 documented mutants, pass = 6)
+    Haiku r4 killed 5: its tests let "time uses descent" and "steepest rounded to a
+    whole percent" survive.
+
+Nobody failed: any refactor/feature, bug or two-file-bug task, any baseline task, t02, t04.
+The traps planted there (mutable cache, signed Tobler grade, BOM before a comment,
+units at the end, the copied truncation in plan.py, the plan/summary ascent rule)
+were all handled by all four models, 4 of 4.
+
+Refusals: the sandbox runs Bash without prompts, but Claude Code still refuses
+commands it cannot analyse (long multi-line shell, subshells with ';'). 92 refused
+calls in 240 runs: Haiku 37, Fable 22, Opus 20, Sonnet 13. None of the 10 failures
+had a refused call, so refusals cost turns, not outcomes.
+
+Totals (Claude Code's API-equivalent estimate: equivalent, not billed)
+  model   passes  total equiv  per pass  wall (all runs)  median turns, harder tasks
+  haiku   55/60      $0.66      $0.012       42.7 min        13
+  sonnet  55/60      $6.19      $0.113       26.0 min         7
+  opus    60/60     $15.82      $0.264       48.3 min         8
+  fable   60/60     $31.01      $0.517       48.8 min         6

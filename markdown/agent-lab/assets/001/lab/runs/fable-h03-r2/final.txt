@@ -1,0 +1,12 @@
+Fixed: `steepest_grade()` now returns a percentage, so the 18 m over 100 m track gives `18.0`. The full suite passes (48 tests), including two new ones for this function.
+
+**Cause:** in `src/trailhead/elevation.py` the function computed rise over run and returned it rounded to three decimals (`0.18`), contradicting its docstring and the README. Nothing caught it because there was no test for `steepest_grade`, and the summary report hid it by multiplying by 100 itself.
+
+**Changes:**
+- `src/trailhead/elevation.py`: the return is now `round(steepest * 100, 1)`, matching the documented "percent, rounded to 0.1".
+- `src/trailhead/report.py`: removed the `* 100`, which would otherwise have turned the summary's "steepest" line into 1800%. The summary output is unchanged (still `6.0%` in the existing report test).
+- `tests/test_elevation.py`: added a test for the reported case (expects `18.0`) and one covering a descent plus a repeated point.
+
+Any outside code that worked around the bug by multiplying the result by 100 itself will need that removed.
+
+Nothing is committed.

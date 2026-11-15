@@ -1,0 +1,145 @@
+{
+  "run_id": "fable-t04-r4",
+  "task": "t04",
+  "tier": "tests",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "`src/trailhead/plan.py` has no tests. Write `tests/test_plan.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 103.6,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 99735,
+  "duration_api_ms": 98568,
+  "api_equivalent_usd": 0.8313322000000001,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 27748,
+    "cache_read_input_tokens": 131021,
+    "output_tokens": 9027,
+    "output_tokens_details": {
+      "thinking_tokens": 3483
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 27748,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 772,
+        "cache_read_input_tokens": 38598,
+        "cache_creation_input_tokens": 1913,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1913
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 10,
+      "outputTokens": 9027,
+      "cacheReadInputTokens": 131021,
+      "cacheCreationInputTokens": 27748,
+      "webSearchRequests": 0,
+      "costUSD": 0.8313322000000001,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 3483,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 27748,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git ls-files; cat README.md src/trailhead/plan.py; cat pyproject.toml 2>/dev/null; ls tests 2>/dev/null",
+    "cat src/trailhead/pace.py src/trailhead/elevation.py src/trailhead/track.py src/trailhead/geo.py src/trailhead/report.py; cat tests/conftest.py tests/test_pace.py; grep -n \"plan\" -n src/trailhead/cli.py tests/test_cli.py; python -m pytest -q 2>&1 | tail -5",
+    "python -m pytest -q 2>&1 | tail -40; ruff check 2>&1 | tail -15; git status --short",
+    "ls -la | head -30; python - <<'EOF'\nimport sys; sys.path.insert(0,'src')\nfrom math import pi\nfrom trailhead.track import Track, Point\nfrom trailhead.plan import split_days, describe_plan\nfrom trailhead.pace import leg_hours\nD = 360/(2*pi*6371.0088)\ndef walk(*legs):\n    km=0; e=1000; pts=[Point(0,0,e)]\n    for k,c in legs:\n        km+=k; e+=c; pts.append(Point(0,km*D,e))\n    return Track(\"t\",pts)\n# exact fit at the limit\nfor n,h in [(2,1.0),(3,0.1),(7,1.0),(3,0.7)]:\n    t=walk(*[(5*h,0)]*n)\n    print(n,h,leg_hours(t), split_days(t, n*h))\n# repeated points\nt=Track(\"t\",[Point(0,0,1000),Point(0,0,1000),Point(0,15*D,1000),Point(0,15*D,1000),Point(0,16*D,1000)])\nprint(split_days(t,2))\nprint(describe_plan([(1,0,1,0.075)]), describe_plan([(1,0,1,0.025)]))\nEOF"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_plan.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "..............................................                           [100%]\n46 passed in 0.05s\n",
+    "src_changed": [],
+    "killed": [
+      "days numbered from 0",
+      "last day stops one point short",
+      "hours rounded to 0.1",
+      "zero limit allowed",
+      "fitness dropped",
+      "minutes not zero-padded",
+      "minutes truncated",
+      "next day starts one point late"
+    ],
+    "survived": [
+      "a day that exactly fills the limit is closed early"
+    ],
+    "kills": 8,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_plan.py"
+    ],
+    "lines_added": 210,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_plan.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "..............................................                           [100%]\n46 passed in 0.05s\n",
+    "src_changed": [],
+    "killed": [
+      "days numbered from 0",
+      "last day stops one point short",
+      "hours rounded to 0.1",
+      "zero limit allowed",
+      "fitness dropped",
+      "minutes not zero-padded",
+      "minutes truncated",
+      "next day starts one point late"
+    ],
+    "survived": [
+      "a day that exactly fills the limit is closed early"
+    ],
+    "kills": 8,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_plan.py"
+    ],
+    "lines_added": 210,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

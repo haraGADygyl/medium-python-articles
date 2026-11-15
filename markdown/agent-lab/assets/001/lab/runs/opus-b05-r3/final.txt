@@ -1,0 +1,7 @@
+Fixed. trailhead now reports Pikes Peak's high point as **4302 m**, not 14115 m.
+
+**Cause:** in `src/trailhead/track.py`, `parse_track` converted each point's elevation as soon as it read that line, using whatever units setting it had seen so far. When the `# units: ft` line came after the points, every point had already been stored as metres, so 14,115 ft became 14115 m. The README says settings can appear anywhere in the file and apply to the whole track, so the code didn't match its own spec. A units line between points had the same bug: only the points after it were converted.
+
+**Fix:** points are now read with their raw elevations, and the feet-to-metres conversion is applied once, after the whole file has been read. `_parse_point` no longer takes a scale. If a file has more than one `# units:` line, the last one still wins, as before.
+
+**Tests:** I added two tests in `tests/test_track.py`, one with the units line after the points and one with it between them. All 49 tests pass. Running `python -m trailhead summary pikes-peak.csv` now shows an altitude range of 2042–4302 m and an ascent of +2260 m. I haven't committed anything.

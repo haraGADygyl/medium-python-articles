@@ -1,0 +1,11 @@
+`trailhead plan` and `trailhead summary` now agree on a noisy track. The full suite passes, including a new regression test.
+
+**Cause:** `pace.leg_hours`, which `plan` uses, counted every positive elevation change between two points as climb. On a noisy GPS track, each small up-tick got billed at Naismith's 1 hour per 600 m. `summary` filters jitter with the 3 m threshold (`elevation.counted_changes`), so it counted far less ascent. That gap is the 9h 40m against 7h 05m. The README says a leg's climb should be what the summary's threshold rule credits to it, so the code didn't match the documented behaviour.
+
+**Fix (`src/trailhead/pace.py`):** `leg_hours` now takes each leg's climb from `counted_changes` instead of the raw point-to-point difference. It has an optional `threshold` argument that defaults to 3 m. The legs' times add up to the summary time.
+
+**Test:** `tests/test_pace.py` has a new test with a jittery track that checks `sum(leg_hours(track))` equals `summarise(track).hours`. It fails without the fix and passes with it.
+
+`trailhead plan` has no `--threshold` option, while `summary` does. If someone runs `summary --threshold 5`, the two will differ again. I left the CLI alone since the README only promises agreement at the default threshold. Adding the flag to `plan` would be a small change if you want it.
+
+I haven't committed anything.

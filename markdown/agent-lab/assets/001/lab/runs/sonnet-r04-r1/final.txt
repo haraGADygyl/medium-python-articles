@@ -1,0 +1,12 @@
+`Track.leg_lengths_km()` now caches each leg's distance, so a summary computes each leg once. `summarise` on a 3-point track made 2 `haversine_km` calls, one per leg. The existing 47 tests pass.
+
+The change is in `src/trailhead/track.py`. The cache is keyed by each leg's endpoint coordinates (`lat, lon, lat, lon`) rather than stored as one list.
+
+I did it that way because the README says a `Track` is mutable and its lengths always reflect the current points. A single cached list would go stale after an `append` or an edit to `track.points`. With coordinate keys:
+- **Appending a point:** only the new leg is computed.
+- **Replacing a point:** the legs touching it are recomputed.
+- **Changing only an elevation:** nothing is recomputed, since elevation doesn't affect distance.
+
+I checked both cases by hand with a mocked `haversine_km`: after an append the call count went from 2 to 3, and after replacing a point `length_km()` matched a fresh computation. I didn't add these as tests to the suite.
+
+The cache grows with each distinct leg a track has had. It is excluded from `repr` and equality, so those behave as before.

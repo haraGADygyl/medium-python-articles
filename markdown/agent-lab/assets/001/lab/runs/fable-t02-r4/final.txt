@@ -1,0 +1,9 @@
+I added `tests/test_pace.py` with 39 tests covering all three functions in `pace.py`; they all pass, along with the existing suite (83 passed), and `ruff check` is clean. Nothing under `src/` was touched, and nothing is committed.
+
+The tests found no place where `pace.py` departs from the README or its docstrings.
+
+- **`naismith_hours`**: 5 km/h on the flat, one hour per 600 m of ascent, the two adding up, fitness dividing the time (1.25, 2, 0.8), an unrounded result, and `ValueError` for zero or negative fitness and for negative distance or ascent.
+- **`tobler_kmh`**: the README formula at several grades, the 6 km/h peak at a 5% descent, grade as rise over run rather than percent, and climbing slower than descending the same slope.
+- **`leg_hours`**: one time per leg, climb credited to the right leg, descent adding nothing, jitter under 3 m ignored, a slow climb in 1 m steps counted where it reaches the threshold, fitness applied to every leg, and the legs summing to the summary time (`report.summarise`) on a hilly track.
+
+The legs-sum-to-summary tests compare with `pytest.approx`, since the summary rounds ascent to 0.1 m before timing it.

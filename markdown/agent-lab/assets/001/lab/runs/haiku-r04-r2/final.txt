@@ -1,0 +1,12 @@
+`Track.leg_lengths_km()` now caches its result, so a summary computes each leg's distance once. The full suite passes (50 tests, up from 47), and ruff and mypy are clean.
+
+**The cache is keyed on the current points, not on the first call alone.** The README says a `Track` is mutable and its lengths must always reflect the current points, so a plain "compute once" cache would have broken that. The cache stores a snapshot of `points` and recomputes only when the snapshot differs. `Point` is frozen, so the comparison is cheap compared with the trigonometry it saves.
+
+**Changes:**
+- `src/trailhead/track.py`: `Track` gets a private `_legs` field (`init=False`, `repr=False`, `compare=False`), so the constructor, `repr` and equality are unchanged. `leg_lengths_km()` returns a copy of the cached list, so callers can't corrupt the cache.
+- `tests/test_track.py`: three new tests.
+  - Haversine runs once per leg across `leg_lengths_km()` and `length_km()`.
+  - Appending to or replacing a point is reflected in the next call.
+  - Mutating the returned list does not change later results.
+
+**Not done:** I haven't committed anything. The git status also shows untracked dotfiles at the repo root (`.bashrc`, `.claude/` and others) that were already there, and I left them alone.

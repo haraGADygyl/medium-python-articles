@@ -1,0 +1,21 @@
+I wrote `tests/test_pace.py` with 27 tests. All of them pass and `ruff check` is clean. I didn't touch anything under `src/`.
+
+The tests cover the three functions in `pace.py` against the README and docstrings:
+
+- **`naismith_hours`:**
+  - 5 km flat is one hour, 600 m of ascent is one hour, and the two add together.
+  - `fitness` divides the time (1.25 and 0.8 are checked).
+  - The default fitness is 1.0 and the result isn't rounded.
+  - A fitness of zero or below, a negative distance, and a negative ascent each raise `ValueError`.
+- **`tobler_kmh`:**
+  - The peak is 6 km/h at a −5% grade.
+  - Values match `6*exp(-3.5*|g+0.05|)`, and flat speed is checked directly.
+  - It is symmetric around −0.05, a climb is slower than the same descent, and it never exceeds 6.
+- **`leg_hours`:**
+  - It returns one value per leg.
+  - A climb is credited to the leg where the threshold is reached, so 1 m steps count on the third leg.
+  - Descent adds nothing, jitter is ignored, and `fitness` is applied.
+  - Bad fitness raises `ValueError`.
+  - The leg times add up to the summary time (`naismith_hours` on the track length plus the counted ascent from `gain_and_loss`), at fitness 1.0 and 1.5.
+
+The tests build their tracks with the existing `make_track` fixture from `conftest.py`. I didn't run `mypy`.

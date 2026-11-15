@@ -1,0 +1,69 @@
+diff --git a/src/trailhead/elevation.py b/src/trailhead/elevation.py
+index 38ee915..61a3e10 100644
+--- a/src/trailhead/elevation.py
++++ b/src/trailhead/elevation.py
+@@ -9,7 +9,7 @@ DEFAULT_THRESHOLD_M = 3.0
+ 
+ 
+ def counted_changes(
+-    elevations: Sequence[float], threshold: float = DEFAULT_THRESHOLD_M
++    elevations: Sequence[float | None], threshold: float = DEFAULT_THRESHOLD_M
+ ) -> list[float]:
+     """The elevation change counted on each leg, in metres: up positive, down negative.
+ 
+@@ -20,8 +20,22 @@ def counted_changes(
+     if threshold < 0:
+         raise ValueError("threshold must not be negative")
+     changes: list[float] = []
+-    if not elevations:
+-        return changes
++    reference: float | None = None
++    for index, elevation in enumerate(elevations):
++        if elevation is None or reference is None:
++            # A missing elevation counts nothing; the first known one starts the reference.
++            if elevation is not None:
++                reference = elevation
++            if index > 0:
++                changes.append(0.0)
++            continue
++        change = elevation - reference
++        if abs(change) >= threshold and change != 0:
++            changes.append(change)
++            reference = elevation
++        else:
++            changes.append(0.0)
++    return changes
+     reference = elevations[0]
+     for elevation in elevations[1:]:
+         change = elevation - reference
+@@ -37,7 +51,7 @@ def counted_changes(
+ 
+ 
+ def gain_and_loss(
+-    elevations: Sequence[float], threshold: float = DEFAULT_THRESHOLD_M
++    elevations: Sequence[float | None], threshold: float = DEFAULT_THRESHOLD_M
+ ) -> tuple[float, float]:
+     """Total counted ascent and descent in metres, each rounded to 0.1 m."""
+     changes = counted_changes(elevations, threshold)
+@@ -47,8 +61,10 @@ def gain_and_loss(
+ 
+ 
+ def highest_and_lowest(track: Track) -> tuple[float, float]:
+-    """Highest and lowest elevation on the track, in metres."""
+-    elevations = [point.ele for point in track.points]
++    """Highest and lowest known elevation on the track, in metres."""
++    elevations = [point.ele for point in track.points if point.ele is not None]
++    if not elevations:
++        raise ValueError("track has no elevation data")
+     return max(elevations), min(elevations)
+ 
+ 
+@@ -60,7 +76,7 @@ def steepest_grade(track: Track) -> float:
+     """
+     steepest = 0.0
+     for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):
+-        if km == 0:
++        if km == 0 or a.ele is None or b.ele is None:
+             continue
+         steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000) * 100)
+     return round(steepest, 1)

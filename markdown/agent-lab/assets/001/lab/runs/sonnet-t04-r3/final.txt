@@ -1,0 +1,26 @@
+I've written `tests/test_plan.py` with 24 tests, and they all pass. The full suite passes too (66 tests), `ruff check` and `mypy` are clean, and I didn't touch anything under `src/`.
+
+The tests check these things, taken from the README and docstrings:
+- **`split_days` structure:**
+  - Days are numbered from 1.
+  - The first day starts at point 0 and the last ends at the final point.
+  - Each day starts where the previous one ended.
+- **Day limit:**
+  - A day never goes over the limit.
+  - Legs are packed greedily.
+  - A leg that exactly fills the limit stays in its day.
+  - A single leg longer than the limit becomes a day by itself, including when it's the first leg.
+- **Timing:**
+  - Hours are rounded to 0.01.
+  - Climbing adds time and descent adds none.
+  - `fitness` shortens days and divides the total time.
+  - The days add up to the summary time on a track with jittery elevations.
+- **Invalid input:** `ValueError` for a limit or fitness of zero or below.
+- **`describe_plan`:**
+  - The format matches `Day 2: points 14-31, 6h 05m`.
+  - Durations cover `5h 07m`, `0h 45m`, `12h 00m` and a round-up to `2h 00m`.
+  - It returns one line per day, and an empty list for no days.
+
+I found no discrepancies between `plan.py` and its documentation.
+
+`git status` also lists some untracked dotfiles (`.bashrc`, `.claude/` and so on) that were already in the working directory. I left them alone.

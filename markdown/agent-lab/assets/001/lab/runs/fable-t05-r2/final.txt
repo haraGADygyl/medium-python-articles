@@ -1,0 +1,14 @@
+I added `tests/test_report.py` with 45 tests; they all pass against the current code, along with the existing suite (90 passed), and `ruff check` is clean. Nothing under `src/` was touched, and nothing is committed.
+
+Expected values are worked out from the README's rules (sphere radius, Naismith, 3 m threshold) rather than copied from the code's output, and I found no place where `report.py` disagrees with the documentation.
+
+What the tests cover:
+
+- **`summarise` numbers**: length rounded to 0.1 km while time uses the unrounded length, ascent/descent, highest/lowest, and steepest grade in percent (including downhill legs and skipped repeated points).
+- **Fitness**: it divides the time and changes nothing else; zero or negative raises `ValueError`.
+- **Threshold**: jitter is ignored, a long climb in 1 m steps counts, a custom threshold feeds through to both ascent and time, and a negative threshold raises `ValueError`.
+- **Heading**: all eight compass points, nearest-point boundaries, intermediate points ignored, and `loop` at 89 m from the start but not at 111 m.
+- **Integration**: a track in feet is summarised in metres, and the days of a plan add up to the summary time (within the plan's 0.01 h per-day rounding).
+- **`format_summary`**: the exact seven-line layout, and the README's duration examples (`5h 07m`, `0h 45m`, `12h 00m`), plus rounding up into the next hour.
+
+One thing is deliberately not pinned down: a duration landing exactly on a half minute. The README says "nearest minute" without saying which way ties go, and the code uses Python's `round`, which rounds ties to even (2.5 minutes shows as `02m`). If you want ties to round up, that is a code change, not a test.

@@ -1,0 +1,29 @@
+I wrote `tests/test_plan.py` with 27 tests. They pass, along with the rest of the suite (69 tests), and `ruff check` is clean on the new file. I didn't change anything under `src/`.
+
+The tests cover `split_days` and `describe_plan` as the README and docstrings describe them:
+
+- **`split_days` structure:**
+  - Days count from 1.
+  - Neighbouring days share a boundary point.
+  - The days cover the whole track.
+  - Hours are rounded to 0.01.
+  - The default limit is 7 hours.
+- **Limit handling:**
+  - No day goes over the limit.
+  - A day can fill the limit exactly.
+  - A single leg longer than the limit becomes a day by itself, including when it is the first leg, with no empty day before it.
+- **Timing:**
+  - Climbs add time and descents add none.
+  - `fitness` shortens the plan and can change where days split.
+  - A limit or `fitness` of zero or less raises `ValueError`.
+- **Agreement with the summary:**
+  - Day hours add up to `summarise(...).hours` at several fitness values.
+  - 1 m wiggles are not charged as ascent.
+  - A 60 m climb in 1 m steps is charged in full.
+- **`describe_plan`:** Covers the line format, one line per day in order, rounding to the nearest minute, minutes rolling into hours, and an empty plan.
+
+I found no bugs in `plan.py`: all the documented behaviour passed on the first run.
+
+The test tracks run along the equator with 0.045° of longitude per leg, which is about 5 km, so one leg is about one hour of flat walking.
+
+`git status` also lists untracked files (`.bashrc`, `.claude/` and others) that I didn't create.

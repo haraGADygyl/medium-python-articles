@@ -1,0 +1,12 @@
+`steepest_grade()` now returns percent, so the 18 m over 100 m leg gives `18.0` as the README and docstring describe. The full suite passes (48 tests).
+
+**Cause:** `steepest_grade` returned a ratio (rise over run, 0.18), but its docstring and the README say percent. `report.py` multiplied by 100 to compensate, so the report's `steepest` line looked right while the public function did not.
+
+**Fix:**
+- `src/trailhead/elevation.py`: `steepest_grade` now returns `round(steepest * 100, 1)`.
+- `src/trailhead/report.py`: removed the extra `* 100`. It passes the value straight through.
+- `tests/test_elevation.py`: added two tests, one for an uphill leg and one for a downhill leg, each 18 m over about 100 m, checking the result is about 18.0.
+
+The rounding also changed from 3 decimals of a ratio to 1 decimal of a percent. That matches the documented "rounded to 0.1" and the report's output.
+
+Anyone calling `steepest_grade()` directly will now get values 100 times larger than before. The report output is unchanged. I haven't committed anything.

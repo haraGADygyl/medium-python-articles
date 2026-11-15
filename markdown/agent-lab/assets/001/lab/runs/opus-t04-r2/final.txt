@@ -1,0 +1,20 @@
+I've written `tests/test_plan.py`. The full suite passes: 140 passed and 1 expected failure. `ruff check` is clean and nothing under `src/` changed.
+
+**The expected failure is a real bug in `split_days`.** The README says a day only goes over the limit when a single leg does, and then that leg is a day by itself. That isn't always true. If a day starts with a leg that takes no time (for example a repeated point on flat ground), the next leg that's over the limit gets added to the same day:
+
+```python
+# legs: 0 h, then 1 h; limit 0.5 h
+split_days(track, 0.5)  ->  [(1, 0, 2, 1.0)]        # README implies [(1, 0, 1, 0.0), (2, 1, 2, 1.0)]
+```
+
+This happens because the code only starts a new day once the current one has used some time (the `used > 0` check). Real recorded tracks often contain repeated points, so it can happen in practice. I marked that test `xfail(strict=True)` and gave the reason, so it will start failing once the bug is fixed, which tells you to remove the marker. I didn't touch `src/`. The fix would be to decide day breaks by legs added rather than by time used. For the same reason, the randomised "no day over the limit" check builds its tracks without repeated points.
+
+**What the tests cover:**
+- **Return format:** days count from 1, point numbers start at 0, hours are rounded to 0.01, consecutive days share their boundary point, and the plan covers the whole track.
+- **Splitting:** days fill up in order until the next leg won't fit, a day can hit the limit exactly, the default limit is 7 hours, and a leg that's over the limit on its own is a separate day wherever it falls (first, middle, last, or two in a row).
+- **Timing:** descent adds no time, 1 m elevation jitter adds none, and a 600 m climb recorded in 1 m steps still counts as one hour. Each climb is credited to the leg where it passes the 3 m threshold.
+- **Fitness:** it divides the time and changes where the days split. Zero or negative fitness raises `ValueError`, and so does a zero or negative daily limit.
+- **Matches the summary:** on randomised tracks, across several fitness values and limits, the days add up to `summarise(...).hours`. The allowed difference only covers rounding (each day to 0.01 h, the summary's ascent to 0.1 m).
+- **`describe_plan`:** the docstring example plus the README duration examples (`5h 07m`, `0h 45m`, `12h 00m`), rounding to the nearest minute, and an empty plan.
+
+Several untracked dotfiles (`.bashrc`, `.gitconfig`, `.idea`, `.mcp.json` and others) also appear in the working tree. I didn't create them and haven't touched them.

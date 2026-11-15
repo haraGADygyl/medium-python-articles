@@ -1,0 +1,11 @@
+Fixed. `trailhead summary` now shows **+300 m** for a steady climb with one point per metre. It showed +0 m before.
+
+**Cause:** in `counted_changes` (`src/trailhead/elevation.py`), small elevation changes are meant to add up until they reach a 3 m threshold, measured from the last height that was counted. But one stray line, `reference = elevation`, ran after every point, counted or not. So each 1 m step was only compared with the point just before it, never reached 3 m, and was thrown away as GPS jitter. Tracks with bigger gaps between points looked fine because each step there was 3 m or more on its own. Any recording with frequent, gentle height changes was under-counted, for descent as well as ascent.
+
+**Fix:** I deleted that line. The reference now moves only when a change is actually counted, which is what the function's docstring already says it does. Walking-time estimates for each leg (`pace.leg_hours`) use the same function, so they were also missing that climb and are now correct too.
+
+**Tests:** I added two tests to `tests/test_elevation.py`:
+- A 300 m climb and a 300 m descent in 1 m steps each give 300 m.
+- With 1 m steps, the climb is credited on every third leg.
+
+All 48 tests pass, including the existing one that checks small jitter is still ignored. I also ran the CLI on a made-up 301-point CSV climbing from 1000 m to 1300 m: it reported `+300 m / -0 m` and a walking time of 1h 10m.

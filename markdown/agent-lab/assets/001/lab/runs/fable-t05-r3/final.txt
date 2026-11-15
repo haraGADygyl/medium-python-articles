@@ -1,0 +1,18 @@
+`tests/test_report.py` is written: 43 tests, all passing alongside the existing suite (88 total), and `ruff check tests` is clean. Nothing under `src/` was touched.
+
+The tests found no discrepancies between `report.py` and the README or docstrings. Expected values are worked out by hand from the README (sphere radius, Naismith's rule, the 3 m threshold) rather than copied from the code's output.
+
+What they cover:
+
+- **`summarise` fields:** name, length rounded to 0.1 km, ascent and descent, highest and lowest, steepest grade in percent (including downhill legs and repeated points).
+- **Walking time:** computed from the unrounded distance, descent adds nothing, `fitness` divides the time and changes nothing else, and zero or negative fitness raises `ValueError`.
+- **Threshold:** jitter under the default 3 m is ignored, a custom threshold changes what counts, a 300 m climb in 1 m steps counts in full, and a negative threshold raises `ValueError`.
+- **Heading:** all eight compass points, start-to-finish rather than the route taken, and `loop` inside 0.1 km but not just outside it.
+- **Units:** a `# units: ft` track is summarised in metres.
+- **Plan agreement:** the days from `split_days` add up to the summary time, at fitness 1.0 and 1.2.
+- **`format_summary`:** the full layout, and duration display (`5h 07m`, `0h 45m`, `12h 00m`, rounding to the nearest minute, and carrying into the hour).
+
+Two choices to be aware of:
+
+- **Layout pinned beyond the README:** the layout tests fix the exact label text and spacing of all seven lines, which the README only documents for durations. If you consider that layout free to change, those two tests are the ones to loosen.
+- **Exact ties left untested:** I did not test half-minute durations or the finish at exactly 0.1 km, because the README doesn't say which way they go.

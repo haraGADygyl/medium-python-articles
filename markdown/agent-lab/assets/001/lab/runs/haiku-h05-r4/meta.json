@@ -1,0 +1,142 @@
+{
+  "run_id": "haiku-h05-r4",
+  "task": "h05",
+  "tier": "two-file bug",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"On my GPS track, which has a lot of small up-and-down noise, the days from `trailhead plan` add up to 9h 40m, but `trailhead summary` says 7h 05m for the same file. The README says the two should agree.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 66.4,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 23,
+  "duration_ms": 64218,
+  "duration_api_ms": 60356,
+  "api_equivalent_usd": 0.01582396,
+  "usage": {
+    "input_tokens": 32,
+    "cache_creation_input_tokens": 29167,
+    "cache_read_input_tokens": 513136,
+    "output_tokens": 9712,
+    "output_tokens_details": {
+      "thinking_tokens": 1804
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 29167,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 646,
+        "cache_read_input_tokens": 41314,
+        "cache_creation_input_tokens": 616,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 616
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 32,
+      "outputTokens": 9712,
+      "cacheReadInputTokens": 513136,
+      "cacheCreationInputTokens": 29167,
+      "webSearchRequests": 0,
+      "costUSD": 0.01582396,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 1804,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 29167,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 12,
+    "Edit": 10
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && cat README* 2>/dev/null | head -200",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h05-r4/src/trailhead && cat elevation.py plan.py && grep -n \"gain_and_loss\\|ascent\\|naismith\\|def \" cli.py report.py track.py geo.py pace.py | head -80",
+    "cat pace.py && sed -n 30,70p report.py && cd ../.. && cat tests/test_plan.py && grep -n \"leg_hours\\|counted_changes\" -r tests src",
+    "cat src/trailhead/cli.py && sed -n 20,40p tests/test_pace.py && python -m pytest -q 2>&1 | tail -5",
+    "mkdir -p \"$TMPDIR/repro\" && python - <<'EOF'\nimport os, random\nrandom.seed(1)\nlines = [\"# name: jitter\", \"lat,lon,ele\"]\nele = 1000.0\nfor i in range(2000):\n    # gentle real climb of ~0.2 m per step plus +/-2 m GPS noise\n    ele_obs = 1000 + i * 0.2 + random.uniform(-2, 2)\n    lines.append(f\"0,{i*0.0005:.6f},{ele_obs:.2f}\")\nopen(os.path.join(os.environ[\"TMPDIR\"], \"repro\", \"jitter.csv\"), \"w\").write(\"\\n\".join(lines) + \"\\n\")\nEOF\nPYTHONPATH=src python -m trailhead summary \"$TMPDIR/repro/jitter.csv\"; PYTHONPATH=src python -m trailhead plan \"$TMPDIR/repro/jitter.csv\"",
+    "mkdir -p \"$TMPDIR/repro\" && python -c '\nimport os, random\nrandom.seed(1)\nlines = [\"# name: jitter\", \"lat,lon,ele\"]\nfor i in range(2000):\n    ele = 1000 + i * 0.2 + random.uniform(-2, 2)\n    lines.append(f\"0,{i*0.0005:.6f},{ele:.2f}\")\nopen(os.environ[\"TMPDIR\"] + \"/repro/jitter.csv\", \"w\").write(\"\\n\".join(lines) + \"\\n\")\n' && PYTHONPATH=src python -m trailhead summary \"$TMPDIR/repro/jitter.csv\"; PYTHONPATH=src python -m trailhead plan \"$TMPDIR/repro/jitter.csv\"",
+    "python -c '\nimport random, tempfile, os\nrandom.seed(1)\nlines = [\"# name: jitter\", \"lat,lon,ele\"]\nfor i in range(2000):\n    ele = 1000 + i * 0.2 + random.uniform(-2, 2)\n    lines.append(f\"0,{i*0.0005:.6f},{ele:.2f}\")\nd = tempfile.mkdtemp()\np = os.path.join(d, \"jitter.csv\")\nopen(p, \"w\").write(\"\\n\".join(lines) + \"\\n\")\nprint(p)\n' > \"$TMPDIR/repro_path.txt\" && P=$(cat \"$TMPDIR/repro_path.txt\") && PYTHONPATH=src python -m trailhead summary \"$P\" && PYTHONPATH=src python -m trailhead plan \"$P\"",
+    "python -c '\nimport random, os\nrandom.seed(1)\nlines = [\"# name: jitter\", \"lat,lon,ele\"]\nfor i in range(2000):\n    ele = 1000 + i * 0.2 + random.uniform(-2, 2)\n    lines.append(f\"0,{i*0.0005:.6f},{ele:.2f}\")\nopen(os.path.join(os.environ[\"TMPDIR\"], \"jitter.csv\"), \"w\").write(\"\\n\".join(lines) + \"\\n\")\n' && PYTHONPATH=src python -m trailhead summary \"$TMPDIR/jitter.csv\" && PYTHONPATH=src python -m trailhead plan \"$TMPDIR/jitter.csv\"",
+    "cat >> tests/test_plan.py <<'EOF'\n\n\ndef test_days_add_up_to_the_summary_on_a_jittery_track(make_track):\n    # A gentle 0.2 m-per-step climb with +/-2 m noise: the summary's threshold\n    # filters the noise, and the days must use the same climb.\n    import random\n\n    from trailhead.report import summarise\n\n    rng = random.Random(1)\n    track = make_track(*[(0, i * 0.0005, 1000 + i * 0.2 + rng.uniform(-2, 2)) for i in range(2000)])\n    total = sum(hours for *_, hours in split_days(track, max_hours_per_day=1000))\n    assert total == pytest.approx(summarise(track).hours, abs=0.01)\nEOF\nPYTHONPATH=src python -m trailhead summary \"$TMPDIR/jitter.csv\" && PYTHONPATH=src python -m trailhead plan \"$TMPDIR/jitter.csv\"; python -m pytest -q 2>&1 | tail -3; ruff check 2>&1 | tail -5; mypy 2>&1 | tail -2",
+    "ruff check 2>&1 | head -30; git stash -q && ruff check 2>&1 | tail -2; git stash pop -q",
+    "python -m pytest -q 2>&1 | tail -3; ruff check 2>&1 | tail -2; mypy 2>&1 | tail -1; git stash -q && python -m pytest -q tests/test_plan.py 2>&1 | tail -2; git stash pop -q && git status --short src tests",
+    "git stash push -q -- src && python -m pytest -q tests/test_plan.py 2>&1 | tail -3; git stash pop -q && python -m pytest -q 2>&1 | tail -1 && git status --short src tests && git diff --stat"
+  ],
+  "permission_denials": [
+    {
+      "command": "mkdir -p \"$TMPDIR/repro\" && python - <<'EOF'\nimport os, random\nrandom.seed(1)\nlines = [\"# name: jitter\", \"lat,lon,ele\"]\nele = 1000.0\nfor i in range(2000):\n    # gentle real climb of ~0.2 m per step plus +/-2 m GPS noise\n    ele_obs = 1000 + i * 0.2 + random.uniform(-2, 2)\n    lines.append(f\"0,{i*0.0005:.6f},{ele_obs:.2f}\")\nopen(os.path.join(os.environ[\"TMPDIR\"], \"repro\", \"jitter.csv\"), \"w\").write(\"\\n\".join(lines) + \"\\n\")\nEOF\nPYTHONPATH=src python -m trailhead summary \"$TMPDIR/repro/jitter.csv\"; PYTHONPATH=src python -m trailhead plan \"$TMPDIR/repro/jitter.csv\"",
+      "description": "Build jittery track and compare summary and plan"
+    },
+    {
+      "command": "mkdir -p \"$TMPDIR/repro\" && python -c '\nimport os, random\nrandom.seed(1)\nlines = [\"# name: jitter\", \"lat,lon,ele\"]\nfor i in range(2000):\n    ele = 1000 + i * 0.2 + random.uniform(-2, 2)\n    lines.append(f\"0,{i*0.0005:.6f},{ele:.2f}\")\nopen(os.environ[\"TMPDIR\"] + \"/repro/jitter.csv\", \"w\").write(\"\\n\".join(lines) + \"\\n\")\n' && PYTHONPATH=src python -m trailhead summary \"$TMPDIR/repro/jitter.csv\"; PYTHONPATH=src python -m trailhead plan \"$TMPDIR/repro/jitter.csv\"",
+      "description": "Build jittery track and compare summary and plan"
+    },
+    {
+      "command": "python -c '\nimport random, tempfile, os\nrandom.seed(1)\nlines = [\"# name: jitter\", \"lat,lon,ele\"]\nfor i in range(2000):\n    ele = 1000 + i * 0.2 + random.uniform(-2, 2)\n    lines.append(f\"0,{i*0.0005:.6f},{ele:.2f}\")\nd = tempfile.mkdtemp()\np = os.path.join(d, \"jitter.csv\")\nopen(p, \"w\").write(\"\\n\".join(lines) + \"\\n\")\nprint(p)\n' > \"$TMPDIR/repro_path.txt\" && P=$(cat \"$TMPDIR/repro_path.txt\") && PYTHONPATH=src python -m trailhead summary \"$P\" && PYTHONPATH=src python -m trailhead plan \"$P\"",
+      "description": "Generate jittery track and compare summary and plan"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 35,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 35,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  }
+}

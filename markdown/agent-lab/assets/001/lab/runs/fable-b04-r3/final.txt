@@ -1,0 +1,7 @@
+Fixed: the Garmin export starts with a UTF-8 byte order mark, and the parser now ignores it. `trailhead summary garmin-export.csv` now prints a summary instead of the header error, and the test suite passes.
+
+**Cause:** the file's first three bytes are `EF BB BF`, an invisible marker some exporters (Garmin, Excel) put at the start of a file. Editors hide it, so the line looks like exactly `lat,lon,ele`. The parser saw `\ufefflat` as the first column name and rejected the header.
+
+**Fix:** `parse_track` in `src/trailhead/track.py` now strips a leading BOM before parsing. I added a regression test in `tests/test_track.py` covering both a BOM file on disk with Windows line endings and a BOM string passed directly.
+
+Nothing is committed.

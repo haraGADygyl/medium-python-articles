@@ -1,0 +1,198 @@
+{
+  "run_id": "haiku-r05-r1",
+  "task": "r05",
+  "tier": "refactor/feature",
+  "baseline": false,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Add Tobler's hiking function as an alternative to Naismith's rule for walking time. Give `pace.leg_hours`, `plan.split_days` and `report.summarise` a keyword argument `pace: str = \"naismith\"` that accepts `\"naismith\"` or `\"tobler\"` (anything else is a `ValueError`), and give both CLI commands a `--pace {naismith,tobler}` option. Under Tobler, a leg takes its length divided by `tobler_kmh(grade)` hours, where grade is the leg's elevation change divided by its horizontal length (both in metres); a zero-length leg takes no time; fitness divides the time as it does for Naismith; and the summary time is the sum of the leg times. Naismith stays the default and existing output must not change. Update the README.",
+  "harness_timeout": false,
+  "wall_s": 127.6,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 48,
+  "duration_ms": 125440,
+  "duration_api_ms": 121556,
+  "api_equivalent_usd": 0.03405897,
+  "usage": {
+    "input_tokens": 68,
+    "cache_creation_input_tokens": 44334,
+    "cache_read_input_tokens": 1441937,
+    "output_tokens": 21532,
+    "output_tokens_details": {
+      "thinking_tokens": 3892
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 44334,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 543,
+        "cache_read_input_tokens": 56882,
+        "cache_creation_input_tokens": 215,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 215
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 68,
+      "outputTokens": 21532,
+      "cacheReadInputTokens": 1441937,
+      "cacheCreationInputTokens": 44334,
+      "webSearchRequests": 0,
+      "costUSD": 0.03405897,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 3892,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 44334,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 33,
+    "Edit": 13,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && cat README.md 2>/dev/null | head -200",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src/trailhead && cat pace.py plan.py report.py cli.py && cat ../../pyproject.toml",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1 && cat src/trailhead/elevation.py && grep -n \"def \\|class \" src/trailhead/track.py && sed -n '/def leg_lengths_km/,/^$/p' src/trailhead/track.py && cat tests/test_pace.py tests/test_plan.py tests/test_report.py tests/test_cli.py tests/conftest.py | head -400",
+    "cat >> tests/test_pace.py <<'EOF'\n\n\ndef test_tobler_leg_uses_its_grade(make_track):\n    # Leg one climbs 300 m over 1.11195 km; leg two drops 300 m over the same distance.\n    track = make_track((0, 0, 1000), (0, 0.01, 1300), (0, 0.02, 1000))\n    up, down = leg_hours(track, pace=\"tobler\")\n    assert up == pytest.approx(1.11195 / tobler_kmh(300 / 1111.95), abs=1e-4)\n    assert down == pytest.approx(1.11195 / tobler_kmh(-300 / 1111.95), abs=1e-4)\n    assert down < up\n\n\ndef test_tobler_zero_length_leg_takes_no_time(make_track):\n    track = make_track((0, 0, 0), (0, 0, 0), (0, 0.01, 0))\n    first, second = leg_hours(track, pace=\"tobler\")\n    assert first == 0.0\n    assert second > 0\n\n\ndef test_tobler_fitness_divides_time(make_track):\n    track = make_track((0, 0, 0), (0, 0.01, 50))\n    assert leg_hours(track, fitness=2.0, pace=\"tobler\")[0] == pytest.approx(\n        leg_hours(track, pace=\"tobler\")[0] / 2\n    )\n\n\ndef test_naismith_is_the_default(make_track):\n    track = make_track((0, 0, 1000), (0, 0.01, 1300))\n    assert leg_hours(track) == leg_hours(track, pace=\"naismith\")\n\n\n@pytest.mark.parametrize(\"pace\", [\"Tobler\", \"\", \"minetti\"])\ndef test_unknown_pace_is_an_error(make_track, pace):\n    track = make_track((0, 0, 0), (0, 0.01, 0))\n    with pytest.raises(ValueError):\n        leg_hours(track, pace=pace)\nEOF\nsed -i 's/^from trailhead.pace import leg_hours, naismith_hours, tobler_kmh$/&/' tests/test_pace.py\ncat >> tests/test_plan.py <<'EOF'\n\n\ndef test_tobler_days_add_up_to_the_leg_times(make_track):\n    track = make_track((0, 0, 1000), (0, 0.01, 1300), (0, 0.02, 1000))\n    days = split_days(track, max_hours_per_day=100, pace=\"tobler\")\n    assert days[0][3] == pytest.approx(sum(leg_hours(track, pace=\"tobler\")), abs=0.01)\n\n\ndef test_unknown_pace_in_plan(five_flat_hours):\n    with pytest.raises(ValueError):\n        split_days(five_flat_hours, pace=\"minetti\")\nEOF\nsed -i 's/^from trailhead.plan import describe_plan, split_days$/from trailhead.pace import leg_hours\\nfrom trailhead.plan import describe_plan, split_days/' tests/test_plan.py\ncat >> tests/test_report.py <<'EOF'\n\n\ndef test_tobler_summary_time_is_the_sum_of_leg_times(make_track):\n    from trailhead.pace import leg_hours\n\n    track = make_track(*RIDGE)\n    summary = summarise(track, pace=\"tobler\")\n    assert summary.hours == pytest.approx(sum(leg_hours(track, pace=\"tobler\")))\n    assert summary.gain_m == 95.0\n\n\ndef test_naismith_summary_is_unchanged_by_the_pace_argument(make_track):\n    track = make_track(*RIDGE)\n    assert summarise(track, pace=\"naismith\").hours == summarise(track).hours\n\n\ndef test_unknown_pace_in_summary(make_track):\n    with pytest.raises(ValueError):\n        summarise(make_track(*RIDGE), pace=\"minetti\")\nEOF\ncat >> tests/test_cli.py <<'EOF'\n\n\ndef test_summary_with_tobler(write_track, capsys):\n    assert main([\"summary\", str(write_track(TRACK)), \"--pace\", \"tobler\"]) == 0\n    assert \"  time      \" in capsys.readouterr().out\n\n\ndef test_plan_with_tobler(write_track, capsys):\n    assert main([\"plan\", str(write_track(TRACK)), \"--pace\", \"tobler\"]) == 0\n    assert capsys.readouterr().out.startswith(\"Day 1: points 0-2, \")\n\n\ndef test_unknown_pace_is_a_usage_error(write_track, capsys):\n    with pytest.raises(SystemExit) as exc:\n        main([\"summary\", str(write_track(TRACK)), \"--pace\", \"minetti\"])\n    assert exc.value.code == 2\nEOF\nsed -i '1i import pytest\\n' tests/test_cli.py\nhead -5 tests/test_cli.py; python -m pytest -q 2>&1 | tail -15; ruff check 2>&1 | tail -15; mypy 2>&1 | tail -5",
+    "python - <<'EOF'\nimport re\np='tests/test_report.py'\ns=open(p).read()\ns=s.replace(\"    from trailhead.pace import leg_hours\\n\\n\",\"\")\ns=s.replace(\"from trailhead.report import format_summary, summarise\\n\",\"from trailhead.pace import leg_hours\\nfrom trailhead.report import format_summary, summarise\\n\",1)\nopen(p,'w').write(s)\nEOF\npython -m pytest -q 2>&1 | tail -1; ruff check 2>&1|tail -1\n# compare Naismith output against committed HEAD sources\nD=$(mktemp -d); git archive HEAD src | tar -x -C \"$D\"\nprintf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1090\\n0,0.02,1050\\n0,0.03,1400\\n0,0.031,1400\\n' > \"$D/r.csv\"\nfor c in \"summary $D/r.csv\" \"plan $D/r.csv --max-hours 0.3 --fitness 1.2\"; do\n  a=$(PYTHONPATH=\"$D/src\" python -I -m trailhead $c); b=$(PYTHONPATH=src python -I -m trailhead $c); [ \"$a\" = \"$b\" ] && echo \"same: $c\" || echo \"DIFF: $c\"; done\nPYTHONPATH=src python -I -m trailhead summary \"$D/r.csv\" --pace tobler; PYTHONPATH=src python -I -m trailhead plan \"$D/r.csv\" --pace tobler --max-hours 0.3\nPYTHONPATH=src python -I -m trailhead summary \"$D/r.csv\" --pace foo; echo \"exit $?\"",
+    "python -m pytest -q 2>&1 | tail -1 && ruff check | tail -1 && D=$(mktemp -d) && git archive HEAD src | tar -x -C \"$D\" && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1090\\n0,0.02,1050\\n0,0.03,1400\\n0,0.031,1400\\n' > \"$D/r.csv\" && PYTHONPATH=\"$D/src\" python -I -m trailhead summary \"$D/r.csv\" > \"$D/old1\"; PYTHONPATH=src python -I -m trailhead summary \"$D/r.csv\" > \"$D/new1\"; PYTHONPATH=\"$D/src\" python -I -m trailhead plan \"$D/r.csv\" --max-hours 0.3 --fitness 1.2 > \"$D/old2\"; PYTHONPATH=src python -I -m trailhead plan \"$D/r.csv\" --max-hours 0.3 --fitness 1.2 > \"$D/new2\"; cmp \"$D/old1\" \"$D/new1\" && cmp \"$D/old2\" \"$D/new2\" && echo \"Naismith output identical\"; cat \"$D/new1\"; PYTHONPATH=src python -I -m trailhead summary \"$D/r.csv\" --pace tobler; PYTHONPATH=src python -I -m trailhead plan \"$D/r.csv\" --pace tobler --max-hours 0.3; PYTHONPATH=src python -I -m trailhead summary \"$D/r.csv\" --pace foo; echo \"exit $?\"",
+    "python -m pytest -q 2>&1 | tail -1 && ruff check | tail -1",
+    "mkdir -p \"$TMPDIR/oldsrc\" && cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1 && git archive HEAD src | tar -x -C \"$TMPDIR/oldsrc\" && ls \"$TMPDIR/oldsrc/src/trailhead\"",
+    "cd \"$TMPDIR\" && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1090\\n0,0.02,1050\\n0,0.03,1400\\n0,0.031,1400\\n' > r.csv && PYTHONPATH=\"$TMPDIR/oldsrc/src\" python -I -m trailhead summary r.csv > old1.txt; PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead summary r.csv > new1.txt; PYTHONPATH=\"$TMPDIR/oldsrc/src\" python -I -m trailhead plan r.csv --max-hours 0.3 --fitness 1.2 > old2.txt; PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead plan r.csv --max-hours 0.3 --fitness 1.2 > new2.txt; cmp old1.txt new1.txt && cmp old2.txt new2.txt && echo \"Naismith output identical\"; cat new1.txt; echo ---; cat new2.txt",
+    "cd \"$TMPDIR\" && export PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src && python -I -m trailhead summary r.csv --pace tobler; python -I -m trailhead plan r.csv --pace tobler --max-hours 0.3; python -I -m trailhead summary r.csv --pace foo; echo \"exit $?\"",
+    "echo $TMPDIR",
+    "cd /tmp/claude-1000 && rm -rf check/oldsrc && mkdir -p check/oldsrc && cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1 && git archive HEAD src | tar -x -C /tmp/claude-1000/check/oldsrc && echo extracted",
+    "git -C /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1 archive HEAD src | tar -x -C /tmp/claude-1000/check/oldsrc && echo extracted",
+    "mkdir -p /tmp/claude-1000/check/oldsrc && git -C /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1 archive HEAD src | tar -x -C /tmp/claude-1000/check/oldsrc && echo extracted",
+    "cd /tmp/claude-1000/check && PYTHONPATH=/tmp/claude-1000/check/oldsrc/src python -I -m trailhead summary r.csv > old1.txt; PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead summary r.csv > new1.txt; PYTHONPATH=/tmp/claude-1000/check/oldsrc/src python -I -m trailhead plan r.csv --max-hours 0.3 --fitness 1.2 > old2.txt; PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead plan r.csv --max-hours 0.3 --fitness 1.2 > new2.txt; cmp old1.txt new1.txt && cmp old2.txt new2.txt && echo \"Naismith output identical\"; cat new1.txt; cat new2.txt",
+    "cd /tmp/claude-1000/check && export PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src && python -I -m trailhead summary r.csv --pace tobler; python -I -m trailhead plan r.csv --pace tobler --max-hours 0.3; python -I -m trailhead summary r.csv --pace foo; echo \"exit $?\"",
+    "env PYTHONPATH=/tmp/claude-1000/check/oldsrc/src python -I -m trailhead summary /tmp/claude-1000/check/r.csv > /tmp/claude-1000/check/old1.txt && env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead summary /tmp/claude-1000/check/r.csv > /tmp/claude-1000/check/new1.txt && cmp /tmp/claude-1000/check/old1.txt /tmp/claude-1000/check/new1.txt && echo \"summary identical\" && cat /tmp/claude-1000/check/new1.txt",
+    "env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead summary /tmp/claude-1000/check/r.csv --pace tobler",
+    "env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead plan /tmp/claude-1000/check/r.csv --pace tobler --max-hours 0.3",
+    "env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead summary /tmp/claude-1000/check/r.csv --pace foo; echo \"exit $?\"",
+    "env PYTHONPATH=/tmp/claude-1000/check/oldsrc/src python -m trailhead summary /tmp/claude-1000/check/r.csv > /tmp/claude-1000/check/old1.txt; env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -m trailhead summary /tmp/claude-1000/check/r.csv > /tmp/claude-1000/check/new1.txt; env PYTHONPATH=/tmp/claude-1000/check/oldsrc/src python -m trailhead plan /tmp/claude-1000/check/r.csv --max-hours 0.3 --fitness 1.2 > /tmp/claude-1000/check/old2.txt; env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -m trailhead plan /tmp/claude-1000/check/r.csv --max-hours 0.3 --fitness 1.2 > /tmp/claude-1000/check/new2.txt; cmp /tmp/claude-1000/check/old1.txt /tmp/claude-1000/check/new1.txt && cmp /tmp/claude-1000/check/old2.txt /tmp/claude-1000/check/new2.txt && echo \"Naismith output identical\"; cat /tmp/claude-1000/check/new1.txt /tmp/claude-1000/check/new2.txt",
+    "env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -m trailhead summary /tmp/claude-1000/check/r.csv --pace tobler; env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -m trailhead plan /tmp/claude-1000/check/r.csv --pace tobler --max-hours 0.3; env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -m trailhead summary /tmp/claude-1000/check/r.csv --pace foo; echo \"exit $?\"",
+    "cmp /tmp/claude-1000/check/old1.txt /tmp/claude-1000/check/new1.txt && echo same-summary",
+    "cmp /tmp/claude-1000/check/old2.txt /tmp/claude-1000/check/new2.txt && echo same-plan",
+    "env PYTHONPATH=/tmp/claude-1000/check/oldsrc/src python -m trailhead summary /tmp/claude-1000/check/r.csv > /tmp/claude-1000/check/old1.txt; env PYTHONPATH=/tmp/claude-1000/check/oldsrc/src python -m trailhead plan /tmp/claude-1000/check/r.csv --max-hours 0.3 --fitness 1.2 > /tmp/claude-1000/check/old2.txt; echo done",
+    "env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -m trailhead plan /tmp/claude-1000/check/r.csv --max-hours 0.3 --fitness 1.2 > /tmp/claude-1000/check/new2.txt; echo done",
+    "cmp /tmp/claude-1000/check/old1.txt /tmp/claude-1000/check/new1.txt && echo same-summary",
+    "cmp /tmp/claude-1000/check/old2.txt /tmp/claude-1000/check/new2.txt && echo same-plan",
+    "env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -m trailhead summary /tmp/claude-1000/check/r.csv > /tmp/claude-1000/check/new1.txt; echo done",
+    "cmp /tmp/claude-1000/check/old1.txt /tmp/claude-1000/check/new1.txt && echo same-summary",
+    "python -m pytest -q 2>&1 | tail -1",
+    "ruff check && mypy",
+    "rm -rf /tmp/claude-1000/check"
+  ],
+  "permission_denials": [
+    {
+      "command": "python - <<'EOF'\nimport re\np='tests/test_report.py'\ns=open(p).read()\ns=s.replace(\"    from trailhead.pace import leg_hours\\n\\n\",\"\")\ns=s.replace(\"from trailhead.report import format_summary, summarise\\n\",\"from trailhead.pace import leg_hours\\nfrom trailhead.report import format_summary, summarise\\n\",1)\nopen(p,'w').write(s)\nEOF\npython -m pytest -q 2>&1 | tail -1; ruff check 2>&1|tail -1\n# compare Naismith output against committed HEAD sources\nD=$(mktemp -d); git archive HEAD src | tar -x -C \"$D\"\nprintf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1090\\n0,0.02,1050\\n0,0.03,1400\\n0,0.031,1400\\n' > \"$D/r.csv\"\nfor c in \"summary $D/r.csv\" \"plan $D/r.csv --max-hours 0.3 --fitness 1.2\"; do\n  a=$(PYTHONPATH=\"$D/src\" python -I -m trailhead $c); b=$(PYTHONPATH=src python -I -m trailhead $c); [ \"$a\" = \"$b\" ] && echo \"same: $c\" || echo \"DIFF: $c\"; done\nPYTHONPATH=src python -I -m trailhead summary \"$D/r.csv\" --pace tobler; PYTHONPATH=src python -I -m trailhead plan \"$D/r.csv\" --pace tobler --max-hours 0.3\nPYTHONPATH=src python -I -m trailhead summary \"$D/r.csv\" --pace foo; echo \"exit $?\"",
+      "description": "Tidy test import, verify Naismith output unchanged, run Tobler CLI"
+    },
+    {
+      "command": "python -m pytest -q 2>&1 | tail -1 && ruff check | tail -1 && D=$(mktemp -d) && git archive HEAD src | tar -x -C \"$D\" && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1090\\n0,0.02,1050\\n0,0.03,1400\\n0,0.031,1400\\n' > \"$D/r.csv\" && PYTHONPATH=\"$D/src\" python -I -m trailhead summary \"$D/r.csv\" > \"$D/old1\"; PYTHONPATH=src python -I -m trailhead summary \"$D/r.csv\" > \"$D/new1\"; PYTHONPATH=\"$D/src\" python -I -m trailhead plan \"$D/r.csv\" --max-hours 0.3 --fitness 1.2 > \"$D/old2\"; PYTHONPATH=src python -I -m trailhead plan \"$D/r.csv\" --max-hours 0.3 --fitness 1.2 > \"$D/new2\"; cmp \"$D/old1\" \"$D/new1\" && cmp \"$D/old2\" \"$D/new2\" && echo \"Naismith output identical\"; cat \"$D/new1\"; PYTHONPATH=src python -I -m trailhead summary \"$D/r.csv\" --pace tobler; PYTHONPATH=src python -I -m trailhead plan \"$D/r.csv\" --pace tobler --max-hours 0.3; PYTHONPATH=src python -I -m trailhead summary \"$D/r.csv\" --pace foo; echo \"exit $?\"",
+      "description": "Run tests, compare Naismith output with HEAD, try Tobler CLI"
+    },
+    {
+      "command": "cd \"$TMPDIR\" && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1090\\n0,0.02,1050\\n0,0.03,1400\\n0,0.031,1400\\n' > r.csv && PYTHONPATH=\"$TMPDIR/oldsrc/src\" python -I -m trailhead summary r.csv > old1.txt; PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead summary r.csv > new1.txt; PYTHONPATH=\"$TMPDIR/oldsrc/src\" python -I -m trailhead plan r.csv --max-hours 0.3 --fitness 1.2 > old2.txt; PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead plan r.csv --max-hours 0.3 --fitness 1.2 > new2.txt; cmp old1.txt new1.txt && cmp old2.txt new2.txt && echo \"Naismith output identical\"; cat new1.txt; echo ---; cat new2.txt",
+      "description": "Compare Naismith CLI output with HEAD version"
+    },
+    {
+      "command": "cd \"$TMPDIR\" && export PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src && python -I -m trailhead summary r.csv --pace tobler; python -I -m trailhead plan r.csv --pace tobler --max-hours 0.3; python -I -m trailhead summary r.csv --pace foo; echo \"exit $?\"",
+      "description": "Run Tobler CLI and invalid pace check"
+    },
+    {
+      "command": "cd /tmp/claude-1000 && rm -rf check/oldsrc && mkdir -p check/oldsrc && cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1 && git archive HEAD src | tar -x -C /tmp/claude-1000/check/oldsrc && echo extracted",
+      "description": "Extract committed sources to check directory"
+    },
+    {
+      "command": "cd /tmp/claude-1000/check && PYTHONPATH=/tmp/claude-1000/check/oldsrc/src python -I -m trailhead summary r.csv > old1.txt; PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead summary r.csv > new1.txt; PYTHONPATH=/tmp/claude-1000/check/oldsrc/src python -I -m trailhead plan r.csv --max-hours 0.3 --fitness 1.2 > old2.txt; PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead plan r.csv --max-hours 0.3 --fitness 1.2 > new2.txt; cmp old1.txt new1.txt && cmp old2.txt new2.txt && echo \"Naismith output identical\"; cat new1.txt; cat new2.txt",
+      "description": "Compare Naismith CLI output with committed version"
+    },
+    {
+      "command": "cd /tmp/claude-1000/check && export PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src && python -I -m trailhead summary r.csv --pace tobler; python -I -m trailhead plan r.csv --pace tobler --max-hours 0.3; python -I -m trailhead summary r.csv --pace foo; echo \"exit $?\"",
+      "description": "Run Tobler CLI and invalid pace check"
+    },
+    {
+      "command": "env PYTHONPATH=/tmp/claude-1000/check/oldsrc/src python -I -m trailhead summary /tmp/claude-1000/check/r.csv > /tmp/claude-1000/check/old1.txt && env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -I -m trailhead summary /tmp/claude-1000/check/r.csv > /tmp/claude-1000/check/new1.txt && cmp /tmp/claude-1000/check/old1.txt /tmp/claude-1000/check/new1.txt && echo \"summary identical\" && cat /tmp/claude-1000/check/new1.txt",
+      "description": "Compare Naismith summary output with committed version"
+    },
+    {
+      "command": "env PYTHONPATH=/tmp/claude-1000/check/oldsrc/src python -m trailhead summary /tmp/claude-1000/check/r.csv > /tmp/claude-1000/check/old1.txt; env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -m trailhead summary /tmp/claude-1000/check/r.csv > /tmp/claude-1000/check/new1.txt; env PYTHONPATH=/tmp/claude-1000/check/oldsrc/src python -m trailhead plan /tmp/claude-1000/check/r.csv --max-hours 0.3 --fitness 1.2 > /tmp/claude-1000/check/old2.txt; env PYTHONPATH=/tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r1/src python -m trailhead plan /tmp/claude-1000/check/r.csv --max-hours 0.3 --fitness 1.2 > /tmp/claude-1000/check/new2.txt; cmp /tmp/claude-1000/check/old1.txt /tmp/claude-1000/check/new1.txt && cmp /tmp/claude-1000/check/old2.txt /tmp/claude-1000/check/new2.txt && echo \"Naismith output identical\"; cat /tmp/claude-1000/check/new1.txt /tmp/claude-1000/check/new2.txt",
+      "description": "Compare Naismith summary and plan output with committed version"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M README.md",
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_cli.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 155,
+    "lines_removed": 22,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M README.md",
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_cli.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 155,
+    "lines_removed": 22,
+    "own_suite_pass_as_left": true
+  }
+}

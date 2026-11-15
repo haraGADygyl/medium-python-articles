@@ -1,0 +1,141 @@
+{
+  "run_id": "sonnet-t02-r4",
+  "task": "t02",
+  "tier": "tests",
+  "baseline": true,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "sonnet",
+  "prompt": "`src/trailhead/pace.py` has no tests. Write `tests/test_pace.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 28.2,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 25040,
+  "duration_api_ms": 24346,
+  "api_equivalent_usd": 0.11158580000000001,
+  "usage": {
+    "input_tokens": 8,
+    "cache_creation_input_tokens": 17028,
+    "cache_read_input_tokens": 85678,
+    "output_tokens": 3489,
+    "output_tokens_details": {
+      "thinking_tokens": 128
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 17028,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 533,
+        "cache_read_input_tokens": 27084,
+        "cache_creation_input_tokens": 2707,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 2707
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 8,
+      "outputTokens": 3489,
+      "cacheReadInputTokens": 85678,
+      "cacheCreationInputTokens": 17028,
+      "webSearchRequests": 0,
+      "costUSD": 0.11158580000000001,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 128,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 17028,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Read": 1,
+    "Bash": 3,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git ls-files && cat README*",
+    "cat tests/conftest.py src/trailhead/elevation.py src/trailhead/track.py; head -30 tests/test_plan.py",
+    "python -m pytest tests/test_pace.py -q 2>&1 | tail -20; ruff check tests/test_pace.py"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_pace.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "...........................                                              [100%]\n27 passed in 0.04s\n",
+    "src_changed": [],
+    "killed": [
+      "flat speed 4 km/h",
+      "500 m per hour climb",
+      "fitness multiplies",
+      "zero fitness allowed",
+      "negative ascent allowed",
+      "tobler peak on the wrong side",
+      "leg descent counted",
+      "leg fitness dropped"
+    ],
+    "survived": [],
+    "kills": 8,
+    "mutants": 8,
+    "changed": [
+      "A tests/test_pace.py"
+    ],
+    "lines_added": 148,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_pace.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "...........................                                              [100%]\n27 passed in 0.04s\n",
+    "src_changed": [],
+    "killed": [
+      "flat speed 4 km/h",
+      "500 m per hour climb",
+      "fitness multiplies",
+      "zero fitness allowed",
+      "negative ascent allowed",
+      "tobler peak on the wrong side",
+      "leg descent counted",
+      "leg fitness dropped"
+    ],
+    "survived": [],
+    "kills": 8,
+    "mutants": 8,
+    "changed": [
+      "A tests/test_pace.py"
+    ],
+    "lines_added": 148,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

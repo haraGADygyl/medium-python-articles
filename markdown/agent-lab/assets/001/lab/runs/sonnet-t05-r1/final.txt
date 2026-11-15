@@ -1,0 +1,11 @@
+I added `tests/test_report.py` with 41 tests for `summarise` and `format_summary`. They all pass, as does the rest of the suite (86 tests), and `ruff` is clean. Nothing under `src/` was changed.
+
+They cover:
+- **Summary fields:** length rounded to 0.1 km, ascent and descent with the 3 m jitter threshold, a 300 m climb in 1 m steps, and a custom or negative threshold. They also cover steepest grade in percent (uphill and downhill), and highest and lowest points, including feet converted to metres.
+- **Time:** the Naismith time, `fitness` dividing it, bad fitness raising `ValueError`, and time using the unrounded length. I also checked that the day-plan total matches the summary time for the same track and fitness.
+- **Heading:** all eight compass points, a route that wanders but is judged only start to finish, and the 0.1 km loop boundary (99 m is a loop, 101 m is not).
+- **Formatting:** the exact seven-line layout, durations such as `5h 07m`, `0h 45m` and `12h 00m`, and `1h 59.6m` showing as `2h 00m` rather than `1h 60m`.
+
+I found no mismatches between `report.py` and the README. I left out exact-half-minute durations like 2.5 minutes, because the README only says "nearest minute" and Python's `round` would round that case to even.
+
+My first run had two failures, both mistakes in the tests rather than bugs in `report.py`. One was a missing leading indent in an expected string. The other was my tolerance for the day-plan comparison. `split_days` rounds each day to 0.01 h, so that check allows a 0.01 h difference.

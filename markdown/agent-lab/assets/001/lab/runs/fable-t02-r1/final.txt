@@ -1,0 +1,7 @@
+I added `tests/test_pace.py` with 42 tests covering all three functions in `pace.py`; the full suite (81 tests) passes and `ruff check` is clean on the new file. Nothing under `src/` was touched, and the tests turned up no discrepancies between `pace.py` and the README or docstrings.
+
+- **`naismith_hours`**: checks the 5 km/h flat rate, the hour per 600 m of ascent, and that fitness divides the time (1.25 faster, 0.8 slower). It also checks that results are unrounded and that zero or negative fitness and negative distance or ascent raise `ValueError`.
+- **`tobler_kmh`**: checks the formula at several grades, the 6 km/h peak at a 5% descent, and that grade is rise over run rather than percent. It also checks that uphill is slower than the same grade downhill and that speed falls as the slope steepens.
+- **`leg_hours`**: checks one time per leg, that descent adds nothing, and that fitness applies to every leg. For the 3 m threshold, it checks that jitter is ignored, that small steps are credited to the leg that reaches the threshold, and that a climb of exactly 3 m counts. It also checks that the legs add up to the summary time for the same track and fitness.
+
+The legs-versus-summary test compares to within 0.001 h rather than exactly, because the summary rounds ascent to 0.1 m before timing it and the legs do not.

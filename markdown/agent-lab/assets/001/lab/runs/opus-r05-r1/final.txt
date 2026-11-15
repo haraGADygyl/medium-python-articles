@@ -1,0 +1,14 @@
+Tobler pacing is now an option everywhere you asked for it, and Naismith is still the default. With default settings the CLI output is identical to before: I compared it against the original code on the same track. All 59 tests pass, and `ruff check` and `mypy` are clean. I haven't committed anything.
+
+**What changed**
+- **`pace.py`**: `leg_hours(track, fitness=1.0, pace="naismith")` now also does Tobler. Each leg takes `km / tobler_kmh(grade) / fitness` hours, where grade is the elevation change divided by the leg's horizontal length in metres. A zero-length leg takes no time. A new `check_pace()` raises `ValueError` for any pace other than `"naismith"` or `"tobler"`. The match is case-sensitive, so `"Tobler"` is rejected.
+- **`plan.split_days`** and **`report.summarise`** take `pace="naismith"` and check it. Under Tobler, the summary time is the sum of the leg times, so a plan's days add up to the summary time just as they do under Naismith.
+- **CLI**: `summary` and `plan` both accept `--pace {naismith,tobler}`, and argparse rejects anything else.
+- **README**: covers the new option and how Tobler timing works, with an example command.
+- **Tests**: 12 new tests covering Tobler leg times, fitness scaling, zero-length legs, invalid fitness, unknown paces (in every function and in the CLI), the plan split, the summary being the sum of leg times, and exact CLI output.
+
+**Decisions the spec didn't settle:**
+- **Tobler uses raw elevations, with no 3 m jitter threshold.** This follows your definition of grade. It means `summary --threshold` still changes the ascent figures but has no effect on the Tobler time. The README says so.
+- **Under Tobler, `fitness` of zero or less is a `ValueError`**, as it is for Naismith. Before this, only `naismith_hours` checked fitness.
+
+For the sample 2.2 km ridge in the CLI tests, Tobler gives 0h 29m.

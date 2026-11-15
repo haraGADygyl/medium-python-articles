@@ -1,0 +1,9 @@
+I added `tests/test_pace.py` with 29 tests covering `naismith_hours`, `tobler_kmh` and `leg_hours`. All 69 tests in the suite pass, `ruff check` and `ruff format --check` are clean on the new file, and nothing under `src/` changed. I didn't commit the file.
+
+The tests check what the README and docstrings say:
+
+- **Naismith:** 5 km/h on the flat, one hour per 600 m of ascent, descent adds nothing, fitness divides the time, times aren't rounded, and negative distance or ascent or non-positive fitness raise `ValueError`.
+- **Tobler:** the peak of 6 km/h at a 5% descent, symmetry around that peak, and the stated values for flat ground and a 10% climb.
+- **Per-leg hours:** one value per leg, flat and descending legs cost only distance, a climb is credited to the leg where it happens, jitter below 3 m adds nothing, a long climb in small steps counts in full, and the legs add up to the summary time from `report.py` for several fitness values.
+
+I ran `ruff check --fix` once to sort the imports, which is the only change to the file after I wrote it. I also renamed one test to avoid a duplicate name that ruff flagged.

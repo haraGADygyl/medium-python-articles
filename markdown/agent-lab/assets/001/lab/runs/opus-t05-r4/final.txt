@@ -1,0 +1,24 @@
+I added `tests/test_report.py` with 44 tests. They all pass, the full suite passes (89 tests) and `ruff check` is clean. Nothing under `src/` was changed.
+
+**What the tests check for `summarise`:**
+- **Name** is taken from the track.
+- **Distance** is great-circle distance, adds up every leg, and is rounded to 0.1 km (one degree on the equator gives 111.2).
+- **Ascent and descent**: small jitter adds nothing, a 300 m climb in 1 m steps counts as 300 m, the `threshold` argument is used, and a negative threshold raises `ValueError`.
+- **Highest and lowest** elevation.
+- **Steepest grade**: the README's example (18 m over 100 m gives `18.0`), downhill legs count, and repeated points are skipped.
+- **Walking time**: Naismith's rule, descent adds nothing, `fitness` divides the time, and zero or negative fitness raises `ValueError`.
+- **Time isn't rounded**: it uses the exact distance, not the 0.1 km display value.
+- **Matches the day plan**: the summary time equals the sum of `split_days` for the same track and fitness. The tolerance allows for each day being rounded to 0.01 h.
+- **Heading**: all eight compass points, measured from start to finish regardless of the route in between. A finish at the start or 0.09 km away is `loop`; 0.11 km away is not.
+- **End to end** from a parsed file with `# units: ft` and the settings lines placed after the points.
+- `Summary` can't be modified after it's created.
+
+**What the tests check for `format_summary`:**
+- The exact seven-line output.
+- The README's duration examples (`5h 07m`, `0h 45m`, `12h 00m`).
+- Rounding to the nearest minute, including 1h 59.7m showing as `2h 00m` rather than `1h 60m`.
+- The `loop` heading.
+
+**What isn't tested:** times exactly half a minute past (for example 7.5 minutes). The code uses Python's `round`, which rounds halves to the nearest even number, and the README doesn't say what should happen there.
+
+When I ran `git status`, it showed several untracked files in the repo root that I didn't create (`.bashrc`, `.zshrc`, `.gitconfig`, `.idea`, `.vscode`, `.mcp.json`, `.claude/` and others). They probably come from the sandbox setup. I left them alone, but check them before you commit anything.

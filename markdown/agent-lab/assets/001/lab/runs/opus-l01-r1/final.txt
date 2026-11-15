@@ -1,0 +1,9 @@
+`ruff check` now passes. I didn't touch the ruff config or add any `noqa` comments. All 47 tests pass and mypy is clean.
+
+**One of the warnings was a real bug, and fixing it changes the program's output.** In `src/trailhead/pace.py`, `naismith_hours` worked out the walking time divided by `fitness` but then returned the time without it. So `--fitness` did nothing, even though the docstring and README say it divides the time. Ruff's suggested fix would have deleted the unused variable and kept the bug. I made the function return the fitness-adjusted time instead. This changes the hours shown by `summary` and the day splits from `plan` whenever fitness isn't 1.0. I added `test_naismith_fitness_divides_the_time` so this stays fixed.
+
+**In `src/trailhead/track.py`:**
+- I removed the unused `import os`, which also cleared the import-order warning.
+- The bare `except:` now catches only `ValueError`, which is what `float()` raises for bad input, and passes the original error along with `from err`. Before, it caught every exception, including Ctrl-C.
+
+Nothing is committed.

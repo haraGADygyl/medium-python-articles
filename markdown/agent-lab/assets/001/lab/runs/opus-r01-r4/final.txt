@@ -1,0 +1,7 @@
+`haversine_km` is now `distance_km`, and the old name still works as a deprecated alias. All 48 tests pass. I ran them with deprecation warnings turned into errors, which confirms nothing in `src/` still calls the old name.
+
+- **`src/trailhead/geo.py`**: the function is renamed to `distance_km`. `haversine_km` is now a thin wrapper that emits a `DeprecationWarning` and returns `distance_km(...)`. The warning is reported at the caller's line rather than inside `geo.py`.
+- **`src/trailhead/track.py` and `src/trailhead/report.py`**: imports and calls switched to `distance_km`.
+- **`tests/test_geo.py`**: existing tests now use `distance_km`. I added one test that checks the alias emits the warning and returns the same value as `distance_km`.
+
+The only places `haversine_km` still appears are the alias itself and its test.

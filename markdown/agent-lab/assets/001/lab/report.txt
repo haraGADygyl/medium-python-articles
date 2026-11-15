@@ -1,0 +1,106 @@
+240 graded runs
+
+Passes by tier (passed / runs)
+tier                   haiku    sonnet      opus     fable
+refactor/feature       12/12     12/12     12/12     12/12
+tests                  11/12     12/12     12/12     12/12
+lint                    8/12      7/12     12/12     12/12
+bug                    12/12     12/12     12/12     12/12
+two-file bug           12/12     12/12     12/12     12/12
+all                    55/60     55/60     60/60     60/60
+baseline (5 tasks)     20/20     20/20     20/20     20/20
+harder (10 tasks)      35/40     35/40     40/40     40/40
+
+Per task (passed / runs)
+task       haiku    sonnet      opus     fable
+b01          4/4       4/4       4/4       4/4
+b04          4/4       4/4       4/4       4/4
+b05          4/4       4/4       4/4       4/4
+h03          4/4       4/4       4/4       4/4
+h04          4/4       4/4       4/4       4/4
+h05          4/4       4/4       4/4       4/4
+l01          4/4       4/4       4/4       4/4
+l02          0/4       1/4       4/4       4/4
+l04          4/4       2/4       4/4       4/4
+r01          4/4       4/4       4/4       4/4
+r04          4/4       4/4       4/4       4/4
+r05          4/4       4/4       4/4       4/4
+t02          4/4       4/4       4/4       4/4
+t04          4/4       4/4       4/4       4/4
+t05          3/4       4/4       4/4       4/4
+
+Mutants killed by the agent's tests (tests tier, total kills / total mutants)
+  haiku    90/96
+  sonnet   91/96
+  opus     93/96
+  fable    94/96
+
+Cost of a run (medians)
+model      wall s  turns  tokens k  equiv $  lines +/-
+haiku        35.2   11.5     230.7      0.0       38.5
+sonnet       22.1    7.0     142.8      0.1       27.0
+opus         39.5    7.0     179.7      0.2       34.5
+fable        38.3    6.0     153.4      0.4       30.0
+
+Failure reasons
+  haiku      4  hidden or regression tests fail
+  haiku      1  killed 5 of 7 mutants
+  sonnet     5  hidden or regression tests fail
+
+Runs with refused tool calls: 52
+  fable-b01-r2: 2
+  fable-b04-r2: 1
+  fable-h04-r1: 1
+  fable-h04-r3: 1
+  fable-h04-r4: 1
+  fable-h05-r4: 1
+  fable-l04-r3: 2
+  fable-l04-r4: 1
+  fable-r04-r1: 1
+  fable-r04-r2: 2
+  fable-r04-r3: 1
+  fable-r05-r1: 1
+  fable-r05-r3: 4
+  fable-r05-r4: 3
+  haiku-b04-r2: 1
+  haiku-b05-r1: 2
+  haiku-b05-r2: 1
+  haiku-b05-r3: 1
+  haiku-h04-r1: 1
+  haiku-h04-r4: 1
+  haiku-h05-r1: 4
+  haiku-h05-r2: 3
+  haiku-h05-r3: 1
+  haiku-h05-r4: 3
+  haiku-l01-r1: 1
+  haiku-l04-r4: 1
+  haiku-r04-r1: 1
+  haiku-r05-r1: 9
+  haiku-r05-r3: 2
+  haiku-r05-r4: 1
+  haiku-t02-r2: 1
+  haiku-t04-r4: 1
+  haiku-t05-r2: 1
+  haiku-t05-r3: 1
+  opus-b01-r4: 1
+  opus-h04-r2: 1
+  opus-l04-r2: 2
+  opus-r05-r1: 4
+  opus-r05-r2: 3
+  opus-r05-r3: 4
+  opus-r05-r4: 1
+  opus-t04-r2: 1
+  opus-t04-r3: 3
+  sonnet-b04-r2: 1
+  sonnet-l01-r1: 1
+  sonnet-r01-r4: 1
+  sonnet-r05-r1: 2
+  sonnet-r05-r2: 2
+  sonnet-r05-r3: 3
+  sonnet-r05-r4: 1
+  sonnet-t05-r2: 1
+  sonnet-t05-r4: 1
+
+Model ids: claude-fable-5-2, claude-haiku-5-5, claude-opus-5-5, claude-sonnet-5-5
+Claude Code: 2.1.325
+Costs are Claude Code's API-equivalent estimates: equivalent, not billed.

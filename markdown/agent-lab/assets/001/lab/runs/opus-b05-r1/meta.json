@@ -1,0 +1,121 @@
+{
+  "run_id": "opus-b05-r1",
+  "task": "b05",
+  "tier": "bug",
+  "baseline": false,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "opus",
+  "prompt": "Bug report from a user: \"My GPS app writes the `# units: ft` line at the end of the file, after the points. trailhead then reports a highest point of 14115 m for a hike that tops out at 14,115 ft (about 4302 m). The file is attached as `pikes-peak.csv`.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 36.2,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 10,
+  "duration_ms": 33879,
+  "duration_api_ms": 32537,
+  "api_equivalent_usd": 0.2017214,
+  "usage": {
+    "input_tokens": 15,
+    "cache_creation_input_tokens": 14386,
+    "cache_read_input_tokens": 183067,
+    "output_tokens": 2498,
+    "output_tokens_details": {
+      "thinking_tokens": 301
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 14386,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 1,
+        "output_tokens": 566,
+        "cache_read_input_tokens": 26235,
+        "cache_creation_input_tokens": 914,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 914
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 15,
+      "outputTokens": 2498,
+      "cacheReadInputTokens": 183067,
+      "cacheCreationInputTokens": 14386,
+      "webSearchRequests": 0,
+      "costUSD": 0.2017214,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 301,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 14386,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 6,
+    "Grep": 1,
+    "Read": 1,
+    "Edit": 1
+  },
+  "bash_commands": [
+    "git ls-files; cat *.md 2>/dev/null | head -50",
+    "cat src/trailhead/track.py; cat pikes-peak.csv | head; tail -3 pikes-peak.csv",
+    "python -m trailhead summary pikes-peak.csv",
+    "PYTHONPATH=src python -m trailhead summary pikes-peak.csv",
+    "python - <<'EOF'\np='src/trailhead/track.py'\ns=open(p).read()\ns=s.replace(\"\"\"        points.append(_parse_point(line, number, scale))\n    if len(points) < 2:\n        raise TrackError(\"a track needs at least two points\")\n    return Track(name, points)\n\"\"\",\"\"\"        points.append(_parse_point(line, number))\n    if len(points) < 2:\n        raise TrackError(\"a track needs at least two points\")\n    # Settings apply to the whole track wherever they appear, so convert units only\n    # once the entire file has been read.\n    if scale != 1.0:\n        points = [Point(p.lat, p.lon, p.ele * scale) for p in points]\n    return Track(name, points)\n\"\"\")\ns=s.replace(\"def _parse_point(line: str, number: int, scale: float) -> Point:\",\"def _parse_point(line: str, number: int) -> Point:\")\ns=s.replace(\"    return Point(lat, lon, ele * scale)\",\"    return Point(lat, lon, ele)\")\nopen(p,'w').write(s)\nEOF\ngit diff --stat",
+    "PYTHONPATH=src python -m pytest -q 2>&1 | tail -3; PYTHONPATH=src python -m trailhead summary pikes-peak.csv"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".....................................................                    [100%]\n53 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 14,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".....................................................                    [100%]\n53 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 14,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  }
+}

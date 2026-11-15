@@ -1,0 +1,67 @@
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index d2fe23c..429fa94 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -9,6 +9,12 @@ FLAT_SPEED_KMH = 5.0
+ CLIMB_M_PER_HOUR = 600.0
+ 
+ 
++def format_duration(hours: float) -> str:
++    """Format hours as ``<h>h <mm>m``, rounded to the nearest whole minute."""
++    whole, minutes = divmod(round(hours * 60), 60)
++    return f"{whole}h {minutes:02d}m"
++
++
+ def naismith_hours(distance_km: float, ascent_m: float, fitness: float = 1.0) -> float:
+     """Naismith's rule: 5 km per hour on the flat plus one hour per 600 m of ascent.
+ 
+diff --git a/src/trailhead/plan.py b/src/trailhead/plan.py
+index 3a7bb36..e095c53 100644
+--- a/src/trailhead/plan.py
++++ b/src/trailhead/plan.py
+@@ -1,6 +1,6 @@
+ """Splitting a track into days of walking."""
+ 
+-from trailhead.pace import leg_hours
++from trailhead.pace import format_duration, leg_hours
+ from trailhead.track import Track
+ 
+ DEFAULT_MAX_HOURS = 7.0
+@@ -32,6 +32,5 @@ def describe_plan(days: list[tuple[int, int, int, float]]) -> list[str]:
+     """One line per day, for example ``Day 2: points 14-31, 6h 05m``."""
+     lines: list[str] = []
+     for day, first, last, hours in days:
+-        whole, minutes = divmod(int(hours * 60), 60)
+-        lines.append(f"Day {day}: points {first}-{last}, {whole}h {minutes:02d}m")
++        lines.append(f"Day {day}: points {first}-{last}, {format_duration(hours)}")
+     return lines
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 9f8ecf5..74e9005 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -9,7 +9,7 @@ from trailhead.elevation import (
+     steepest_grade,
+ )
+ from trailhead.geo import compass_point, haversine_km, initial_bearing
+-from trailhead.pace import naismith_hours
++from trailhead.pace import format_duration, naismith_hours
+ from trailhead.track import Track
+ 
+ LOOP_RADIUS_KM = 0.1
+@@ -55,7 +55,6 @@ def summarise(
+ 
+ 
+ def format_summary(summary: Summary) -> str:
+-    whole, minutes = divmod(int(summary.hours * 60), 60)
+     return "\n".join(
+         [
+             summary.name,
+@@ -63,7 +62,7 @@ def format_summary(summary: Summary) -> str:
+             f"  ascent    +{summary.gain_m:.0f} m / -{summary.loss_m:.0f} m",
+             f"  altitude  {summary.lowest_m:.0f}-{summary.highest_m:.0f} m",
+             f"  steepest  {summary.steepest_pct:.1f}%",
+-            f"  time      {whole}h {minutes:02d}m",
++            f"  time      {format_duration(summary.hours)}",
+             f"  heading   {summary.heading}",
+         ]
+     )

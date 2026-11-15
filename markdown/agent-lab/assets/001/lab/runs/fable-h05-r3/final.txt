@@ -1,0 +1,10 @@
+Fixed: `plan` was counting every small upward wiggle as climb, while `summary` ignores changes under the 3 m threshold. On a noisy track that inflated the plan's ascent and so its hours.
+
+**Cause:** `leg_hours` in `src/trailhead/pace.py` timed each leg with its raw elevation rise (`max(b.ele - a.ele, 0)`), not the thresholded ascent the summary uses.
+
+**Fix:** `leg_hours` now takes each leg's climb from `elevation.counted_changes`, the same rule behind the summary's ascent, as the README describes. I added a regression test in `tests/test_plan.py` with a jittery 300 m climb; it fails on the old code and passes now. The full suite, `ruff check` and `mypy` are clean. Nothing is committed.
+
+Two remaining ways the totals can still differ, which I left alone:
+
+- **Rounding:** `split_days` rounds each day's hours to 0.01 (about 36 s) before display, so the days can differ from the summary by up to a minute or so in total. The README says times aren't rounded until displayed; removing the rounding would mean changing the existing tests that compare exact values.
+- **Custom threshold:** `summary --threshold X` with a non-default value will not match `plan`, which always uses 3 m and has no `--threshold` option. The README documents this.

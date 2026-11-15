@@ -1,0 +1,7 @@
+`mypy` now passes with no errors, and all 48 tests and `ruff` pass. I used no `# type: ignore`, `cast` or `Any`, and I didn't touch the mypy config.
+
+`Point.ele` is `float | None` because a GPS can lose elevation. The code in `elevation.py`, `pace.py` and `report.py` treated it as a plain `float`. The README already says what to do with a missing elevation: use the nearest earlier point that has one, or the nearest later point if there is none.
+
+I added a method, `Track.elevations_m()`, that applies that rule and returns a `list[float]`. `highest_and_lowest`, `steepest_grade`, `leg_hours` and `summarise` now use it instead of reading `point.ele` directly. Distance still counts every point, as the README describes.
+
+A track where every elevation is blank has nothing to fill from. Before, that case crashed with an unrelated `TypeError`. Now `elevations_m()` raises `TrackError("the track has no elevation data")`. The README doesn't cover this case, so say if you'd rather it behave differently.

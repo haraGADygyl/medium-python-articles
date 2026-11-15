@@ -1,0 +1,7 @@
+The cause was that the minutes were truncated instead of rounded. `format_summary` in `src/trailhead/report.py` computed `divmod(int(summary.hours * 60), 60)`, and `int()` drops the fraction. So 44.9 minutes displayed as `0h 44m`, where the README promises `0h 45m`.
+
+`describe_plan` in `src/trailhead/plan.py` had the same bug, so `trailhead plan` would also have shown times a minute short. I fixed both by replacing `int(...)` with `round(...)`. Rounding up to 60 minutes is handled by `divmod`, so 59.6 minutes becomes `1h 00m`.
+
+The existing tests pass (47), but I didn't add a regression test for this case.
+
+Python's `round()` rounds exact halves to the nearest even number. A time of exactly 44.5 minutes would show as 44, and 45.5 as 46. That's very unlikely with float hours, but say if you want strict round-half-up.

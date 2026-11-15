@@ -1,0 +1,5 @@
+`ruff check src/` now passes, and the 46 tests pass. I changed no ruff configuration and added no `noqa` comments.
+
+- **`pace.py` (F841):** `naismith_hours` computed `hours` with the fitness scaling but then returned the unscaled value, so `fitness` had no effect. It now returns `hours`, as the docstring describes. This changes behaviour: any caller passing a `fitness` other than 1.0 will now get a different result.
+- **`track.py` (E722, B904):** the bare `except:` is now `except ValueError as err:`, with `raise TrackError(...) from err`. The `float()` conversion only raises `ValueError`, so nothing else is caught.
+- **`track.py` (I001, F401):** `ruff --fix` sorted the imports and removed the unused `os` import.

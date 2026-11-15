@@ -1,0 +1,54 @@
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index 5f82ff4..3b6d6d4 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -59,13 +59,17 @@ def parse_track(text: str, default_name: str | None = None) -> Track:
+                 raise TrackError(f"line {number}: expected the header 'lat,lon,ele'")
+             header_seen = True
+             continue
+-        points.append(_parse_point(line, number, scale))
++        points.append(_parse_point(line, number))
+     if len(points) < 2:
+         raise TrackError("a track needs at least two points")
++    # Settings apply to the whole track wherever they appear, so convert only after
++    # the units line (which may follow the points) has been read.
++    if scale != 1.0:
++        points = [Point(point.lat, point.lon, point.ele * scale) for point in points]
+     return Track(name, points)
+ 
+ 
+-def _parse_point(line: str, number: int, scale: float) -> Point:
++def _parse_point(line: str, number: int) -> Point:
+     fields = [part.strip() for part in line.split(",")]
+     if len(fields) != 3:
+         raise TrackError(f"line {number}: expected 3 fields, got {len(fields)}")
+@@ -75,7 +79,7 @@ def _parse_point(line: str, number: int, scale: float) -> Point:
+         raise TrackError(f"line {number}: not a number") from None
+     if not -90 <= lat <= 90 or not -180 <= lon <= 180:
+         raise TrackError(f"line {number}: coordinates out of range")
+-    return Point(lat, lon, ele * scale)
++    return Point(lat, lon, ele)
+ 
+ 
+ def load_track(path: str | Path) -> Track:
+diff --git a/tests/test_track.py b/tests/test_track.py
+index ba1bbad..f96d810 100644
+--- a/tests/test_track.py
++++ b/tests/test_track.py
+@@ -25,6 +25,16 @@ def test_feet_are_converted_to_metres():
+     assert [point.ele for point in track.points] == pytest.approx([304.8, 609.6])
+ 
+ 
++def test_units_line_after_the_points_applies_to_all_points():
++    track = parse_track("lat,lon,ele\n0,0,1000\n0,0.01,2000\n# units: ft\n")
++    assert [point.ele for point in track.points] == pytest.approx([304.8, 609.6])
++
++
++def test_units_line_between_points_applies_to_all_points():
++    track = parse_track("lat,lon,ele\n0,0,1000\n# units: ft\n0,0.01,2000\n")
++    assert [point.ele for point in track.points] == pytest.approx([304.8, 609.6])
++
++
+ def test_default_name_comes_from_the_file(write_track):
+     path = write_track("lat,lon,ele\n0,0,0\n0,0.01,0\n", filename="vihren.csv")
+     assert load_track(path).name == "vihren"

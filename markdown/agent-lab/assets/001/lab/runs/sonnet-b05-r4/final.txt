@@ -1,0 +1,9 @@
+I fixed the bug. `pikes-peak.csv` now reports a highest point of 4302 m instead of 14115 m.
+
+**Cause:** `parse_track` in `src/trailhead/track.py` converted each point to metres as it read the line, using whatever units were set at that moment. A `# units: ft` line at the end of the file was read after every point, so no point was converted. The README says settings can appear anywhere in the file and apply to the whole track, so the parser was wrong, not the GPS app.
+
+**Fix:** Points are now parsed with their raw elevations. The units scale is applied once, after the whole file has been read. `_parse_point` no longer takes a `scale` argument.
+
+**Tests:** I added `test_units_line_after_the_points_still_applies` to `tests/test_track.py`. All 48 tests pass. Running `trailhead summary` on the attached file now shows an altitude range of 2042–4302 m.
+
+I haven't committed anything.

@@ -1,0 +1,16 @@
+`mypy` now passes on `src/` in strict mode. The 8 errors all came from `Point.ele` being `float | None`, and the fix also closes a real crash on tracks with gaps.
+
+**What was wrong:** The README says a point with an empty elevation keeps `ele=None` and that ascent, extremes, steepest grade and walking time should use the nearest earlier known elevation (or the nearest later one, if there is none). The code never did this, so any track with a gap would have raised `TypeError` at runtime. The type errors were pointing at that gap.
+
+**What I changed:**
+- `src/trailhead/elevation.py`: added `filled_elevations(track) -> list[float]`, which implements the README rule. `highest_and_lowest` and `steepest_grade` now use it.
+- `src/trailhead/pace.py` and `src/trailhead/report.py`: use `filled_elevations` instead of reading `point.ele` directly.
+- `tests/test_elevation.py`: added three tests covering a gap after a known point, a leading gap, and a track with no elevations at all.
+
+**Choices I made:**
+- `Track` still stores `None`, since `test_track.py` asserts that and the README describes it as the stored value. Filling happens only where elevations are used.
+- A track with no elevation at all raises `TrackError`. The README doesn't cover this case, so I picked the error type that matches the rest of the module.
+
+**Verification:** `mypy src/` reports no issues, `pytest` passes 51 tests (48 existing plus 3 new), and `ruff check` is clean. `ruff format --check` flags one file, but it flags the same file with my changes stashed, so that predates this work. I did not touch it.
+
+I did not use `# type: ignore`, `cast`, `Any`, or any config change.

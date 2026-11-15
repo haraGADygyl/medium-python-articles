@@ -1,0 +1,117 @@
+{
+  "run_id": "fable-b04-r1",
+  "task": "b04",
+  "tier": "bug",
+  "baseline": false,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "Bug report from a user: \"Track files exported from my Garmin app fail with `trailhead: line 1: expected the header 'lat,lon,ele'`, but when I open one in my editor the first line is exactly `lat,lon,ele`. One of the files is attached as `garmin-export.csv`.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 27.0,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 24871,
+  "duration_api_ms": 23811,
+  "api_equivalent_usd": 0.3146184000000001,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 14472,
+    "cache_read_input_tokens": 138452,
+    "output_tokens": 1382,
+    "output_tokens_details": {
+      "thinking_tokens": 101
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 14472,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 196,
+        "cache_read_input_tokens": 27039,
+        "cache_creation_input_tokens": 196,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 196
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 12,
+      "outputTokens": 1382,
+      "cacheReadInputTokens": 138452,
+      "cacheCreationInputTokens": 14472,
+      "webSearchRequests": 0,
+      "costUSD": 0.3146184000000001,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 101,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 14472,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 5
+  },
+  "bash_commands": [
+    "git ls-files; head -c 64 garmin-export.csv | xxd; grep -rn \"expected the header\" --include=* . 2>/dev/null | grep -v '^./.git/' | head",
+    "cat src/trailhead/track.py; cat tests/test_track.py; grep -rn \"open(\\|read_text\\|encoding\" src | grep -v \"track.py\"",
+    "grep -n \"parse_track\\|load_track\\|stdin\" -r src; cat tests/conftest.py | head -30",
+    "python - <<'EOF'\nimport re,pathlib\np=pathlib.Path('src/trailhead/track.py'); s=p.read_text()\ns=s.replace('''    header_seen = False\n    for number, raw in enumerate(text.splitlines(), start=1):''','''    header_seen = False\n    # Some exporters (Garmin, Excel) start UTF-8 files with a byte order mark.\n    text = text.removeprefix(\"\\\\ufeff\")\n    for number, raw in enumerate(text.splitlines(), start=1):''')\np.write_text(s)\np=pathlib.Path('tests/test_track.py'); s=p.read_text()\ns=s.replace('''def test_bad_header():''','''def test_byte_order_mark_is_ignored(write_track):\n    path = write_track(\"\\\\ufefflat,lon,ele\\\\r\\\\n0,0,0\\\\r\\\\n0,0.01,0\\\\r\\\\n\", filename=\"garmin.csv\")\n    assert len(load_track(path).points) == 2\n    assert parse_track(\"\\\\ufeff# name: Musala\\\\nlat,lon,ele\\\\n0,0,0\\\\n0,0.01,0\\\\n\").name == \"Musala\"\n\n\ndef test_bad_header():''')\np.write_text(s)\nEOF\ngit diff --stat; python -m pytest -q 2>&1 | tail -3; PYTHONPATH=src python -m trailhead --help | head -8",
+    "PYTHONPATH=src python -m trailhead summary garmin-export.csv; echo \"exit $?\""
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 8,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 8,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

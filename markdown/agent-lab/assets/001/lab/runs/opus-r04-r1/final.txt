@@ -1,0 +1,19 @@
+I added a cache to `Track.leg_lengths_km()`, and a summary now works out each leg's great-circle distance only once instead of twice. All 50 tests pass, and `ruff check` and `mypy` are clean.
+
+**The change** (`src/trailhead/track.py`):
+- `Track` has two new private fields, which are left out of the constructor, `repr` and equality. One holds a copy of the points the lengths were worked out from; the other holds the lengths.
+- When `leg_lengths_km()` is called, it compares the current `points` list with that copy. If they match, it returns the stored lengths; if not, it recomputes them.
+- The README says a `Track` is mutable and its lengths always follow the current points, so the cache can't just be filled once. The comparison catches every kind of change: appending, deleting, replacing a point, or assigning a new list to `track.points`. Because `Point` is frozen, nobody can edit a point in place, so the same points always give the same legs.
+- The check is cheap. When comparing lists, Python first checks whether each pair of items is the same object, so an unchanged track costs one quick comparison per point and no distance calculations.
+- It returns a copy of the stored list, so a caller that changes the result can't corrupt the cache.
+
+Results are unchanged: the same `haversine_km` formula runs on the same points, so the numbers are identical.
+
+**New tests** in `tests/test_track.py`:
+- `summarise` on a three-point track calls `haversine_km` in `trailhead.track` only twice, once per leg.
+- Lengths stay correct after appending, replacing, reassigning and deleting points.
+- Changing the returned list doesn't affect the track.
+
+I haven't checked that the first test fails on the old code. By my reading, the old code calculated each leg twice per summary (once for the length and once for the steepest grade), which would be 4 calls instead of 2.
+
+The start-to-finish distance used for the summary's heading is still calculated separately in `report._heading`. That's a single distance between the first and last points, not a leg, so I left it alone.

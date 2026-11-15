@@ -1,0 +1,6 @@
+`mypy` now passes in strict mode, and all 47 tests still pass. I didn't add any `# type: ignore`, `cast` or `Any`, and I didn't touch the mypy config.
+
+- **`geo.py`:** `initial_bearing` now has full annotations: four `float` parameters and a `float` return.
+- **`report.py`:** `_heading` returns `None` for loop tracks, so `Summary.heading` is now `str | None`. `format_summary` prints `loop` in that case. The README already says the heading is `loop` when the finish is within 0.1 km of the start. Before this change the report would have printed the literal text `None` for loops.
+
+The loop output isn't covered by a test, so `loop` is unchecked beyond reading the README.

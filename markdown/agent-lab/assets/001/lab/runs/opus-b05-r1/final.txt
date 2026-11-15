@@ -1,0 +1,20 @@
+Fixed. The report for `pikes-peak.csv` now shows a highest point of 4302 m.
+
+**Cause:** in `src/trailhead/track.py`, `parse_track` converted each point's elevation to metres as soon as it read that point, using whatever units it had seen so far. The README says settings can appear anywhere and apply to the whole track. But a `# units: ft` line only took effect for points *after* it. Your file has the line at the end, so every elevation was left in feet and labelled as metres.
+
+**Fix:** points are now read as raw numbers, and the feet-to-metres conversion is applied to all of them once the whole file has been read. `_parse_point` no longer does any conversion.
+
+**Results on `pikes-peak.csv`:**
+
+| | Before | After |
+|---|---|---|
+| altitude | 6700–14115 m | 2042–4302 m |
+| ascent | +7415 m | +2260 m |
+| steepest | 123.5% | 37.7% |
+| time | 14h 19m | 5h 44m |
+
+**Test:** I added `test_units_apply_to_the_whole_track_wherever_they_appear` in `tests/test_track.py`. It checks a units line at the end of the file and in the middle of the points. All 48 tests pass.
+
+If a file has two `# units:` lines that disagree, the last one now applies to every point. Before, each one applied only to the points after it.
+
+`python -m trailhead` doesn't work in the current venv because the package isn't installed there, so I ran everything with `PYTHONPATH=src`. Nothing is committed yet.

@@ -1,0 +1,9 @@
+I found the cause and fixed it. On noisy tracks, `plan` was counting the jitter as climbing.
+
+**Cause:** `plan.split_days` times each leg with `pace.leg_hours`, which counted every rise between two points as climbing (`max(b.ele - a.ele, 0)`). The summary uses `elevation.counted_changes` instead, which ignores changes under 3 m. On a noisy track, every 1–2 m bump added climbing time to the plan but not to the summary. That's where the extra 2h 35m in the user's report comes from. The README says a leg's climb should be "the ascent the summary's rule credits to it", and the code didn't do that.
+
+**Fix** (`src/trailhead/pace.py`): `leg_hours` now gets each leg's climb from `counted_changes`, with the same 3 m default threshold as the summary. It also takes an optional `threshold` argument. On clean tracks nothing changes, because steady climbs count the same as before.
+
+**Test:** I added `test_days_add_up_to_the_summary_time_on_a_noisy_track` to `tests/test_plan.py`. It builds a 300 m climb with ±2 m jitter on every point, splits it into several days, and checks that the days add up to the summary time at two fitness levels. It fails on the old code and passes with the fix. All 48 tests pass, and `ruff` and `mypy` are clean.
+
+The days can still differ from the summary by about a minute in total. Each day's hours are rounded to 0.01 h, and the summary rounds the ascent to 0.1 m first.

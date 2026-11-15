@@ -1,0 +1,243 @@
+diff --git a/tests/test_plan.py b/tests/test_plan.py
+new file mode 100644
+index 0000000..a6745e3
+--- /dev/null
++++ b/tests/test_plan.py
+@@ -0,0 +1,237 @@
++import random
++from itertools import pairwise
++
++import pytest
++
++from trailhead.plan import DEFAULT_MAX_HOURS, describe_plan, split_days
++from trailhead.report import summarise
++
++# Most tracks here keep every point at the same position, so legs have no length
++# and their time is set by the climb alone: 600 m of ascent is exactly one hour.
++M_PER_HOUR = 600.0
++
++
++@pytest.fixture
++def climb_track(make_track):
++    """A track of zero-length legs whose climbs take the given numbers of hours."""
++
++    def build(*leg_hours: float):
++        elevations = [0.0]
++        for hours in leg_hours:
++            elevations.append(elevations[-1] + hours * M_PER_HOUR)
++        return make_track(*((0.0, 0.0, ele) for ele in elevations))
++
++    return build
++
++
++def assert_well_formed(days, track):
++    """Days count from 1, cover the whole track and share their boundary points."""
++    assert [day for day, *_ in days] == list(range(1, len(days) + 1))
++    assert days[0][1] == 0
++    assert days[-1][2] == len(track.points) - 1
++    for (_, _, last, _), (_, first, _, _) in pairwise(days):
++        assert first == last
++    for _, first, last, hours in days:
++        assert first < last
++        assert hours == round(hours, 2)
++
++
++def test_default_limit_is_seven_hours():
++    assert DEFAULT_MAX_HOURS == 7.0
++
++
++def test_short_walk_is_a_single_day(make_track):
++    track = make_track((0, 0, 1000), (0, 0.01, 1000), (0, 0.02, 1000))
++    days = split_days(track)
++    # Two flat legs of 1.11195 km each at 5 km/h, rounded to 0.01 h.
++    assert days == [(1, 0, 2, 0.44)]
++
++
++def test_hours_are_rounded_to_hundredths(make_track):
++    track = make_track((0, 0, 0), (0, 0.01, 0))
++    # 1.11195 km / 5 km/h = 0.22239 h
++    assert split_days(track) == [(1, 0, 1, 0.22)]
++
++
++def test_days_are_split_between_legs(climb_track):
++    track = climb_track(3, 3, 3)
++    days = split_days(track, max_hours_per_day=7)
++    assert days == [(1, 0, 2, 6.0), (2, 2, 3, 3.0)]
++    assert_well_formed(days, track)
++
++
++def test_a_day_may_reach_the_limit_exactly(climb_track):
++    track = climb_track(3.5, 3.5)
++    assert split_days(track, max_hours_per_day=7) == [(1, 0, 2, 7.0)]
++
++
++def test_default_limit_is_used(climb_track):
++    track = climb_track(*[1] * 10)
++    assert split_days(track) == [(1, 0, 7, 7.0), (2, 7, 10, 3.0)]
++
++
++def test_limit_is_respected_greedily(climb_track):
++    track = climb_track(2, 2, 2, 2, 2)
++    days = split_days(track, max_hours_per_day=4.5)
++    assert days == [(1, 0, 2, 4.0), (2, 2, 4, 4.0), (3, 4, 5, 2.0)]
++
++
++def test_overlong_leg_in_the_middle_is_a_day_by_itself(climb_track):
++    track = climb_track(1, 9, 1)
++    days = split_days(track, max_hours_per_day=7)
++    assert days == [(1, 0, 1, 1.0), (2, 1, 2, 9.0), (3, 2, 3, 1.0)]
++    assert_well_formed(days, track)
++
++
++def test_overlong_first_and_last_legs_are_days_by_themselves(climb_track):
++    track = climb_track(8, 1, 1, 8)
++    days = split_days(track, max_hours_per_day=7)
++    assert days == [(1, 0, 1, 8.0), (2, 1, 3, 2.0), (3, 3, 4, 8.0)]
++
++
++def test_consecutive_overlong_legs_are_separate_days(climb_track):
++    track = climb_track(8, 9)
++    assert split_days(track, max_hours_per_day=7) == [(1, 0, 1, 8.0), (2, 1, 2, 9.0)]
++
++
++def test_descent_adds_no_time(make_track):
++    track = make_track((0, 0, 3000), (0, 0, 2400), (0, 0, 600), (0, 0, 0))
++    assert split_days(track) == [(1, 0, 3, 0.0)]
++
++
++def test_elevation_jitter_adds_no_time(make_track):
++    track = make_track(*((0, 0, 1000 + (i % 2) * 1.0) for i in range(50)))
++    assert split_days(track) == [(1, 0, 49, 0.0)]
++
++
++def test_climb_in_small_steps_counts_in_full(make_track):
++    # 600 m recorded in 1 m steps is still one hour of climbing.
++    track = make_track(*((0, 0, float(ele)) for ele in range(601)))
++    assert split_days(track) == [(1, 0, 600, 1.0)]
++    days = split_days(track, max_hours_per_day=0.4)
++    assert len(days) == 3
++    # Each day is rounded to 0.01 h.
++    assert sum(hours for *_, hours in days) == pytest.approx(1.0, abs=0.015)
++    assert all(hours <= 0.4 for *_, hours in days)
++    assert_well_formed(days, track)
++
++
++def test_climb_is_credited_to_the_leg_where_it_counts(make_track):
++    # +2 m is below the 3 m threshold, so the climb counts on leg 1 (+4 m from the
++    # start), not leg 0; leg 2 is credited with the remaining 2396 m.
++    track = make_track((0, 0, 0), (0, 0, 2), (0, 0, 4), (0, 0, 2400))
++    days = split_days(track, max_hours_per_day=3.5)
++    assert days == [(1, 0, 2, round(4 / M_PER_HOUR, 2)), (2, 2, 3, round(2396 / M_PER_HOUR, 2))]
++
++
++@pytest.mark.xfail(
++    strict=True,
++    reason="split_days only starts a new day once the current one has used time, so a "
++    "zero-time leg (e.g. a repeated point) joins the overlong leg after it",
++)
++def test_overlong_leg_after_a_zero_time_leg_is_a_day_by_itself(make_track):
++    # README: "A day never goes over the limit unless a single leg on its own does, in
++    # which case that leg is a day by itself."
++    track = make_track((0, 0, 0), (0, 0, 0), (0, 0, 600))
++    days = split_days(track, max_hours_per_day=0.5)
++    assert days == [(1, 0, 1, 0.0), (2, 1, 2, 1.0)]
++
++
++@pytest.mark.parametrize("fitness", [0.8, 1.25, 2.0])
++def test_fitness_divides_time(climb_track, fitness):
++    track = climb_track(3, 3, 3)
++    days = split_days(track, max_hours_per_day=100, fitness=fitness)
++    assert days == [(1, 0, 3, round(9 / fitness, 2))]
++
++
++def test_fitness_changes_where_days_split(climb_track):
++    track = climb_track(3, 3, 3)
++    assert split_days(track, max_hours_per_day=7, fitness=1.0) == [
++        (1, 0, 2, 6.0),
++        (2, 2, 3, 3.0),
++    ]
++    assert split_days(track, max_hours_per_day=7, fitness=1.5) == [(1, 0, 3, 6.0)]
++
++
++@pytest.mark.parametrize("max_hours", [0, -1, -0.5])
++def test_non_positive_limit_is_an_error(climb_track, max_hours):
++    with pytest.raises(ValueError):
++        split_days(climb_track(1, 1), max_hours_per_day=max_hours)
++
++
++@pytest.mark.parametrize("fitness", [0, -1])
++def test_non_positive_fitness_is_an_error(climb_track, fitness):
++    with pytest.raises(ValueError):
++        split_days(climb_track(1, 1), fitness=fitness)
++
++
++def random_walk(make_track, seed, n=300, repeats=True):
++    """A realistic-looking track: small moves with jittery climbs and descents."""
++    rng = random.Random(seed)
++    lat, lon, ele = 42.2, 23.3, 1500.0
++    points = []
++    for _ in range(n):
++        points.append((lat, lon, ele))
++        lat += rng.uniform(-0.002, 0.002)
++        lon += rng.uniform(-0.002, 0.002)
++        ele += rng.choice([rng.uniform(-2, 2), rng.uniform(-15, 25)])
++        if repeats and rng.random() < 0.05:
++            points.append((lat, lon, ele))  # repeated point
++    return make_track(*points)
++
++
++@pytest.mark.parametrize("seed", range(5))
++@pytest.mark.parametrize("fitness", [0.8, 1.0, 1.2])
++@pytest.mark.parametrize("max_hours", [0.5, 3, 7])
++def test_days_add_up_to_the_summary_time(make_track, seed, fitness, max_hours):
++    track = random_walk(make_track, seed)
++    days = split_days(track, max_hours, fitness)
++    total = sum(hours for *_, hours in days)
++    # Each day is rounded to 0.01 h; the summary rounds its ascent to 0.1 m.
++    tolerance = 0.005 * len(days) + 0.1 / M_PER_HOUR / fitness + 1e-9
++    assert total == pytest.approx(summarise(track, fitness=fitness).hours, abs=tolerance)
++    assert_well_formed(days, track)
++
++
++@pytest.mark.parametrize("seed", range(5))
++@pytest.mark.parametrize("max_hours", [0.05, 0.5, 2, 7])
++def test_no_day_goes_over_the_limit_unless_one_leg_does(make_track, seed, max_hours):
++    # Without repeated points: see the xfail test above for zero-time legs.
++    track = random_walk(make_track, seed, repeats=False)
++    days = split_days(track, max_hours)
++    assert_well_formed(days, track)
++    for _, first, last, hours in days:
++        if hours > max_hours:
++            assert last - first == 1
++
++
++def test_describe_plan_docstring_example():
++    assert describe_plan([(2, 14, 31, 6.0833)]) == ["Day 2: points 14-31, 6h 05m"]
++
++
++@pytest.mark.parametrize(
++    ("hours", "shown"),
++    [
++        (5 + 7 / 60, "5h 07m"),
++        (0.75, "0h 45m"),
++        (12.0, "12h 00m"),
++        (11.999, "12h 00m"),
++        (0.0, "0h 00m"),
++        (1.0 + 29.4 / 60, "1h 29m"),
++        (1.0 + 29.6 / 60, "1h 30m"),
++    ],
++)
++def test_describe_plan_formats_durations(hours, shown):
++    assert describe_plan([(1, 0, 5, hours)]) == [f"Day 1: points 0-5, {shown}"]
++
++
++def test_describe_plan_one_line_per_day(climb_track):
++    days = split_days(climb_track(3, 3, 3), max_hours_per_day=7)
++    assert describe_plan(days) == [
++        "Day 1: points 0-2, 6h 00m",
++        "Day 2: points 2-3, 3h 00m",
++    ]
++
++
++def test_describe_empty_plan():
++    assert describe_plan([]) == []

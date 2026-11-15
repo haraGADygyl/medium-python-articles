@@ -1,0 +1,143 @@
+{
+  "run_id": "opus-t04-r4",
+  "task": "t04",
+  "tier": "tests",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "opus",
+  "prompt": "`src/trailhead/plan.py` has no tests. Write `tests/test_plan.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 66.0,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 62166,
+  "duration_api_ms": 60811,
+  "api_equivalent_usd": 0.3376968,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 22399,
+    "cache_read_input_tokens": 156384,
+    "output_tokens": 6359,
+    "output_tokens_details": {
+      "thinking_tokens": 910
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 22399,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 793,
+        "cache_read_input_tokens": 34596,
+        "cache_creation_input_tokens": 566,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 566
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 6359,
+      "cacheReadInputTokens": 156384,
+      "cacheCreationInputTokens": 22399,
+      "webSearchRequests": 0,
+      "costUSD": 0.3376968,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 910,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 22399,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4,
+    "Write": 1
+  },
+  "bash_commands": [
+    "cd . && git ls-files && cat README.md && cat src/trailhead/plan.py && ls tests && cat pyproject.toml",
+    "cat src/trailhead/pace.py src/trailhead/track.py src/trailhead/elevation.py src/trailhead/report.py tests/conftest.py; head -40 tests/test_pace.py tests/test_report.py",
+    "python -m pytest -q 2>&1 | tail -30; ruff check tests/test_plan.py",
+    "sed -i 's/for previous, following in zip(days, days\\[1:\\]):/for previous, following in pairwise(days):/; 1i from itertools import pairwise\\n' tests/test_plan.py && ruff check tests/test_plan.py && ruff format --check tests/test_plan.py; python -m pytest -q tests/test_plan.py | tail -2"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_plan.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.06s\n",
+    "src_changed": [],
+    "killed": [
+      "a day that exactly fills the limit is closed early",
+      "days numbered from 0",
+      "last day stops one point short",
+      "hours rounded to 0.1",
+      "zero limit allowed",
+      "fitness dropped",
+      "minutes not zero-padded",
+      "minutes truncated",
+      "next day starts one point late"
+    ],
+    "survived": [],
+    "kills": 9,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_plan.py"
+    ],
+    "lines_added": 236,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_plan.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.06s\n",
+    "src_changed": [],
+    "killed": [
+      "a day that exactly fills the limit is closed early",
+      "days numbered from 0",
+      "last day stops one point short",
+      "hours rounded to 0.1",
+      "zero limit allowed",
+      "fitness dropped",
+      "minutes not zero-padded",
+      "minutes truncated",
+      "next day starts one point late"
+    ],
+    "survived": [],
+    "kills": 9,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_plan.py"
+    ],
+    "lines_added": 236,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

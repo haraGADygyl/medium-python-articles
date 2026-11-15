@@ -1,0 +1,119 @@
+{
+  "run_id": "opus-h03-r4",
+  "task": "h03",
+  "tier": "two-file bug",
+  "baseline": true,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "opus",
+  "prompt": "Bug report from a user: \"`elevation.steepest_grade()` returns 0.18 for a track whose steepest stretch climbs 18 m over 100 m. The README and the docstring say it returns a percentage, so I expected 18.0.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 30.6,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 28422,
+  "duration_api_ms": 27166,
+  "api_equivalent_usd": 0.1823426,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 14558,
+    "cache_read_input_tokens": 133753,
+    "output_tokens": 1954,
+    "output_tokens_details": {
+      "thinking_tokens": 278
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 14558,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 553,
+        "cache_read_input_tokens": 26677,
+        "cache_creation_input_tokens": 644,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 644
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 1954,
+      "cacheReadInputTokens": 133753,
+      "cacheCreationInputTokens": 14558,
+      "webSearchRequests": 0,
+      "costUSD": 0.1823426,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 278,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 14558,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 5
+  },
+  "bash_commands": [
+    "git ls-files; grep -rn \"steepest_grade\\|def grade\\|percent\" --include=*.py --include=*.md . | head -50",
+    "cat src/trailhead/elevation.py; sed -n 1,80p src/trailhead/report.py; sed -n 40,55p README.md; grep -rn \"steepest\\|grade\" tests src/trailhead/cli.py src/trailhead/plan.py src/trailhead/pace.py",
+    "sed -n 1,30p tests/test_elevation.py; cat tests/conftest.py; grep -n \"def \\|class \" src/trailhead/track.py",
+    "python - <<'EOF'\nimport re\np='src/trailhead/elevation.py'; s=open(p).read()\ns=s.replace(\"    return round(steepest, 3)\\n\",\"    return round(steepest * 100, 1)\\n\")\nopen(p,'w').write(s)\np='src/trailhead/report.py'; s=open(p).read()\ns=s.replace(\"steepest_pct=round(steepest_grade(track) * 100, 1),\",\"steepest_pct=steepest_grade(track),\")\nopen(p,'w').write(s)\np='tests/test_elevation.py'; s=open(p).read()\ns=s.replace(\"import pytest\\n\\nfrom trailhead.elevation import gain_and_loss, highest_and_lowest\\n\",\n\"from math import degrees\\n\\nimport pytest\\n\\nfrom trailhead.elevation import gain_and_loss, highest_and_lowest, steepest_grade\\n\\n# Degrees of latitude spanning 100 m on the 6371.0088 km sphere.\\nHUNDRED_M_LAT = degrees(0.1 / 6371.0088)\\n\")\ns+='''\n\ndef test_steepest_grade_is_a_percentage(make_track):\n    track = make_track(\n        (0, 0, 500),\n        (HUNDRED_M_LAT, 0, 505),\n        (2 * HUNDRED_M_LAT, 0, 523),\n        (2 * HUNDRED_M_LAT, 0, 523),\n        (3 * HUNDRED_M_LAT, 0, 513),\n    )\n    assert steepest_grade(track) == 18.0\n\n\ndef test_steepest_grade_counts_descents(make_track):\n    track = make_track((0, 0, 500), (HUNDRED_M_LAT, 0, 475.5))\n    assert steepest_grade(track) == 24.5\n'''\nopen(p,'w').write(s)\nEOF\ngit diff --stat; python -m pytest -q 2>&1 | tail -3",
+    "git stash push src -q && python -m pytest -q 2>&1 | tail -3; git stash pop -q && git diff src"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M src/trailhead/report.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 24,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M src/trailhead/report.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 24,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  }
+}

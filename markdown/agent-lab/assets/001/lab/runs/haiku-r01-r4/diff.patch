@@ -1,0 +1,118 @@
+diff --git a/src/trailhead/geo.py b/src/trailhead/geo.py
+index 0b8f135..8db0938 100644
+--- a/src/trailhead/geo.py
++++ b/src/trailhead/geo.py
+@@ -1,12 +1,13 @@
+ """Great-circle geometry on a spherical Earth."""
+ 
++import warnings
+ from math import asin, atan2, cos, degrees, radians, sin, sqrt
+ 
+ EARTH_RADIUS_KM = 6371.0088
+ COMPASS_POINTS = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+ 
+ 
+-def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
++def distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+     """Distance in kilometres between two points given in decimal degrees."""
+     phi1, phi2 = radians(lat1), radians(lat2)
+     d_phi = radians(lat2 - lat1)
+@@ -15,6 +16,16 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+     return 2 * EARTH_RADIUS_KM * asin(sqrt(a))
+ 
+ 
++def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
++    """Deprecated alias for `distance_km`; emits a DeprecationWarning."""
++    warnings.warn(
++        "haversine_km is deprecated; use distance_km instead",
++        DeprecationWarning,
++        stacklevel=2,
++    )
++    return distance_km(lat1, lon1, lat2, lon2)
++
++
+ def initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+     """Compass bearing in degrees, 0 <= bearing < 360, from the first point to the second."""
+     phi1, phi2 = radians(lat1), radians(lat2)
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 9c7e1a7..7e6d71a 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -8,7 +8,7 @@ from trailhead.elevation import (
+     highest_and_lowest,
+     steepest_grade,
+ )
+-from trailhead.geo import compass_point, haversine_km, initial_bearing
++from trailhead.geo import compass_point, distance_km, initial_bearing
+ from trailhead.pace import naismith_hours
+ from trailhead.track import Track
+ 
+@@ -30,7 +30,7 @@ class Summary:
+ 
+ def _heading(track: Track) -> str:
+     start, finish = track.points[0], track.points[-1]
+-    if haversine_km(start.lat, start.lon, finish.lat, finish.lon) <= LOOP_RADIUS_KM:
++    if distance_km(start.lat, start.lon, finish.lat, finish.lon) <= LOOP_RADIUS_KM:
+         return "loop"
+     return compass_point(initial_bearing(start.lat, start.lon, finish.lat, finish.lon))
+ 
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index e147dce..c19406a 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
+ from itertools import pairwise
+ from pathlib import Path
+ 
+-from trailhead.geo import haversine_km
++from trailhead.geo import distance_km
+ 
+ FEET_TO_METRES = 0.3048
+ HEADER = ["lat", "lon", "ele"]
+@@ -28,7 +28,7 @@ class Track:
+ 
+     def leg_lengths_km(self) -> list[float]:
+         """Length of each leg, the stretch between two consecutive points."""
+-        return [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]
++        return [distance_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]
+ 
+     def length_km(self) -> float:
+         return sum(self.leg_lengths_km())
+diff --git a/tests/test_geo.py b/tests/test_geo.py
+index 213ed25..c76ab37 100644
+--- a/tests/test_geo.py
++++ b/tests/test_geo.py
+@@ -1,21 +1,27 @@
+ import pytest
+ 
+-from trailhead.geo import compass_point, haversine_km, initial_bearing
++from trailhead.geo import compass_point, distance_km, haversine_km, initial_bearing
+ 
+ 
+ def test_one_hundredth_of_a_degree_along_the_equator():
+-    assert haversine_km(0, 0, 0, 0.01) == pytest.approx(1.11195, abs=1e-4)
++    assert distance_km(0, 0, 0, 0.01) == pytest.approx(1.11195, abs=1e-4)
+ 
+ 
+ def test_distance_between_two_cities():
+     sofia, plovdiv = (42.6977, 23.3219), (42.1354, 24.7453)
+-    assert haversine_km(*sofia, *plovdiv) == pytest.approx(132.5, abs=0.1)
++    assert distance_km(*sofia, *plovdiv) == pytest.approx(132.5, abs=0.1)
+ 
+ 
+ def test_distance_is_symmetric_and_zero_for_the_same_point():
+-    there = haversine_km(42.1, 23.3, 42.2, 23.4)
+-    assert there == pytest.approx(haversine_km(42.2, 23.4, 42.1, 23.3))
+-    assert haversine_km(42.1, 23.3, 42.1, 23.3) == 0
++    there = distance_km(42.1, 23.3, 42.2, 23.4)
++    assert there == pytest.approx(distance_km(42.2, 23.4, 42.1, 23.3))
++    assert distance_km(42.1, 23.3, 42.1, 23.3) == 0
++
++
++def test_haversine_km_is_a_deprecated_alias_for_distance_km():
++    with pytest.warns(DeprecationWarning):
++        result = haversine_km(42.6977, 23.3219, 42.1354, 24.7453)
++    assert result == distance_km(42.6977, 23.3219, 42.1354, 24.7453)
+ 
+ 
+ @pytest.mark.parametrize(

@@ -1,0 +1,17 @@
+I added `tests/test_plan.py` with 46 tests; all pass against the current code (88 in the whole suite), `ruff check` is clean, and nothing under `src/` was touched.
+
+The tests cover, for `split_days`:
+- **Grouping:** the default 7-hour limit, packing legs up to the limit, day numbering from 1, and consecutive days sharing their boundary point.
+- **Overlong legs:** a leg longer than the limit becomes a day by itself, whether at the start, middle or end.
+- **Timing:** one hour per 600 m of ascent, nothing for descent, nothing for jitter under 3 m, and a 300 m climb in 1 m steps still counted.
+- **Summary agreement:** day hours add up to `summarise(...).hours` for several limits and fitness values, within the 0.01 rounding per day.
+- **Fitness and validation:** fitness divides the time and moves the day breaks; zero or negative fitness raises `ValueError`.
+
+For `describe_plan` they cover the docstring example, one line per day, the empty plan, and the `<hours>h <minutes>m` format, including a carry such as 2.999 h showing as `3h 00m`.
+
+One test goes beyond the documentation: the `ValueError` for a zero or negative `max_hours_per_day` is in the code but not in the README or docstring.
+
+I found no documented behaviour that the code breaks. Three edge cases are deliberately left untested because the docs don't settle them:
+- **Day exactly at the limit:** whether it fits depends on float noise. Three 0.7 h legs with a 2.1 h limit split into two days, while seven 1 h legs with a 7 h limit stay as one.
+- **Half-minute ties:** these don't always round up; 0.075 h (4.5 minutes) displays as `0h 04m`.
+- **Repeated points next to an overlong leg:** the zero-length legs are grouped into the same day as the overlong leg, so that day is not strictly a single leg.

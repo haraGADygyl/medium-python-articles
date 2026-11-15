@@ -1,0 +1,73 @@
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index e147dce..368c9b5 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -25,10 +25,23 @@ class Point:
+ class Track:
+     name: str
+     points: list[Point] = field(default_factory=list)
++    # (snapshot of the points, leg lengths) from the last computation.
++    _legs: tuple[list[Point], list[float]] | None = field(
++        default=None, init=False, repr=False, compare=False
++    )
+ 
+     def leg_lengths_km(self) -> list[float]:
+-        """Length of each leg, the stretch between two consecutive points."""
+-        return [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]
++        """Length of each leg, the stretch between two consecutive points.
++
++        The lengths are cached and recomputed only when ``points`` has changed since
++        the last call, so mutating the track is still reflected in the result.
++        """
++        if self._legs is None or self._legs[0] != self.points:
++            lengths = [
++                haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)
++            ]
++            self._legs = (list(self.points), lengths)
++        return list(self._legs[1])
+ 
+     def length_km(self) -> float:
+         return sum(self.leg_lengths_km())
+diff --git a/tests/test_track.py b/tests/test_track.py
+index ba1bbad..59e41fc 100644
+--- a/tests/test_track.py
++++ b/tests/test_track.py
+@@ -59,3 +59,38 @@ def test_track_length_is_the_sum_of_legs(make_track):
+     track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0))
+     assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)
+     assert track.length_km() == pytest.approx(3.33585, abs=1e-3)
++
++
++def test_leg_lengths_are_computed_once_per_leg(make_track, monkeypatch):
++    import trailhead.track as track_module
++
++    calls = []
++    real = track_module.haversine_km
++
++    def counting(*args):
++        calls.append(args)
++        return real(*args)
++
++    monkeypatch.setattr(track_module, "haversine_km", counting)
++    track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0))
++    first = track.leg_lengths_km()
++    second = track.length_km()
++    assert len(calls) == 2
++    assert second == pytest.approx(sum(first))
++
++
++def test_leg_lengths_follow_changes_to_points(make_track):
++    from trailhead.track import Point
++
++    track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0))
++    before = track.leg_lengths_km()
++    track.points[1] = Point(0, 0.02, 0)
++    after = track.leg_lengths_km()
++    assert after != before
++    assert after == pytest.approx([2.2239, 1.11195], abs=1e-3)
++
++
++def test_returned_leg_list_is_a_copy(make_track):
++    track = make_track((0, 0, 0), (0, 0.01, 0))
++    track.leg_lengths_km().clear()
++    assert len(track.leg_lengths_km()) == 1

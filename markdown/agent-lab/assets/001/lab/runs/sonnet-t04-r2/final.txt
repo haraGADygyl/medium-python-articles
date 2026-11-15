@@ -1,0 +1,17 @@
+I added `tests/test_plan.py` with 28 tests, and all of them pass. `ruff check` is clean on the file, and nothing under `src/` was changed.
+
+I didn't run `mypy`; the repo's config only covers `src`.
+
+**`split_days`**
+- **Layout:** days are numbered from 1 and point indexes from 0. Each day starts at the previous day's last point, and the plan covers the whole track.
+- **Limit:** a day exactly at the limit stays whole, and one just over it is split. No day goes over the limit unless a single leg does.
+- **Oversized legs:** a leg over the limit gets a day to itself, including when it is the first leg, where it must not produce an empty day.
+- **Time rules:** hours are rounded to 0.01. Climb adds time and descent adds none. Jitter under 3 m adds nothing, and a 600 m climb in 1 m steps still counts in full.
+- **Summary and fitness:** the days add up to the Naismith summary time at several fitness values. Fitness changes both the hours and where the days split.
+- **Errors:** a non-positive `max_hours_per_day` or a non-positive `fitness` raises `ValueError`.
+
+**`describe_plan`**
+- It matches the README examples: `5h 07m`, `0h 45m` and `12h 00m`.
+- It rounds to the nearest minute, carries 59.9 minutes into the next hour, and returns an empty list for an empty plan.
+
+`git status` also lists some untracked dotfiles (`.bashrc`, `.claude/` and others) that I didn't create. I left them alone.

@@ -1,0 +1,116 @@
+{
+  "run_id": "sonnet-b01-r3",
+  "task": "b01",
+  "tier": "bug",
+  "baseline": true,
+  "repeat": 3,
+  "sandbox": true,
+  "model_alias": "sonnet",
+  "prompt": "Bug report from a user: \"I recorded a long, steady climb with a point for every metre of height, about 300 m up in total. `trailhead summary` shows the ascent as +0 m. Tracks with bigger gaps between points look fine.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 15.9,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 13544,
+  "duration_api_ms": 12993,
+  "api_equivalent_usd": 0.07270750000000001,
+  "usage": {
+    "input_tokens": 8,
+    "cache_creation_input_tokens": 13021,
+    "cache_read_input_tokens": 83075,
+    "output_tokens": 1230,
+    "output_tokens_details": {
+      "thinking_tokens": 76
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 13021,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 361,
+        "cache_read_input_tokens": 25157,
+        "cache_creation_input_tokens": 627,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 627
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 8,
+      "outputTokens": 1230,
+      "cacheReadInputTokens": 83075,
+      "cacheCreationInputTokens": 13021,
+      "webSearchRequests": 0,
+      "costUSD": 0.07270750000000001,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 76,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 13021,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 2,
+    "Read": 1,
+    "Edit": 1,
+    "Bash": 1
+  },
+  "bash_commands": [
+    "cat >> tests/test_elevation.py <<'EOF'\n\n\ndef test_long_climb_in_small_steps_is_counted():\n    assert gain_and_loss(list(range(0, 301))) == (300.0, 0.0)\nEOF\npython -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 4,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 4,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  }
+}

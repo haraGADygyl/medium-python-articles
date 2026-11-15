@@ -1,0 +1,9 @@
+Fixed: a 300 m climb recorded in 1 m steps now shows `+300 m` in `trailhead summary` (it was `+0 m`).
+
+**Cause:** in `counted_changes` (`src/trailhead/elevation.py`), a stray `reference = elevation` ran on every point, not only when a change was counted. Each point was therefore compared with the one just before it instead of with the last counted elevation. Any step under the 3 m threshold was dropped, however far the track had climbed overall. Tracks with bigger gaps looked fine because each step cleared the threshold on its own.
+
+**Fix:** removed that one line, so the reference only moves when a change is counted, as the README describes. Jitter of a metre either way is still ignored.
+
+The same bug affected descents, and the walking time and day plans, since they use the same function; those are corrected too. Expect ascent, descent and time to go up somewhat on existing finely sampled tracks, because small steps that were being dropped now accumulate.
+
+I added a regression test for a 300 m climb and a 300 m descent in 1 m steps. The full suite, `ruff check` and `mypy` pass. Nothing is committed.

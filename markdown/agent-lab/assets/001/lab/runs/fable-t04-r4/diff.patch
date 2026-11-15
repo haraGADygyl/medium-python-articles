@@ -1,0 +1,216 @@
+diff --git a/tests/test_plan.py b/tests/test_plan.py
+new file mode 100644
+index 0000000..9b2b50f
+--- /dev/null
++++ b/tests/test_plan.py
+@@ -0,0 +1,210 @@
++from math import pi
++
++import pytest
++
++from trailhead.plan import DEFAULT_MAX_HOURS, describe_plan, split_days
++from trailhead.report import summarise
++
++# Degrees of longitude per kilometre along the equator, from the README's Earth radius.
++DEG_PER_KM = 360 / (2 * pi * 6371.0088)
++
++
++@pytest.fixture
++def walk(make_track):
++    """Build a track heading east along the equator from ``(km, climb_m)`` legs.
++
++    By Naismith's rule a ``(5, 0)`` leg takes one hour and a ``(5, 600)`` leg two.
++    """
++
++    def build(*legs: tuple[float, float], start_ele: float = 1000.0):
++        km_so_far, ele = 0.0, start_ele
++        points = [(0.0, 0.0, ele)]
++        for km, climb in legs:
++            km_so_far += km
++            ele += climb
++            points.append((0.0, km_so_far * DEG_PER_KM, ele))
++        return make_track(*points)
++
++    return build
++
++
++def assert_days(actual, expected):
++    """Compare day tuples exactly, apart from float noise in the hours."""
++    assert [day[:3] for day in actual] == [day[:3] for day in expected]
++    assert [day[3] for day in actual] == pytest.approx([day[3] for day in expected], abs=0.011)
++
++
++# --- split_days: grouping -------------------------------------------------------------
++
++
++def test_short_walk_is_a_single_day(walk):
++    track = walk((5, 0), (5, 0), (5, 0))
++    assert_days(split_days(track), [(1, 0, 3, 3.0)])
++
++
++def test_two_point_track_is_one_day(walk):
++    assert_days(split_days(walk((2.5, 0))), [(1, 0, 1, 0.5)])
++
++
++def test_default_limit_is_seven_hours(walk):
++    assert DEFAULT_MAX_HOURS == 7.0
++    # Eight legs of 0.9 h: seven fit in a day (6.3 h), the eighth (7.2 h) does not.
++    track = walk(*[(4.5, 0)] * 8)
++    assert_days(split_days(track), [(1, 0, 7, 6.3), (2, 7, 8, 0.9)])
++
++
++def test_legs_are_packed_into_days_up_to_the_limit(walk):
++    track = walk(*[(5, 0)] * 5)
++    days = split_days(track, max_hours_per_day=2.5)
++    assert_days(days, [(1, 0, 2, 2.0), (2, 2, 4, 2.0), (3, 4, 5, 1.0)])
++
++
++def test_days_count_from_one_and_share_their_boundary_point(walk):
++    track = walk(*[(5, 0)] * 7)
++    days = split_days(track, max_hours_per_day=3.5)
++    assert [day for day, *_ in days] == list(range(1, len(days) + 1))
++    assert days[0][1] == 0
++    assert days[-1][2] == len(track.points) - 1
++    for (_, _, last, _), (_, first, _, _) in zip(days, days[1:], strict=False):
++        assert first == last
++
++
++def test_leg_longer_than_the_limit_is_a_day_by_itself(walk):
++    track = walk((2.5, 0), (15, 0), (2.5, 0), (2.5, 0))
++    days = split_days(track, max_hours_per_day=2)
++    assert_days(days, [(1, 0, 1, 0.5), (2, 1, 2, 3.0), (3, 2, 4, 1.0)])
++
++
++def test_overlong_first_and_last_legs(walk):
++    track = walk((15, 0), (2.5, 0), (15, 0))
++    days = split_days(track, max_hours_per_day=2)
++    assert_days(days, [(1, 0, 1, 3.0), (2, 1, 2, 0.5), (3, 2, 3, 3.0)])
++
++
++@pytest.mark.parametrize("max_hours", [0.3, 0.75, 1.0, 2.2, 3.9, 7.0, 100.0])
++def test_no_day_exceeds_the_limit_unless_it_is_a_single_leg(walk, max_hours):
++    track = walk(
++        (3, 120), (1, -40), (6, 300), (2, 0), (0.5, 250), (4, -500), (7, 30), (1.5, 2), (9, 610)
++    )
++    days = split_days(track, max_hours_per_day=max_hours)
++    for _, first, last, hours in days:
++        assert last > first
++        assert hours <= max_hours + 0.005 or last - first == 1
++
++
++# --- split_days: timing ---------------------------------------------------------------
++
++
++def test_ascent_adds_an_hour_per_600_m(walk):
++    # 5 km + 600 m up is two hours, so only one such leg fits in a 3 h day.
++    track = walk((5, 600), (5, 600))
++    assert_days(split_days(track, max_hours_per_day=3), [(1, 0, 1, 2.0), (2, 1, 2, 2.0)])
++
++
++def test_descent_adds_nothing(walk):
++    track = walk((5, -600), (5, -600), start_ele=2000)
++    assert_days(split_days(track, max_hours_per_day=3), [(1, 0, 2, 2.0)])
++
++
++def test_elevation_jitter_below_the_threshold_adds_no_time(walk):
++    track = walk((5, 2), (5, -2), (5, 2), (5, -2))
++    assert_days(split_days(track), [(1, 0, 4, 4.0)])
++
++
++def test_long_climb_in_small_steps_still_counts(walk):
++    # 300 m gained one metre at a time: 6 km on the flat (1.2 h) plus half an hour.
++    track = walk(*[(0.02, 1)] * 300)
++    days = split_days(track)
++    assert_days(days, [(1, 0, 300, 1.7)])
++
++
++def test_hours_are_rounded_to_hundredths(walk):
++    track = walk((1.234, 77), (2.345, 191), (0.777, 0), (3.21, 45))
++    for *_, hours in split_days(track, max_hours_per_day=1):
++        assert hours == round(hours, 2)
++
++
++@pytest.mark.parametrize("fitness", [1.0, 1.2, 0.8])
++@pytest.mark.parametrize("max_hours", [1.0, 2.5, 7.0])
++def test_days_add_up_to_the_summary_time(walk, max_hours, fitness):
++    legs = [(3, 120), (1, -40), (6, 300), (2, 2), (0.5, 250), (4, -500), (7, 30), (1.5, 2)]
++    track = walk(*legs, *[(0.1, 1)] * 40, (9, 610))
++    days = split_days(track, max_hours_per_day=max_hours, fitness=fitness)
++    total = sum(hours for *_, hours in days)
++    # Each day's hours are rounded to 0.01, so allow half of that per day.
++    assert total == pytest.approx(summarise(track, fitness=fitness).hours, abs=0.005 * len(days))
++
++
++# --- split_days: fitness and validation -----------------------------------------------
++
++
++def test_fitness_divides_the_time(walk):
++    track = walk((5, 0), (5, 600), (5, 0))
++    assert_days(split_days(track, fitness=1.0), [(1, 0, 3, 4.0)])
++    assert_days(split_days(track, fitness=2.0), [(1, 0, 3, 2.0)])
++    assert_days(split_days(track, fitness=0.8), [(1, 0, 3, 5.0)])
++
++
++def test_fitness_changes_where_the_days_break(walk):
++    track = walk(*[(5, 0)] * 4)
++    assert_days(split_days(track, max_hours_per_day=2.5), [(1, 0, 2, 2.0), (2, 2, 4, 2.0)])
++    assert_days(split_days(track, max_hours_per_day=2.5, fitness=2.0), [(1, 0, 4, 2.0)])
++    assert_days(
++        split_days(track, max_hours_per_day=2.5, fitness=0.5),
++        [(1, 0, 1, 2.0), (2, 1, 2, 2.0), (3, 2, 3, 2.0), (4, 3, 4, 2.0)],
++    )
++
++
++@pytest.mark.parametrize("fitness", [0, -1.5])
++def test_zero_or_negative_fitness_is_an_error(walk, fitness):
++    with pytest.raises(ValueError):
++        split_days(walk((5, 0), (5, 0)), fitness=fitness)
++
++
++@pytest.mark.parametrize("max_hours", [0, -3])
++def test_limit_must_be_positive(walk, max_hours):
++    with pytest.raises(ValueError):
++        split_days(walk((5, 0), (5, 0)), max_hours_per_day=max_hours)
++
++
++# --- describe_plan --------------------------------------------------------------------
++
++
++def test_describe_plan_docstring_example():
++    assert describe_plan([(2, 14, 31, 6.08)]) == ["Day 2: points 14-31, 6h 05m"]
++
++
++def test_describe_plan_gives_one_line_per_day_in_order():
++    days = [(1, 0, 13, 6.5), (2, 13, 31, 6.08), (3, 31, 40, 2.0)]
++    assert describe_plan(days) == [
++        "Day 1: points 0-13, 6h 30m",
++        "Day 2: points 13-31, 6h 05m",
++        "Day 3: points 31-40, 2h 00m",
++    ]
++
++
++def test_describe_plan_of_no_days():
++    assert describe_plan([]) == []
++
++
++@pytest.mark.parametrize(
++    ("hours", "shown"),
++    [
++        (5.12, "5h 07m"),  # two-digit minutes
++        (0.75, "0h 45m"),  # hours shown even when zero
++        (12.0, "12h 00m"),
++        (0.0, "0h 00m"),
++        (0.99, "0h 59m"),  # 59.4 minutes rounds down
++        (1.01, "1h 01m"),  # 60.6 minutes rounds up
++        (2.999, "3h 00m"),  # rounding carries into the hours, never "2h 60m"
++        (26.25, "26h 15m"),  # hours are not wrapped into days
++    ],
++)
++def test_describe_plan_duration_format(hours, shown):
++    assert describe_plan([(1, 0, 1, hours)]) == [f"Day 1: points 0-1, {shown}"]
++
++
++def test_plan_end_to_end(walk):
++    track = walk((5, 0), (5, 600), (2.5, 0), (5, 0))
++    lines = describe_plan(split_days(track, max_hours_per_day=3.25))
++    assert lines == ["Day 1: points 0-2, 3h 00m", "Day 2: points 2-4, 1h 30m"]

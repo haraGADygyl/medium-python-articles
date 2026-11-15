@@ -1,0 +1,140 @@
+{
+  "run_id": "fable-t02-r4",
+  "task": "t02",
+  "tier": "tests",
+  "baseline": true,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "`src/trailhead/pace.py` has no tests. Write `tests/test_pace.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 52.7,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 5,
+  "duration_ms": 49291,
+  "duration_api_ms": 48104,
+  "api_equivalent_usd": 0.57669,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 22711,
+    "cache_read_input_tokens": 124970,
+    "output_tokens": 4706,
+    "output_tokens_details": {
+      "thinking_tokens": 249
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 22711,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 433,
+        "cache_read_input_tokens": 34334,
+        "cache_creation_input_tokens": 1140,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1140
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 10,
+      "outputTokens": 4706,
+      "cacheReadInputTokens": 124970,
+      "cacheCreationInputTokens": 22711,
+      "webSearchRequests": 0,
+      "costUSD": 0.57669,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 249,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 22711,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4
+  },
+  "bash_commands": [
+    "ls -R . | grep -v '^$' | head -50; cat README.md src/trailhead/pace.py; cat pyproject.toml 2>/dev/null",
+    "cat src/trailhead/elevation.py src/trailhead/track.py src/trailhead/geo.py tests/conftest.py; sed -n 1,40p tests/test_plan.py; grep -rn \"pace\\|naismith\\|leg_hours\\|tobler\" src tests | grep -v \"^src/trailhead/pace.py\"",
+    "sed -n 30,60p src/trailhead/report.py\ncat > tests/test_pace.py <<'EOF'\nfrom math import exp\n\nimport pytest\n\nfrom trailhead.elevation import gain_and_loss\nfrom trailhead.pace import leg_hours, naismith_hours, tobler_kmh\nfrom trailhead.report import summarize\n\n# One degree of longitude along the equator, in km (sphere of radius 6371.0088 km).\nKM_PER_DEGREE = 111.19508\nSTEP_5_KM = 5 / KM_PER_DEGREE\n\n\n# --- naismith_hours ---------------------------------------------------------------\n\n\ndef test_flat_walk_is_five_km_per_hour():\n    assert naismith_hours(5, 0) == pytest.approx(1.0)\n    assert naismith_hours(12.5, 0) == pytest.approx(2.5)\n\n\ndef test_ascent_adds_an_hour_per_600_m():\n    assert naismith_hours(0, 600) == pytest.approx(1.0)\n    assert naismith_hours(0, 150) == pytest.approx(0.25)\n\n\ndef test_distance_and_ascent_add_up():\n    assert naismith_hours(10, 900) == pytest.approx(3.5)\n\n\ndef test_nothing_to_walk_takes_no_time():\n    assert naismith_hours(0, 0) == 0\n\n\ndef test_fitness_defaults_to_an_average_walker():\n    assert naismith_hours(10, 900) == naismith_hours(10, 900, fitness=1.0)\n\n\ndef test_fitness_divides_the_time():\n    # 1.25 is 25% faster: the same walk takes 1/1.25 of the time.\n    assert naismith_hours(10, 900, fitness=1.25) == pytest.approx(2.8)\n    assert naismith_hours(10, 900, fitness=2) == pytest.approx(1.75)\n\n\ndef test_low_fitness_is_slower():\n    assert naismith_hours(10, 900, fitness=0.8) == pytest.approx(4.375)\n\n\ndef test_time_is_not_rounded():\n    assert naismith_hours(1, 100) == pytest.approx(1 / 5 + 100 / 600, rel=1e-12)\n\n\n@pytest.mark.parametrize(\"fitness\", [0, -1, -0.5])\ndef test_fitness_must_be_positive(fitness):\n    with pytest.raises(ValueError):\n        naismith_hours(10, 100, fitness)\n\n\n@pytest.mark.parametrize((\"distance_km\", \"ascent_m\"), [(-1, 0), (0, -1), (-0.001, 100), (-5, -5)])\ndef test_distance_and_ascent_must_not_be_negative(distance_km, ascent_m):\n    with pytest.raises(ValueError):\n        naismith_hours(distance_km, ascent_m)\n\n\n# --- tobler_kmh -------------------------------------------------------------------\n\n\ndef test_tobler_on_the_flat():\n    assert tobler_kmh(0) == pytest.approx(6 * exp(-0.175))\n    assert tobler_kmh(0) == pytest.approx(5.0367, abs=1e-4)\n\n\ndef test_tobler_is_fastest_on_a_gentle_descent():\n    assert tobler_kmh(-0.05) == pytest.approx(6.0)\n    for grade in (-0.5, -0.1, -0.06, -0.04, 0, 0.05, 0.3):\n        assert tobler_kmh(grade) < 6.0\n\n\n@pytest.mark.parametrize(\n    (\"grade\", \"expected\"),\n    [\n        (0.1, 6 * exp(-3.5 * 0.15)),\n        (-0.1, 6 * exp(-3.5 * 0.05)),\n        (0.25, 6 * exp(-3.5 * 0.30)),\n        (-0.3, 6 * exp(-3.5 * 0.25)),\n        (1.0, 6 * exp(-3.5 * 1.05)),\n    ],\n)\ndef test_tobler_formula(grade, expected):\n    assert tobler_kmh(grade) == pytest.approx(expected)\n\n\ndef test_tobler_grade_is_rise_over_run_not_percent():\n    # A 10% climb is grade 0.1 and is walked at about 3.5 km/h.\n    assert tobler_kmh(0.1) == pytest.approx(3.549, abs=1e-3)\n\n\ndef test_tobler_is_symmetric_about_the_fastest_grade():\n    assert tobler_kmh(-0.05 + 0.2) == pytest.approx(tobler_kmh(-0.05 - 0.2))\n\n\ndef test_tobler_climbing_is_slower_than_descending_the_same_slope():\n    assert tobler_kmh(0.1) < tobler_kmh(-0.1)\n\n\ndef test_tobler_slows_down_as_the_climb_steepens():\n    speeds = [tobler_kmh(grade) for grade in (0, 0.1, 0.2, 0.4, 0.8)]\n    assert speeds == sorted(speeds, reverse=True)\n    assert speeds[-1] > 0\n\n\n# --- leg_hours --------------------------------------------------------------------\n\n\ndef test_one_time_per_leg(make_track):\n    track = make_track((0, 0, 0), (0, STEP_5_KM, 0), (0, 2 * STEP_5_KM, 0), (0, 3 * STEP_5_KM, 0))\n    assert leg_hours(track) == pytest.approx([1.0, 1.0, 1.0])\n\n\ndef test_two_point_track_has_one_leg(make_track):\n    assert leg_hours(make_track((0, 0, 0), (0, STEP_5_KM, 0))) == pytest.approx([1.0])\n\n\ndef test_climb_adds_time_to_its_leg(make_track):\n    track = make_track((0, 0, 100), (0, STEP_5_KM, 400), (0, 2 * STEP_5_KM, 400))\n    assert leg_hours(track) == pytest.approx([1.5, 1.0])\n\n\ndef test_descent_adds_nothing(make_track):\n    track = make_track((0, 0, 900), (0, STEP_5_KM, 300), (0, 2 * STEP_5_KM, 0))\n    assert leg_hours(track) == pytest.approx([1.0, 1.0])\n\n\ndef test_repeated_point_takes_no_time(make_track):\n    track = make_track((0, 0, 0), (0, 0, 0), (0, STEP_5_KM, 0))\n    assert leg_hours(track) == pytest.approx([0.0, 1.0])\n\n\ndef test_jitter_below_the_threshold_is_ignored(make_track):\n    track = make_track(\n        (0, 0, 100), (0, STEP_5_KM, 101), (0, 2 * STEP_5_KM, 99), (0, 3 * STEP_5_KM, 102)\n    )\n    assert leg_hours(track) == pytest.approx([1.0, 1.0, 1.0])\n\n\ndef test_slow_climb_is_credited_where_it_reaches_the_threshold(make_track):\n    # 1 m steps: nothing counts until the elevation is 3 m above the last counted one.\n    track = make_track(*[(0, index * STEP_5_KM, 100 + index) for index in range(7)])\n    with_climb = 1.0 + 3 / 600\n    assert leg_hours(track) == pytest.approx([1.0, 1.0, with_climb, 1.0, 1.0, with_climb])\n\n\ndef test_climb_of_exactly_the_threshold_counts(make_track):\n    track = make_track((0, 0, 100), (0, STEP_5_KM, 103))\n    assert leg_hours(track) == pytest.approx([1.0 + 3 / 600])\n\n\ndef test_climb_after_a_counted_descent_is_measured_from_the_bottom(make_track):\n    track = make_track((0, 0, 500), (0, STEP_5_KM, 200), (0, 2 * STEP_5_KM, 500))\n    assert leg_hours(track) == pytest.approx([1.0, 1.5])\n\n\ndef test_leg_fitness_divides_every_leg(make_track):\n    track = make_track((0, 0, 100), (0, STEP_5_KM, 400), (0, 2 * STEP_5_KM, 400))\n    assert leg_hours(track, fitness=1.25) == pytest.approx([1.2, 0.8])\n    assert leg_hours(track, 2) == pytest.approx([0.75, 0.5])\n\n\n@pytest.mark.parametrize(\"fitness\", [0, -1])\ndef test_leg_fitness_must_be_positive(make_track, fitness):\n    with pytest.raises(ValueError):\n        leg_hours(make_track((0, 0, 0), (0, STEP_5_KM, 0)), fitness)\n\n\n@pytest.fixture\ndef hilly(make_track):\n    # Climbs, descents, jitter and a slow climb in sub-threshold steps.\n    elevations = [1200, 1201, 1260, 1259, 1258, 1257.5, 1300, 1150, 1151, 1152, 1153, 1154, 1400]\n    return make_track(\n        *[(42 + 0.004 * i, 23 + 0.003 * i, ele) for i, ele in enumerate(elevations)]\n    )\n\n\n@pytest.mark.parametrize(\"fitness\", [1.0, 1.25, 0.8])\ndef test_legs_add_up_to_naismith_time_for_the_whole_track(hilly, fitness):\n    gain, _ = gain_and_loss([point.ele for point in hilly.points])\n    whole = naismith_hours(hilly.length_km(), gain, fitness)\n    assert sum(leg_hours(hilly, fitness)) == pytest.approx(whole)\n\n\n@pytest.mark.parametrize(\"fitness\", [1.0, 1.2])\ndef test_legs_add_up_to_the_summary_time(hilly, fitness):\n    assert sum(leg_hours(hilly, fitness)) == pytest.approx(summarize(hilly, fitness).hours)\nEOF\npython -m pytest tests/test_pace.py -q 2>&1 | tail -30; ruff check tests/test_pace.py; ruff format --check tests/test_pace.py; git status --short",
+    "sed -i 's/summarize/summarise/g' tests/test_pace.py && ruff format tests/test_pace.py && ruff check tests && python -m pytest -q 2>&1 | tail -30; ls -la | head -30"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_pace.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "...........................................                              [100%]\n43 passed in 0.06s\n",
+    "src_changed": [],
+    "killed": [
+      "flat speed 4 km/h",
+      "500 m per hour climb",
+      "fitness multiplies",
+      "zero fitness allowed",
+      "negative ascent allowed",
+      "tobler peak on the wrong side",
+      "leg descent counted",
+      "leg fitness dropped"
+    ],
+    "survived": [],
+    "kills": 8,
+    "mutants": 8,
+    "changed": [
+      "A tests/test_pace.py"
+    ],
+    "lines_added": 191,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_pace.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "...........................................                              [100%]\n43 passed in 0.06s\n",
+    "src_changed": [],
+    "killed": [
+      "flat speed 4 km/h",
+      "500 m per hour climb",
+      "fitness multiplies",
+      "zero fitness allowed",
+      "negative ascent allowed",
+      "tobler peak on the wrong side",
+      "leg descent counted",
+      "leg fitness dropped"
+    ],
+    "survived": [],
+    "kills": 8,
+    "mutants": 8,
+    "changed": [
+      "A tests/test_pace.py"
+    ],
+    "lines_added": 191,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

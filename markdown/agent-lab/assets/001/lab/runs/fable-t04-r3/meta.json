@@ -1,0 +1,144 @@
+{
+  "run_id": "fable-t04-r3",
+  "task": "t04",
+  "tier": "tests",
+  "baseline": false,
+  "repeat": 3,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "`src/trailhead/plan.py` has no tests. Write `tests/test_plan.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 110.6,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 7,
+  "duration_ms": 106131,
+  "duration_api_ms": 104519,
+  "api_equivalent_usd": 0.8788088,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 27967,
+    "cache_read_input_tokens": 171404,
+    "output_tokens": 9924,
+    "output_tokens_details": {
+      "thinking_tokens": 3151
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 27967,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 638,
+        "cache_read_input_tokens": 40385,
+        "cache_creation_input_tokens": 345,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 345
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 12,
+      "outputTokens": 9924,
+      "cacheReadInputTokens": 171404,
+      "cacheCreationInputTokens": 27967,
+      "webSearchRequests": 0,
+      "costUSD": 0.8788088,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 3151,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 27967,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 5,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git ls-files; cat README.md src/trailhead/plan.py; cat pyproject.toml 2>/dev/null; ls tests 2>/dev/null",
+    "cat src/trailhead/pace.py src/trailhead/elevation.py src/trailhead/track.py src/trailhead/report.py tests/conftest.py tests/test_pace.py; grep -n \"plan\\|split\" -r tests src/trailhead/cli.py | head -40",
+    "python -m pytest -q 2>&1 | tail -40; ruff check tests 2>&1 | tail -15; git status --short",
+    "python - <<'EOF'\nimport re,pathlib\np=pathlib.Path('tests/test_plan.py'); s=p.read_text()\ns=s.replace('''    track = flat(make_track, 4)\n    first, second, *_ = leg_hours(track)\n    days = split_days(track, max_hours_per_day=first + second)\n    assert [(a, b) for _, a, b, _ in days] == [(0, 2), (2, 4)]''','''    track = flat(make_track, 3)\n    first, second, _ = leg_hours(track)\n    days = split_days(track, max_hours_per_day=first + second)\n    assert [(a, b) for _, a, b, _ in days] == [(0, 2), (2, 3)]''')\ns=s.replace('''    assert average == pytest.approx(8.9, abs=0.005)\n    assert fit == pytest.approx(8.9 / 1.25, abs=0.005)\n    assert slow == pytest.approx(8.9 / 0.8, abs=0.005)''','''    exact = 40 * FLAT_LEG_HOURS  # 8.90 h\n    assert average == pytest.approx(exact, abs=0.006)\n    assert fit == pytest.approx(exact / 1.25, abs=0.006)\n    assert slow == pytest.approx(exact / 0.8, abs=0.006)''')\np.write_text(s)\nEOF\npython -m pytest -q 2>&1 | tail -5; ruff check tests | tail -3; git status --short src",
+    "python - <<'EOF'\nimport sys; sys.path.insert(0,'src')\nfrom trailhead.track import Track, Point\nfrom trailhead.plan import split_days, describe_plan\nfrom trailhead.report import summarise, format_summary\nfor k in range(1,400):\n    t=Track(\"t\",[Point(0,0,500),Point(0,k*0.0005,500)])\n    a=describe_plan(split_days(t))[0].split(\", \")[1]\n    b=format_summary(summarise(t)).split(\"time      \")[1].split(\"\\n\")[0]\n    if a!=b: print(k*0.0005,a,b); break\nEOF"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_plan.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "..............................................                           [100%]\n46 passed in 0.07s\n",
+    "src_changed": [],
+    "killed": [
+      "a day that exactly fills the limit is closed early",
+      "days numbered from 0",
+      "last day stops one point short",
+      "hours rounded to 0.1",
+      "zero limit allowed",
+      "fitness dropped",
+      "minutes not zero-padded",
+      "minutes truncated",
+      "next day starts one point late"
+    ],
+    "survived": [],
+    "kills": 9,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_plan.py"
+    ],
+    "lines_added": 267,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_plan.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "..............................................                           [100%]\n46 passed in 0.07s\n",
+    "src_changed": [],
+    "killed": [
+      "a day that exactly fills the limit is closed early",
+      "days numbered from 0",
+      "last day stops one point short",
+      "hours rounded to 0.1",
+      "zero limit allowed",
+      "fitness dropped",
+      "minutes not zero-padded",
+      "minutes truncated",
+      "next day starts one point late"
+    ],
+    "survived": [],
+    "kills": 9,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_plan.py"
+    ],
+    "lines_added": 267,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

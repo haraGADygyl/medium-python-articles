@@ -1,0 +1,9 @@
+`mypy` now passes on `src/`, with no `type: ignore`, `cast`, `Any` or config changes. The 48 tests and `ruff` also pass.
+
+The errors came from `Point.ele` being `float | None`, because the GPS can lose elevation. The code treated it as `float`. I had to pick what a missing elevation should mean:
+
+- **Gain, loss and walking time:** I added `Track.filled_elevations()` in `track.py`. A missing elevation repeats the last known one, so a gap leg counts as 0 change and the climb is still measured from the last known elevation. This keeps one value per leg, which `leg_hours` needs. A track with no elevations at all is treated as flat at 0 m. `pace.py` and `report.py` use it.
+- **Highest and lowest:** `highest_and_lowest` ignores missing values. If there are none, it raises `TrackError("the track has no elevation data")`, which the CLI already catches and reports.
+- **Steepest grade:** `steepest_grade` skips any leg where either end has no elevation.
+
+The gap-handling rules are my choice, not something the repo specified. If you'd prefer something else, such as interpolating across gaps, it would only change `filled_elevations()`.

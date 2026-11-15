@@ -1,0 +1,38 @@
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index e147dce..9307ce1 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -81,6 +81,11 @@ def _parse_point(line: str, number: int) -> Point:
+ 
+ 
+ def load_track(path: str | Path) -> Track:
+-    """Read a track file; without a ``# name:`` line the track is named after the file."""
++    """Read a track file; without a ``# name:`` line the track is named after the file.
++
++    ``utf-8-sig`` is used so that a byte-order mark, which some exporters and
++    editors write at the start of a UTF-8 file, is dropped rather than being
++    read as part of the header.
++    """
+     path = Path(path)
+-    return parse_track(path.read_text(encoding="utf-8"), default_name=path.stem)
++    return parse_track(path.read_text(encoding="utf-8-sig"), default_name=path.stem)
+diff --git a/tests/test_track.py b/tests/test_track.py
+index ba1bbad..d2d4f92 100644
+--- a/tests/test_track.py
++++ b/tests/test_track.py
+@@ -30,6 +30,15 @@ def test_default_name_comes_from_the_file(write_track):
+     assert load_track(path).name == "vihren"
+ 
+ 
++def test_file_with_byte_order_mark_and_crlf_loads(tmp_path):
++    # Garmin-style export: UTF-8 BOM at the start, CRLF line endings.
++    path = tmp_path / "garmin-export.csv"
++    path.write_bytes(b"\xef\xbb\xbflat,lon,ele\r\n42.2031,23.3205,2140\r\n42.2049,23.3188,2196\r\n")
++    track = load_track(path)
++    assert track.name == "garmin-export"
++    assert [point.ele for point in track.points] == [2140, 2196]
++
++
+ def test_bad_header():
+     with pytest.raises(TrackError, match="line 1:"):
+         parse_track("latitude,longitude,elevation\n0,0,0\n0,1,0\n")

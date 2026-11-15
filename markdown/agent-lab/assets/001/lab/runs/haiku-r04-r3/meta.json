@@ -1,0 +1,119 @@
+{
+  "run_id": "haiku-r04-r3",
+  "task": "r04",
+  "tier": "refactor/feature",
+  "baseline": false,
+  "repeat": 3,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "`Track.leg_lengths_km()` recomputes every great-circle distance each time it is called, and summarising a track calls it more than once. Cache the leg lengths so that a summary computes each leg's distance only once, without changing any results.",
+  "harness_timeout": false,
+  "wall_s": 37.0,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 13,
+  "duration_ms": 34719,
+  "duration_api_ms": 32192,
+  "api_equivalent_usd": 0.00991048,
+  "usage": {
+    "input_tokens": 18,
+    "cache_creation_input_tokens": 23232,
+    "cache_read_input_tokens": 252128,
+    "output_tokens": 5482,
+    "output_tokens_details": {
+      "thinking_tokens": 1695
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 23232,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 610,
+        "cache_read_input_tokens": 35606,
+        "cache_creation_input_tokens": 389,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 389
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 18,
+      "outputTokens": 5482,
+      "cacheReadInputTokens": 252128,
+      "cacheCreationInputTokens": 23232,
+      "webSearchRequests": 0,
+      "costUSD": 0.00991048,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 1695,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 23232,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 1,
+    "Read": 5,
+    "Bash": 4,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "git status --short && ls && cat src/trailhead/summary.py 2>/dev/null; grep -rn \"summar\" src | head -30",
+    "grep -rn \"\\.points\\b\" src tests | grep -v \"^src/trailhead/track.py\" ; cat pyproject.toml; ls tests; python -m pytest -q 2>&1 | tail -5",
+    "cat >> tests/test_track.py <<'EOF'\n\n\ndef test_leg_lengths_are_computed_once_per_leg(make_track, monkeypatch):\n    import trailhead.track as track_module\n\n    calls = []\n    real = track_module.haversine_km\n\n    def counting(*args):\n        calls.append(args)\n        return real(*args)\n\n    monkeypatch.setattr(track_module, \"haversine_km\", counting)\n    track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0))\n    first = track.leg_lengths_km()\n    second = track.length_km()\n    assert len(calls) == 2\n    assert second == pytest.approx(sum(first))\n\n\ndef test_leg_lengths_follow_changes_to_points(make_track):\n    from trailhead.track import Point\n\n    track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0))\n    before = track.leg_lengths_km()\n    track.points[1] = Point(0, 0.02, 0)\n    after = track.leg_lengths_km()\n    assert after != before\n    assert after == pytest.approx([2.2239 / 2, 1.11195], abs=1e-3)\n\n\ndef test_returned_leg_list_is_a_copy(make_track):\n    track = make_track((0, 0, 0), (0, 0.01, 0))\n    track.leg_lengths_km().clear()\n    assert len(track.leg_lengths_km()) == 1\nEOF\ngrep -n \"make_track\" -A8 tests/conftest.py | head -20; python -m pytest -q 2>&1 | tail -15; python -m ruff check src tests 2>&1 | tail -3; python -m mypy 2>&1 | tail -2",
+    "python -m pytest -q 2>&1 | tail -3; python -m ruff check src tests 2>&1 | tail -1; python -m mypy 2>&1 | tail -1; git diff --stat -- src tests"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "......................................................                   [100%]\n54 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 50,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "......................................................                   [100%]\n54 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 50,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

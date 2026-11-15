@@ -1,0 +1,7 @@
+The bug was in `counted_changes` in `src/trailhead/elevation.py`. The loop reset `reference = elevation` on every point, not only when a change was counted. The docstring says a change counts once it reaches the threshold from the last *counted* elevation. In practice the code compared each point only to the previous one. With a point every metre, each step was 1 m, always under the 3 m threshold, so none counted and the ascent came out as +0 m. Tracks with bigger gaps between points had steps over the threshold, which is why they looked fine.
+
+I removed the unconditional reset, so the reference now moves only when a change is counted. The two counting branches already set it.
+
+I added a regression test in `tests/test_elevation.py`. A 0 to 300 m climb in 1 m steps now gives 300 m of gain, and the same descent gives 300 m of loss. The full suite passes (47 tests).
+
+`leg_hours` and the day plan use `counted_changes`, so they were undercounting climbs on dense tracks as well. They get the fix too.

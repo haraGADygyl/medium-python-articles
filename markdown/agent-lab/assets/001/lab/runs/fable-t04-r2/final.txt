@@ -1,0 +1,16 @@
+`tests/test_plan.py` is written with 45 tests, and the full suite passes (87 tests) with `ruff check` clean. Nothing under `src/` was touched, and the tests found no bugs in `plan.py`.
+
+The tests cover:
+
+- **Splitting:** the 7-hour default, custom limits, a day exactly at the limit, greedy filling, and days chaining from point 0 to the last point.
+- **Oversized legs:** a leg longer than the limit becomes a day by itself, whether it is first, in the middle or last.
+- **Timing:** ascent at one hour per 600 m, descent and sub-threshold jitter adding nothing, and a 300 m climb in 1 m steps still counting.
+- **Fitness:** it divides the time and moves where days end.
+- **Summary agreement:** day totals add up to `summarise(...).hours` across several limits and fitness values.
+- **Errors:** a zero or negative limit or fitness raises `ValueError`.
+- **`describe_plan`:** the docstring example, the README duration format (`5h 07m`, `0h 45m`, `12h 00m`), rounding up into the next hour, and an empty plan.
+
+Two things rest on the code rather than the documentation:
+
+- **Limit validation:** the `ValueError` for a non-positive `max_hours_per_day` is not mentioned in the README or docstring; I tested it because the code raises it explicitly.
+- **Double rounding:** the README says times are not rounded until displayed, but `split_days` rounds to 0.01 h (as its docstring says) before `describe_plan` rounds to minutes. A day of 9.498 minutes would therefore show as `0h 10m` rather than `0h 09m`. I followed the docstring and did not write a test for this case.

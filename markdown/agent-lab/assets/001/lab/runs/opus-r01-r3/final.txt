@@ -1,0 +1,10 @@
+I renamed `haversine_km` to `distance_km` and updated every caller. All 48 tests pass, and ruff (lint and format) and mypy strict report no problems.
+
+**What changed:**
+- **`src/trailhead/geo.py`**: the function is now `distance_km`. `haversine_km` still exists as a small wrapper. It emits a `DeprecationWarning` saying "haversine_km is deprecated; use distance_km instead" and returns `distance_km(...)`. The warning points at the line that called `haversine_km` (`stacklevel=2`), not at `geo.py`.
+- **Callers**: the imports and calls in `src/trailhead/report.py`, `src/trailhead/track.py` and `tests/test_geo.py` now use `distance_km`. A repo-wide search finds no other uses, and the README doesn't mention the function.
+- **New test**: `test_haversine_km_is_deprecated_alias` in `tests/test_geo.py` checks that the old name raises the warning and returns the same value as `distance_km`.
+
+`src/trailhead/pace.py` has its own parameter called `distance_km` in `naismith_hours`. It doesn't import from `geo`, so the two don't clash, and I didn't touch it.
+
+I haven't committed anything.

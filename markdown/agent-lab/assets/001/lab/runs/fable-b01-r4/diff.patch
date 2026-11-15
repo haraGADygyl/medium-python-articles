@@ -1,0 +1,25 @@
+diff --git a/src/trailhead/elevation.py b/src/trailhead/elevation.py
+index fea4839..38ee915 100644
+--- a/src/trailhead/elevation.py
++++ b/src/trailhead/elevation.py
+@@ -33,7 +33,6 @@ def counted_changes(
+             reference = elevation
+         else:
+             changes.append(0.0)
+-        reference = elevation
+     return changes
+ 
+ 
+diff --git a/tests/test_elevation.py b/tests/test_elevation.py
+index 2e5f019..fd4b8c7 100644
+--- a/tests/test_elevation.py
++++ b/tests/test_elevation.py
+@@ -30,3 +30,8 @@ def test_steepest_grade_in_percent(make_track):
+     # 0.01 degrees of longitude on the equator is about 1112 m.
+     track = make_track((0, 0, 1000), (0, 0.01, 1100), (0, 0.02, 1050))
+     assert steepest_grade(track) == pytest.approx(9.0, abs=0.05)
++
++
++def test_steady_climb_in_steps_below_the_threshold_is_counted():
++    assert gain_and_loss([1000 + step for step in range(301)]) == (300.0, 0.0)
++    assert gain_and_loss([1300 - step for step in range(301)]) == (0.0, 300.0)

@@ -1,0 +1,12 @@
+I fixed the bug. `summary` now shows `0h 45m` for a flat 3.74 km walk, and all 54 tests pass, including the new ones.
+
+**Cause:** the code turned hours into minutes with `int(hours * 60)`. `int()` just drops the fractional part, so 44.88 minutes became 44. That breaks the README's promise of "rounded to the nearest minute". It also caused a second, quieter error: some exact values land just under a whole minute in floating point. For example, `0.35 * 60` comes out as `20.999…`, which `int()` turned into 20 minutes instead of 21.
+
+**Same bug in a second place:** `trailhead plan` used the same `int()` line in `describe_plan` (`src/trailhead/plan.py`), so its per-day times were also cut short.
+
+**Fix:**
+- I added one shared helper, `format_duration(hours)`, in `src/trailhead/pace.py`. It rounds to the nearest minute, and an exact half-minute rounds up (44.5 min → `0h 45m`). I didn't use Python's `round()`, which rounds exact halves to the nearest even number.
+- `format_summary` (`src/trailhead/report.py`) and `describe_plan` now both use it, so the two commands can't drift apart again.
+- I added tests in `tests/test_pace.py` for the reported case, the `0.35`-hour floating-point case, rounding just below and at a half minute, 59.6 min rolling over to `1h 00m`, and the README's examples.
+
+The existing summary and plan tests still pass unchanged, because their expected values come out the same whether you truncate or round. That's why they never caught this. Nothing is committed yet.

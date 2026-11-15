@@ -1,0 +1,14 @@
+The `plan` and `summary` totals now agree.
+
+**Cause:** the two commands measured climb differently.
+- `summary` uses the thresholded ascent from `gain_and_loss`, which ignores changes smaller than 3 m.
+- `plan` called `leg_hours` in `pace.py`, which added up the raw climb on every leg. On a noisy track, each small up-tick added Naismith time. The ticks were never cancelled by the matching down-ticks, because descent costs nothing. That is how 7h 05m became 9h 40m.
+
+**Fix:**
+- `leg_hours` now takes each leg's climb from `counted_changes`, the same function behind `summary`'s ascent. Summing the legs gives the same ascent as `summary`.
+- `plan` was also missing `--threshold`, so there was no way to match a non-default `summary --threshold`. I added the option to `plan` and passed it through `split_days`.
+- I added a regression test in `tests/test_pace.py` using a jittery track. It checks that the summed leg hours equal the summary's time. All 48 tests pass.
+
+**Rounding:** `plan` rounds each day to 0.01 h, so its day totals can differ from `summary` by a minute or so. The day totals should match `summary` closely, but not to the second.
+
+I didn't commit anything.

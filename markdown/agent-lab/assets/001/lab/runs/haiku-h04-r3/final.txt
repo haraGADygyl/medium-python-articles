@@ -1,0 +1,16 @@
+The cause was truncation, not the time calculation. The formatter did `int(hours * 60)`, which drops the fraction, so 44.9 minutes displayed as 44. The fix rounds to the nearest minute instead, and the 3.74 km flat walk now shows `0h 45m`.
+
+**Changes**
+- `src/trailhead/pace.py`: new `format_duration(hours)` that rounds to the nearest minute, with halves rounding up.
+- `src/trailhead/report.py`: `format_summary` uses it for the `time` line.
+- `src/trailhead/plan.py`: `describe_plan` had the same truncation bug, so it now uses the same helper. The task brief only mentioned `summary`, but the README rule applies to every displayed duration.
+- Tests: parametrised cases for the formatter, plus a summary test using the reported 3.74 km flat track.
+
+**Verification**
+- `pytest`: 53 passed (47 existing, 6 new).
+- `ruff check` and `mypy`: clean.
+- The reported case gave 44 before the fix and gives `0h 45m` after it.
+
+**Not changed:** `split_days` rounds each day's hours to 0.01 before `describe_plan` formats them. Formatting an already-rounded value can occasionally land one minute off (for example 44.7 minutes becomes 0.74 h and shows as 44). Fixing that means changing the documented 0.01 rounding of `split_days`' return value, so I left it for you to decide.
+
+I haven't committed anything.

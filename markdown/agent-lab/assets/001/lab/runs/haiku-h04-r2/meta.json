@@ -1,0 +1,121 @@
+{
+  "run_id": "haiku-h04-r2",
+  "task": "h04",
+  "tier": "two-file bug",
+  "baseline": false,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"`trailhead summary` shows `time 0h 44m` for a flat 3.74 km walk. By Naismith's rule that is 44.9 minutes, and the README says times are rounded to the nearest minute.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 35.8,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 20,
+  "duration_ms": 33743,
+  "duration_api_ms": 32437,
+  "api_equivalent_usd": 0.010276280000000002,
+  "usage": {
+    "input_tokens": 16,
+    "cache_creation_input_tokens": 25205,
+    "cache_read_input_tokens": 223968,
+    "output_tokens": 5988,
+    "output_tokens_details": {
+      "thinking_tokens": 1525
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 25205,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 584,
+        "cache_read_input_tokens": 37589,
+        "cache_creation_input_tokens": 379,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 379
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 16,
+      "outputTokens": 5988,
+      "cacheReadInputTokens": 223968,
+      "cacheCreationInputTokens": 25205,
+      "webSearchRequests": 0,
+      "costUSD": 0.010276280000000002,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 1525,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 25205,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 3,
+    "Glob": 1,
+    "Read": 6,
+    "Edit": 8,
+    "Bash": 1
+  },
+  "bash_commands": [
+    "python -m pytest -q 2>&1 | tail -15; ruff check 2>&1 | tail -3; mypy 2>&1 | tail -2"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_pace.py"
+    ],
+    "lines_added": 19,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_pace.py"
+    ],
+    "lines_added": 19,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  }
+}

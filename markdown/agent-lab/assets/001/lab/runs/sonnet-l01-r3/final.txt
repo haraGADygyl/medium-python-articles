@@ -1,0 +1,6 @@
+`ruff check` now passes, and the 46 tests pass. I didn't touch the ruff configuration and added no `noqa` comments.
+
+- **`src/trailhead/pace.py` (F841):** `naismith_hours` computed `hours` with the `fitness` scaling but then returned the unscaled value. Deleting the variable would have hidden that. I made the function `return hours`, which matches its docstring: fitness 1.25 now gives a shorter time. This changes behavior for any caller passing `fitness` other than 1.0. Callers using the default of 1.0 get the same result as before.
+- **`src/trailhead/track.py`:**
+  - I removed the unused `import os`, which also fixed the unsorted-import error.
+  - I changed the bare `except:` to `except ValueError as err:` and re-raised with `from err`. The only thing that can fail in that `try` is `float()` conversion, which raises `ValueError`, so the narrower catch is safe.

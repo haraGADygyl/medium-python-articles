@@ -1,0 +1,8 @@
+`ruff check` now passes and the 46 tests still pass. One of the fixes changes behaviour: the unused variable in `pace.py` was a real bug.
+
+- **`src/trailhead/pace.py`**: `naismith_hours` computed the fitness-scaled time into `hours` and then returned the unscaled formula, so `fitness` was silently ignored. I made it return `hours` rather than delete the variable, which matches the docstring and README ("`fitness` divides the time"). As a result `--fitness` now actually changes `summary` and `plan` output for any value other than 1.0. No existing test covers a non-default fitness, and I did not add one.
+- **`src/trailhead/track.py`**:
+  - Removed the unused `import os`, which also resolves the import-sorting error.
+  - Replaced the bare `except:` with `except ValueError as err:` and added `from err` to the raised `TrackError`. `ValueError` is the only thing `float()` raises on a string there.
+
+Nothing is committed.

@@ -1,0 +1,126 @@
+{
+  "run_id": "haiku-b05-r3",
+  "task": "b05",
+  "tier": "bug",
+  "baseline": false,
+  "repeat": 3,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"My GPS app writes the `# units: ft` line at the end of the file, after the points. trailhead then reports a highest point of 14115 m for a hike that tops out at 14,115 ft (about 4302 m). The file is attached as `pikes-peak.csv`.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 30.5,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 13,
+  "duration_ms": 28266,
+  "duration_api_ms": 26061,
+  "api_equivalent_usd": 0.00890953,
+  "usage": {
+    "input_tokens": 20,
+    "cache_creation_input_tokens": 20786,
+    "cache_read_input_tokens": 273633,
+    "output_tokens": 4028,
+    "output_tokens_details": {
+      "thinking_tokens": 683
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 20786,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 425,
+        "cache_read_input_tokens": 32786,
+        "cache_creation_input_tokens": 763,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 763
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 20,
+      "outputTokens": 4028,
+      "cacheReadInputTokens": 273633,
+      "cacheCreationInputTokens": 20786,
+      "webSearchRequests": 0,
+      "costUSD": 0.00890953,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 683,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 20786,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 8,
+    "Edit": 4
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && ls -la && cat pikes-peak.csv 2>/dev/null | head -50",
+    "cat src/trailhead/track.py && echo ---- && cat src/trailhead/elevation.py && echo ---- && cat src/trailhead/cli.py && echo ---- && cat README.md | head -80",
+    "cat tests/test_track.py && python -m pytest -q 2>&1 | tail -3",
+    "python -m pytest -q 2>&1 | tail -3; (ruff check 2>&1 | tail -2); (mypy 2>&1 | tail -2); PYTHONPATH=src python -m trailhead summary pikes-peak.csv 2>&1",
+    "python -m pytest -q",
+    "PYTHONPATH=src python -m trailhead summary pikes-peak.csv",
+    "ruff check && mypy",
+    "python -m pytest -q && ruff check && mypy"
+  ],
+  "permission_denials": [
+    {
+      "command": "python -m pytest -q 2>&1 | tail -3; (ruff check 2>&1 | tail -2); (mypy 2>&1 | tail -2); PYTHONPATH=src python -m trailhead summary pikes-peak.csv 2>&1",
+      "description": "Run tests, lint, type check, and summary on the user's file"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".....................................................                    [100%]\n53 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 11,
+    "lines_removed": 4,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".....................................................                    [100%]\n53 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 11,
+    "lines_removed": 4,
+    "own_suite_pass_as_left": true
+  }
+}

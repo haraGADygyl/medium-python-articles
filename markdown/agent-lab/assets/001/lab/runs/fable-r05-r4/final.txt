@@ -1,0 +1,12 @@
+Tobler pace is in: `pace.leg_hours`, `plan.split_days` and `report.summarise` take `pace="naismith"` (default) or `"tobler"`, anything else raises `ValueError`, and both CLI commands accept `--pace {naismith,tobler}`. The test suite (55 tests, 8 of them new), `ruff check` and `mypy` all pass, the existing tests pass unmodified, and nothing is committed.
+
+Things you might not expect:
+
+- **Threshold has no effect on Tobler time.** Tobler uses each leg's raw elevation change, as you specified, so `--threshold` changes the summary's ascent/descent figures but not its Tobler time. The README says so.
+- **`pace` is not keyword-only.** It is the last parameter of each function, so it can also be passed positionally.
+- **Near-vertical legs can crash under Tobler.** When a leg's grade is above roughly 200 (e.g. two almost-identical points with a metre of elevation between them), `tobler_kmh` underflows to 0 and the division raises `ZeroDivisionError`. I left this as is because the spec defines the time as length divided by speed; say if you want such legs handled differently.
+- **Unknown `--pace` on the command line** is rejected by argparse with a usage error (exit code 2), not the `trailhead: …` message with exit code 1.
+
+The README has the new option in the usage example and a "Tobler pace" entry under Behaviour, and the walking-time and day-plan entries are reworded to cover both paces.
+
+The untracked dotfiles in `git status` (`.bashrc`, `.gitconfig`, `.idea`, etc.) are not mine and I did not touch them.

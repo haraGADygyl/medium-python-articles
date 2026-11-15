@@ -1,0 +1,41 @@
+diff --git a/src/trailhead/elevation.py b/src/trailhead/elevation.py
+index fea4839..f73b426 100644
+--- a/src/trailhead/elevation.py
++++ b/src/trailhead/elevation.py
+@@ -25,15 +25,11 @@ def counted_changes(
+     reference = elevations[0]
+     for elevation in elevations[1:]:
+         change = elevation - reference
+-        if change > 0 and change >= threshold:
+-            changes.append(change)
+-            reference = elevation
+-        elif change < 0 and -change >= threshold:
++        if abs(change) >= threshold and change != 0:
+             changes.append(change)
+             reference = elevation
+         else:
+             changes.append(0.0)
+-        reference = elevation
+     return changes
+ 
+ 
+diff --git a/tests/test_elevation.py b/tests/test_elevation.py
+index 2e5f019..a46e855 100644
+--- a/tests/test_elevation.py
++++ b/tests/test_elevation.py
+@@ -7,6 +7,15 @@ def test_simple_climb_and_descent():
+     assert gain_and_loss([100, 150, 120]) == (50.0, 30.0)
+ 
+ 
++def test_long_climb_in_small_steps_is_counted():
++    # One point per metre, 300 m up: each step is below the threshold on its own.
++    assert gain_and_loss([100 + i for i in range(301)]) == (300.0, 0.0)
++    # The same 300 m climb, then 300 m back down in 1 m steps.
++    up = [100 + i for i in range(301)]
++    down = [400 - i for i in range(1, 301)]
++    assert gain_and_loss(up + down) == (300.0, 300.0)
++
++
+ def test_jitter_below_the_threshold_is_ignored():
+     assert gain_and_loss([500, 501, 499, 500.5, 501.5, 500]) == (0.0, 0.0)
+ 

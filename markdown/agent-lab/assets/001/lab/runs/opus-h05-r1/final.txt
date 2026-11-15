@@ -1,0 +1,17 @@
+Fixed. `trailhead plan` was counting GPS noise as climbing, and `trailhead summary` wasn't.
+
+**Cause:** `leg_hours` in `src/trailhead/pace.py` times each leg for `plan`. It charged every leg its raw rise (`max(b.ele - a.ele, 0)`), so every 1–2 m upward wobble counted as ascent and added walking time. `summary` uses `gain_and_loss`, which ignores changes under the 3 m threshold. On a noisy track the plan picked up a lot of extra climbing, which is how it reached 9h 40m against 7h 05m.
+
+**Fix:** `leg_hours` now uses `counted_changes` with the default 3 m threshold, the same function behind the summary's ascent. Each leg gets exactly the climb the summary credits to it, so the days add up to the summary time, as the README says. I also removed the import this left unused.
+
+**Tests:** I added two regression tests, and both fail on the old code:
+- `tests/test_pace.py`: a track with 1 m jitter now gets flat-ground time only.
+- `tests/test_plan.py`: on a noisy multi-day climb, the days add up to the summary's hours.
+
+All 49 tests pass, and `ruff check` and `mypy` are clean. Nothing is committed yet.
+
+Two things to know:
+- **Rounding:** each day's hours are rounded to 0.01 h, so the plan total can still differ from the summary by about a minute. That's display rounding, not this bug.
+- **`--threshold`:** `plan` has no `--threshold` option and always uses 3 m. If someone runs `summary --threshold 5`, the two commands will disagree again. The README only promises agreement at the default, so I left it alone, but adding the option to `plan` would be easy.
+
+Also, some untracked files I didn't create are now in the working tree: dotfiles like `.bashrc` and `.gitconfig`, plus `.claude/`, `.idea` and `.vscode`. They look like environment artifacts. I haven't touched them.

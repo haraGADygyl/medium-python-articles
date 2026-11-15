@@ -1,0 +1,8 @@
+`ruff check` now passes. The ruff configuration and `noqa` comments are untouched, and the 46 tests still pass.
+
+Changes:
+
+- **`src/trailhead/pace.py`**: `naismith_hours` computed `hours` (with `fitness` applied) but returned the unscaled value. I changed the return to `hours`. This fixes the F841 warning, and it also makes `--fitness` take effect, which the README and docstring say it should. Before, `fitness` was silently ignored for any value other than the default. For example, `naismith_hours(10, 0, 1.25)` now returns 1.6 instead of 2.0. The existing tests only use the default fitness, so they didn't catch this.
+- **`src/trailhead/track.py`**: removed the unused `import os` (F401) and put the remaining imports in order (I001). In `_parse_point`, the bare `except:` is now `except ValueError as err:` with `raise ... from err` (E722 and B904). `float()` only raises `ValueError` here, so a bare except wasn't needed and was also swallowing things like `KeyboardInterrupt`.
+
+The `fitness` change is a behaviour change, not just a lint fix. If you'd rather keep the old output, the alternative is to delete the `hours` line and fix the docstring and README instead, but that would contradict the documented `--fitness` behaviour.

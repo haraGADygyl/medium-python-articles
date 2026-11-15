@@ -1,0 +1,140 @@
+{
+  "run_id": "opus-t02-r1",
+  "task": "t02",
+  "tier": "tests",
+  "baseline": true,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "opus",
+  "prompt": "`src/trailhead/pace.py` has no tests. Write `tests/test_pace.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 47.4,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 5,
+  "duration_ms": 44105,
+  "duration_api_ms": 43342,
+  "api_equivalent_usd": 0.3671828,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 32052,
+    "cache_read_input_tokens": 106134,
+    "output_tokens": 4475,
+    "output_tokens_details": {
+      "thinking_tokens": 384
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 32052,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 658,
+        "cache_read_input_tokens": 31709,
+        "cache_creation_input_tokens": 343,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 343
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 10,
+      "outputTokens": 4475,
+      "cacheReadInputTokens": 106134,
+      "cacheCreationInputTokens": 32052,
+      "webSearchRequests": 0,
+      "costUSD": 0.3671828,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 384,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 32052,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 3,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git ls-files && cat README.md src/trailhead/pace.py && ls tests && cat pyproject.toml",
+    "cat tests/conftest.py src/trailhead/track.py src/trailhead/elevation.py src/trailhead/report.py tests/test_plan.py; grep -rn \"pace\\|naismith\\|leg_hours\" src tests | grep -v \"^src/trailhead/pace.py\"",
+    "python -m pytest -q 2>&1 | tail -15; ruff check tests/test_pace.py 2>&1 | tail -5; git status --short"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_pace.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".............................                                            [100%]\n29 passed in 0.05s\n",
+    "src_changed": [],
+    "killed": [
+      "flat speed 4 km/h",
+      "500 m per hour climb",
+      "fitness multiplies",
+      "zero fitness allowed",
+      "negative ascent allowed",
+      "tobler peak on the wrong side",
+      "leg descent counted",
+      "leg fitness dropped"
+    ],
+    "survived": [],
+    "kills": 8,
+    "mutants": 8,
+    "changed": [
+      "A tests/test_pace.py"
+    ],
+    "lines_added": 160,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_pace.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".............................                                            [100%]\n29 passed in 0.04s\n",
+    "src_changed": [],
+    "killed": [
+      "flat speed 4 km/h",
+      "500 m per hour climb",
+      "fitness multiplies",
+      "zero fitness allowed",
+      "negative ascent allowed",
+      "tobler peak on the wrong side",
+      "leg descent counted",
+      "leg fitness dropped"
+    ],
+    "survived": [],
+    "kills": 8,
+    "mutants": 8,
+    "changed": [
+      "A tests/test_pace.py"
+    ],
+    "lines_added": 160,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

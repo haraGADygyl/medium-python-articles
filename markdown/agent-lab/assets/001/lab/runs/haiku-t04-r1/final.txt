@@ -1,0 +1,15 @@
+I added `tests/test_plan.py` with 21 pytest tests for `src/trailhead/plan.py`. All pass, the full suite passes (63 tests), and ruff check and format are clean. Nothing under `src/` changed, and I did not commit.
+
+**What the tests cover, from the README and docstrings:**
+- **Grouping:** legs are grouped until the limit, a day may end exactly on the limit, and a leg over the limit becomes a day by itself.
+- **Default limit:** `split_days` defaults to 7 hours, and `DEFAULT_MAX_HOURS` is 7.0.
+- **Naismith timing:** ascent adds time, descent adds none, and `fitness` divides each leg's time.
+- **Fitness vs limit:** `fitness=f` groups the same as a limit of `max * f` at fitness 1.
+- **Summary agreement:** the days add up to `summarise(track, fitness).hours`, using a track with jittery elevations.
+- **Invariants:** days are numbered from 1, consecutive days share a boundary point, the plan covers the whole track, and repeated points are handled.
+- **Errors:** a limit of zero or less, and a fitness of zero or less, raise `ValueError`.
+- **`describe_plan`:** the output format, rounding to the nearest minute including the carry case (0.999 h gives `1h 00m`), and an empty plan.
+
+**Things to know:**
+- **Zero-time legs:** a repeated point at the start of a day adds no time, so the next over-limit leg joins that day. The docstring's "that leg is a day by itself" does not strictly hold there. I made the invariant ignore zero-time legs and did not treat this as a bug, but you may want the docstring tightened or the behaviour changed.
+- **Rounding:** the README says times are "not rounded until they are displayed". `split_days` rounds each day's hours to 0.01, as its docstring says. I followed the docstring and used a tolerance in the summary-agreement test to allow for it.

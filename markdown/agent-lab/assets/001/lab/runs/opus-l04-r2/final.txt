@@ -1,0 +1,14 @@
+`mypy` now passes in strict mode with no `# type: ignore`, `cast` or `Any`, and no config changes. `ruff check` passes and all 48 tests pass.
+
+**Cause:** `Point.ele` can be `None` when the GPS lost the elevation, but the elevation, pace and report code used it as a plain `float`. Before this fix, a track with any empty elevation would have crashed with a `TypeError`.
+
+**Fix:** the README already says what a missing elevation means: it takes the nearest earlier known elevation, or the nearest later one if there isn't one. I put that rule in one place, a new `Track.elevations()` method in `src/trailhead/track.py` that returns a `list[float]` with the gaps filled. The four places that built lists from `point.ele` now call it:
+- `elevation.py`: `highest_and_lowest` and `steepest_grade`
+- `pace.py`: `leg_hours`
+- `report.py`: `summarise`
+
+I checked it by hand: a track with elevations `None, 100, None, 200, None` comes out as `100, 100, 100, 200, 200`, and the summary and day plan work.
+
+**Decision for you:** the README doesn't cover a track where *no* point has an elevation. I made that raise `TrackError("no point has an elevation")`. I also widened the `try` in `cli.py` so the CLI prints `trailhead: …` and exits with code 1 instead of showing a traceback. I didn't get to run the CLI on such a file myself because the command needed approval I didn't have, though calling `elevations()` directly does raise the error. If you'd rather allow it (say, distance only), that's a small change in `elevations()`.
+
+No tests cover missing elevations in the calculations yet; worth adding a couple.

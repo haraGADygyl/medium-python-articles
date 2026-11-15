@@ -1,0 +1,149 @@
+{
+  "run_id": "haiku-h05-r2",
+  "task": "h05",
+  "tier": "two-file bug",
+  "baseline": false,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"On my GPS track, which has a lot of small up-and-down noise, the days from `trailhead plan` add up to 9h 40m, but `trailhead summary` says 7h 05m for the same file. The README says the two should agree.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 75.5,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 24,
+  "duration_ms": 73335,
+  "duration_api_ms": 68650,
+  "api_equivalent_usd": 0.018587630000000004,
+  "usage": {
+    "input_tokens": 34,
+    "cache_creation_input_tokens": 33486,
+    "cache_read_input_tokens": 591403,
+    "output_tokens": 11946,
+    "output_tokens_details": {
+      "thinking_tokens": 2164
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 33486,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 748,
+        "cache_read_input_tokens": 45470,
+        "cache_creation_input_tokens": 779,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 779
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 34,
+      "outputTokens": 11946,
+      "cacheReadInputTokens": 591403,
+      "cacheCreationInputTokens": 33486,
+      "webSearchRequests": 0,
+      "costUSD": 0.018587630000000004,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 2164,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 33486,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 16,
+    "Write": 1,
+    "Edit": 6
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && cat README.md 2>/dev/null | head -150",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h05-r2/src/trailhead && cat -n elevation.py plan.py",
+    "cat -n cli.py pace.py | head -400; cat -n geo.py | head -5",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h05-r2 && cat -n src/trailhead/report.py && cat -n src/trailhead/track.py | sed -n 1,200p | grep -n \"def \\|leg_lengths\" ; cat -n tests/test_plan.py; grep -n \"leg_hours\\|naismith\\|counted_changes\" -r tests src",
+    "cat -n tests/test_pace.py tests/conftest.py && cat -n src/trailhead/track.py | sed -n 25,36p && python -m pytest -q 2>&1 | tail -5",
+    "python - <<'EOF'\nimport os, random\nrandom.seed(1)\nlines = [\"# name: jitter\", \"lat,lon,ele\"]\nele = 1000.0\nstep = 0.0005\nfor i in range(4000):\n    ele += 0.3 if i % 2 == 0 else -0.3  # noise, net zero\n    if i % 40 == 0: ele += 5  # slow real climb in small steps\n    lat = 42 + i*step*0.5; lon = 23 + i*step*0.8\n    lines.append(f\"{lat:.6f},{lon:.6f},{ele:.1f}\")\nopen(os.environ.get(\"TMPDIR\",\"/tmp\")+\"/jitter.csv\",\"w\").write(\"\\n\".join(lines)+\"\\n\")\nEOF\nPYTHONPATH=src python -m trailhead summary $TMPDIR/jitter.csv; PYTHONPATH=src python -m trailhead plan $TMPDIR/jitter.csv | tail -3; PYTHONPATH=src python -c \"\nimport sys\nfrom trailhead.track import load_track\nfrom trailhead.pace import leg_hours\nt=load_track('$TMPDIR/jitter.csv'); print('plan sum', round(sum(leg_hours(t)),3))\"",
+    "mkdir -p \"$TMPDIR/repro\" && python - \"$TMPDIR/repro/jitter.csv\" <<'EOF'\nimport sys\nlines = [\"# name: jitter\", \"lat,lon,ele\"]\nele = 1000.0\nstep = 0.0005\nfor i in range(4000):\n    ele += 0.3 if i % 2 == 0 else -0.3\n    if i % 40 == 0: ele += 5\n    lat = 42 + i*step*0.5; lon = 23 + i*step*0.8\n    lines.append(f\"{lat:.6f},{lon:.6f},{ele:.1f}\")\nopen(sys.argv[1],\"w\").write(\"\\n\".join(lines)+\"\\n\")\nEOF\nF=\"$TMPDIR/repro/jitter.csv\"\nPYTHONPATH=src python -m trailhead summary \"$F\"; PYTHONPATH=src python -m trailhead plan \"$F\" | tail -3",
+    "PYTHONPATH=src python ../repro_jitter.py $TMPDIR/jitter.csv",
+    "grep -n \"pairwise\" src/trailhead/pace.py; git diff --stat",
+    "PYTHONPATH=src python ../repro_jitter.py $TMPDIR/jitter.csv && python -m pytest -q 2>&1 | tail -15",
+    "cat >> tests/test_pace.py <<'EOF'\n\n\ndef test_leg_hours_ignore_jitter_below_the_threshold(make_track):\n    # Up and down by 1 m on every leg: no climb counts at the default 3 m threshold.\n    track = make_track(*[(0, index * 0.01, 1000 + (index % 2)) for index in range(10)])\n    assert all(hours == pytest.approx(naismith_hours(track.leg_lengths_km()[0])) for hours in leg_hours(track))\n    assert sum(leg_hours(track, threshold=0)) > sum(leg_hours(track))\nEOF\ncat >> tests/test_plan.py <<'EOF'\n\n\ndef test_days_add_up_to_the_summary_time(make_track):\n    # Noise of 0.3 m up and down on every leg, plus a real climb in small steps.\n    # The summary ignores the noise; the days must ignore it too.\n    elevations = [1000.0]\n    for index in range(1, 400):\n        elevations.append(elevations[-1] + (0.3 if index % 2 else -0.3))\n        if index % 20 == 0:\n            elevations[-1] += 5\n    track = make_track(*[(0, index * 0.001, ele) for index, ele in enumerate(elevations)])\n    days = split_days(track, max_hours_per_day=1000)\n    assert len(days) == 1\n    assert days[0][3] == pytest.approx(summarise(track).hours, abs=0.01)\n\n\ndef test_threshold_is_passed_to_the_legs(make_track):\n    track = make_track((0, 0, 1000), (0, 0.01, 1001), (0, 0.02, 1002))\n    assert split_days(track, max_hours_per_day=100)[0][3] == pytest.approx(\n        split_days(track, max_hours_per_day=100, threshold=0)[0][3] - 0.0, abs=1\n    ) or True\nEOF\necho done",
+    "python - <<'EOF'\nfrom pathlib import Path\np = Path(\"tests/test_plan.py\")\ntext = p.read_text()\nidx = text.index(\"\\n\\ndef test_threshold_is_passed_to_the_legs\")\ntext = text[:idx] + '''\n\n\ndef test_threshold_is_passed_to_the_legs(make_track):\n    # Two legs of 1 m steps: below the default threshold, so no climb is counted.\n    track = make_track((0, 0, 1000), (0, 0.01, 1001), (0, 0.02, 1002))\n    assert split_days(track, max_hours_per_day=100)[0][3] == pytest.approx(\n        naismith_hours(track.length_km()), abs=0.01\n    )\n    assert split_days(track, max_hours_per_day=100, threshold=0)[0][3] > naismith_hours(\n        track.length_km()\n    )\n'''\ntext = text.replace(\"from trailhead.plan import describe_plan, split_days\\n\",\n \"from trailhead.pace import naismith_hours\\nfrom trailhead.plan import describe_plan, split_days\\nfrom trailhead.report import summarise\\n\")\np.write_text(text)\nEOF\npython -m pytest -q 2>&1 | tail -15; ruff check 2>&1 | tail -15; mypy 2>&1 | tail -3",
+    "python - <<'EOF'\nfrom pathlib import Path\np = Path(\"tests/test_pace.py\")\nt = p.read_text()\nold = t[t.index(\"\\n\\ndef test_leg_hours_ignore_jitter\"):]\nnew = '''\n\ndef test_leg_hours_ignore_jitter_below_the_threshold(make_track):\n    # Up and down by 1 m on every leg: no climb counts at the default 3 m threshold.\n    track = make_track(*[(0, index * 0.01, 1000 + index % 2) for index in range(10)])\n    flat = [naismith_hours(km, 0) for km in track.leg_lengths_km()]\n    assert leg_hours(track) == pytest.approx(flat)\n    assert sum(leg_hours(track, threshold=0)) > sum(flat)\n'''\np.write_text(t.replace(old, new))\nq = Path(\"tests/test_plan.py\")\ns = q.read_text().replace(\"naismith_hours(track.length_km())\", \"naismith_hours(track.length_km(), 0)\")\nq.write_text(s)\nEOF\npython -m pytest -q 2>&1 | tail -15; ruff check 2>&1 | tail -3; mypy 2>&1 | tail -2",
+    "python - <<'EOF'\nfrom pathlib import Path\nq = Path(\"tests/test_plan.py\")\ns = q.read_text().replace(\"\"\"    assert split_days(track, max_hours_per_day=100, threshold=0)[0][3] > naismith_hours(\n        track.length_km()\n    )\"\"\", \"\"\"    assert split_days(track, max_hours_per_day=100, threshold=0)[0][3] > naismith_hours(\n        track.length_km(), 0\n    )\"\"\")\nq.write_text(s)\nEOF\npython -m pytest -q 2>&1 | tail -3; ruff check 2>&1 | tail -1; mypy 2>&1 | tail -1; git stash -q && python -m pytest -q tests/test_plan.py tests/test_pace.py 2>&1 | tail -3; git stash pop -q && git status --short src tests",
+    "git stash push -q -- src && python -m pytest -q 2>&1 | tail -6; git stash pop -q && python -m pytest -q 2>&1 | tail -1 && git diff --stat",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work && rm -f repro_jitter.py && rm -rf \"$TMPDIR/repro\" \"$TMPDIR/jitter.csv\" && ls"
+  ],
+  "permission_denials": [
+    {
+      "command": "python - <<'EOF'\nimport os, random\nrandom.seed(1)\nlines = [\"# name: jitter\", \"lat,lon,ele\"]\nele = 1000.0\nstep = 0.0005\nfor i in range(4000):\n    ele += 0.3 if i % 2 == 0 else -0.3  # noise, net zero\n    if i % 40 == 0: ele += 5  # slow real climb in small steps\n    lat = 42 + i*step*0.5; lon = 23 + i*step*0.8\n    lines.append(f\"{lat:.6f},{lon:.6f},{ele:.1f}\")\nopen(os.environ.get(\"TMPDIR\",\"/tmp\")+\"/jitter.csv\",\"w\").write(\"\\n\".join(lines)+\"\\n\")\nEOF\nPYTHONPATH=src python -m trailhead summary $TMPDIR/jitter.csv; PYTHONPATH=src python -m trailhead plan $TMPDIR/jitter.csv | tail -3; PYTHONPATH=src python -c \"\nimport sys\nfrom trailhead.track import load_track\nfrom trailhead.pace import leg_hours\nt=load_track('$TMPDIR/jitter.csv'); print('plan sum', round(sum(leg_hours(t)),3))\"",
+      "description": "Build noisy track and compare summary vs plan"
+    },
+    {
+      "command": "mkdir -p \"$TMPDIR/repro\" && python - \"$TMPDIR/repro/jitter.csv\" <<'EOF'\nimport sys\nlines = [\"# name: jitter\", \"lat,lon,ele\"]\nele = 1000.0\nstep = 0.0005\nfor i in range(4000):\n    ele += 0.3 if i % 2 == 0 else -0.3\n    if i % 40 == 0: ele += 5\n    lat = 42 + i*step*0.5; lon = 23 + i*step*0.8\n    lines.append(f\"{lat:.6f},{lon:.6f},{ele:.1f}\")\nopen(sys.argv[1],\"w\").write(\"\\n\".join(lines)+\"\\n\")\nEOF\nF=\"$TMPDIR/repro/jitter.csv\"\nPYTHONPATH=src python -m trailhead summary \"$F\"; PYTHONPATH=src python -m trailhead plan \"$F\" | tail -3",
+      "description": "Generate noisy track and compare summary vs plan"
+    },
+    {
+      "command": "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work && rm -f repro_jitter.py && rm -rf \"$TMPDIR/repro\" \"$TMPDIR/jitter.csv\" && ls",
+      "description": "Remove scratch reproduction files"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 62,
+    "lines_removed": 9,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 62,
+    "lines_removed": 9,
+    "own_suite_pass_as_left": true
+  }
+}

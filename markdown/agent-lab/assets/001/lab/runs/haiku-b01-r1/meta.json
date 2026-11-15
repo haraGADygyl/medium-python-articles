@@ -1,0 +1,117 @@
+{
+  "run_id": "haiku-b01-r1",
+  "task": "b01",
+  "tier": "bug",
+  "baseline": true,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"I recorded a long, steady climb with a point for every metre of height, about 300 m up in total. `trailhead summary` shows the ascent as +0 m. Tracks with bigger gaps between points look fine.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 23.4,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 9,
+  "duration_ms": 20812,
+  "duration_api_ms": 19709,
+  "api_equivalent_usd": 0.00897083,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 29602,
+    "cache_read_input_tokens": 128623,
+    "output_tokens": 3526,
+    "output_tokens_details": {
+      "thinking_tokens": 798
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 29602,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 610,
+        "cache_read_input_tokens": 28248,
+        "cache_creation_input_tokens": 1354,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1354
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 3526,
+      "cacheReadInputTokens": 128623,
+      "cacheCreationInputTokens": 29602,
+      "webSearchRequests": 0,
+      "costUSD": 0.00897083,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 798,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 29602,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 3,
+    "Read": 2,
+    "Edit": 3
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && grep -rn \"ascent\\|elevation\" --include=*.py . | head -50",
+    "PYTHONPATH=src python3 -c \"\nfrom trailhead.elevation import gain_and_loss\nprint(gain_and_loss([100 + i for i in range(301)]))\nprint(gain_and_loss([100 + 0.3*i for i in range(1001)]))\n\" && python3 -m pytest -q 2>&1 | tail -3",
+    "PYTHONPATH=src python3 -c \"\nfrom trailhead.elevation import gain_and_loss\nprint(gain_and_loss([100 + i for i in range(301)]))\n\" && python3 -m pytest -q 2>&1 | tail -3 && git diff --stat"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 10,
+    "lines_removed": 5,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 10,
+    "lines_removed": 5,
+    "own_suite_pass_as_left": true
+  }
+}

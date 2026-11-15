@@ -1,0 +1,120 @@
+{
+  "run_id": "sonnet-h05-r1",
+  "task": "h05",
+  "tier": "two-file bug",
+  "baseline": false,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "sonnet",
+  "prompt": "Bug report from a user: \"On my GPS track, which has a lot of small up-and-down noise, the days from `trailhead plan` add up to 9h 40m, but `trailhead summary` says 7h 05m for the same file. The README says the two should agree.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 25.9,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 11,
+  "duration_ms": 23736,
+  "duration_api_ms": 23165,
+  "api_equivalent_usd": 0.1147609,
+  "usage": {
+    "input_tokens": 11,
+    "cache_creation_input_tokens": 17917,
+    "cache_read_input_tokens": 139309,
+    "output_tokens": 2914,
+    "output_tokens_details": {
+      "thinking_tokens": 109
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 17917,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 1,
+        "output_tokens": 530,
+        "cache_read_input_tokens": 28957,
+        "cache_creation_input_tokens": 1723,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1723
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 11,
+      "outputTokens": 2914,
+      "cacheReadInputTokens": 139309,
+      "cacheCreationInputTokens": 17917,
+      "webSearchRequests": 0,
+      "costUSD": 0.1147609,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 109,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 17917,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 2,
+    "Glob": 1,
+    "Read": 6,
+    "Bash": 1
+  },
+  "bash_commands": [
+    "python - <<'E'\nimport re\ndef sub(p,a,b):\n    s=open(p).read(); assert a in s; open(p,'w').write(s.replace(a,b,1))\nsub('src/trailhead/pace.py','''from trailhead.track import Track\n''','''from trailhead.elevation import DEFAULT_THRESHOLD_M, counted_changes\nfrom trailhead.track import Track\n''')\nsub('src/trailhead/pace.py','''def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:\n    \"\"\"Naismith time for every leg, counting the leg's own climb.\"\"\"\n    return [\n        naismith_hours(km, max(b.ele - a.ele, 0.0), fitness)\n        for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True)\n    ]''','''def leg_hours(\n    track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M\n) -> list[float]:\n    \"\"\"Naismith time for every leg, counting the climb credited to that leg.\n\n    Climb is the thresholded ascent from ``counted_changes``, the same figure the\n    summary uses, so the legs add up to the summary's time.\n    \"\"\"\n    changes = counted_changes([point.ele for point in track.points], threshold)\n    return [\n        naismith_hours(km, max(change, 0.0), fitness)\n        for change, km in zip(changes, track.leg_lengths_km(), strict=True)\n    ]''')\nsub('src/trailhead/pace.py','from itertools import pairwise\\n','')\nsub('src/trailhead/plan.py','from trailhead.pace','from trailhead.elevation import DEFAULT_THRESHOLD_M\\nfrom trailhead.pace')\nsub('src/trailhead/plan.py','''fitness: float = 1.0\n) ->''','''fitness: float = 1.0,\n    threshold: float = DEFAULT_THRESHOLD_M,\n) ->''')\nsub('src/trailhead/plan.py','leg_hours(track, fitness)','leg_hours(track, fitness, threshold)')\nsub('src/trailhead/cli.py','''    plan.add_argument(\"--fitness\", type=float, default=1.0)\n''','''    plan.add_argument(\"--fitness\", type=float, default=1.0)\n    plan.add_argument(\"--threshold\", type=float, default=DEFAULT_THRESHOLD_M)\n''')\nsub('src/trailhead/cli.py','split_days(track, args.max_hours, args.fitness)','split_days(track, args.max_hours, args.fitness, args.threshold)')\nE\ncat >> tests/test_plan.py <<'E'\n\n\ndef test_plan_hours_match_summary_on_noisy_track(make_track):\n    from trailhead.report import summarise\n\n    track = make_track(*[(0, i * 0.01, 1000 + (2 if i % 2 else 0)) for i in range(40)])\n    days = split_days(track, max_hours_per_day=100)\n    assert sum(d[3] for d in days) == pytest.approx(summarise(track).hours, abs=0.01)\nE\nhead -12 tests/test_plan.py; python -m pytest -q 2>&1 | tail -15; sed -n 54,60p README.md"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 26,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 26,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  }
+}

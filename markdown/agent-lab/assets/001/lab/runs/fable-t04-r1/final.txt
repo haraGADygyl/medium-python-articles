@@ -1,0 +1,17 @@
+`tests/test_plan.py` is written and the full suite passes (93 tests, 49 of them new), `ruff check` is clean, and nothing under `src/` was touched.
+
+The tests found no discrepancy between `plan.py` and the README or docstrings.
+
+What the tests cover:
+
+- **Grouping:** a short track is one day, the default limit is 7 hours, custom limits work, days are numbered from 1 and each day starts at the point where the previous one ended.
+- **The limit:** a day may reach the limit exactly, a leg longer than the limit is a day by itself (first, middle or last), and across a range of limits only single-leg days ever exceed it.
+- **Timing:** 600 m of ascent adds an hour, descent adds nothing, jitter under the 3 m threshold adds no climb, and a slow climb in 2 m steps still counts in full.
+- **Summary agreement:** the days of a plan add up to the summary time for the same track and fitness, within the 0.01 h per-day rounding.
+- **Fitness:** it divides the time, and zero or negative values raise `ValueError`.
+- **`describe_plan`:** the docstring example, the README duration examples (`5h 07m`, `0h 45m`, `12h 00m`), rounding up into the next hour, and an empty plan.
+
+Two things go slightly beyond the documentation:
+
+- **Non-positive limit:** `test_limit_must_be_positive` checks that a zero or negative `max_hours_per_day` raises `ValueError`. The code does this, but neither the README nor the docstring says so.
+- **Greedy packing:** the exact-split assertions assume each day takes as many legs as fit. The README only promises that a day never goes over the limit, so a different valid packing strategy would fail these tests.

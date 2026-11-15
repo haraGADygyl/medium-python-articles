@@ -1,0 +1,126 @@
+{
+  "run_id": "fable-h04-r3",
+  "task": "h04",
+  "tier": "two-file bug",
+  "baseline": false,
+  "repeat": 3,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "Bug report from a user: \"`trailhead summary` shows `time 0h 44m` for a flat 3.74 km walk. By Naismith's rule that is 44.9 minutes, and the README says times are rounded to the nearest minute.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 53.0,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 50647,
+  "duration_api_ms": 48459,
+  "api_equivalent_usd": 0.5229346,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 20861,
+    "cache_read_input_tokens": 153513,
+    "output_tokens": 3959,
+    "output_tokens_details": {
+      "thinking_tokens": 812
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 20861,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 414,
+        "cache_read_input_tokens": 32219,
+        "cache_creation_input_tokens": 1405,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1405
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 12,
+      "outputTokens": 3959,
+      "cacheReadInputTokens": 153513,
+      "cacheCreationInputTokens": 20861,
+      "webSearchRequests": 0,
+      "costUSD": 0.5229346,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 812,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 20861,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 5
+  },
+  "bash_commands": [
+    "git ls-files | head -100; cat README.md; grep -rnE \"round|int\\(|//|divmod|floor|trunc\" --include=*.py . | head -50",
+    "cat src/trailhead/report.py src/trailhead/plan.py src/trailhead/pace.py; grep -n \"h \\|hours\" tests/*.py",
+    "sed -n 34,45p tests/test_plan.py; cat tests/test_report.py tests/test_cli.py; python -m pytest -q 2>&1 | tail -3",
+    "python - <<'E'\nimport re,pathlib\np=pathlib.Path('src/trailhead/pace.py'); s=p.read_text()\ns=s.replace('from math import exp\\n','from math import exp, floor\\n')\ns+='''\n\ndef format_duration(hours: float) -> str:\n    \"\"\"``<hours>h <minutes>m``, rounded to the nearest minute (halves round up).\"\"\"\n    whole, minutes = divmod(floor(hours * 60 + 0.5), 60)\n    return f\"{whole}h {minutes:02d}m\"\n'''\np.write_text(s)\np=pathlib.Path('src/trailhead/report.py'); s=p.read_text()\ns=s.replace('from trailhead.pace import naismith_hours','from trailhead.pace import format_duration, naismith_hours')\ns=s.replace('    whole, minutes = divmod(int(summary.hours * 60), 60)\\n','')\ns=s.replace('f\"  time      {whole}h {minutes:02d}m\"','f\"  time      {format_duration(summary.hours)}\"')\np.write_text(s)\np=pathlib.Path('src/trailhead/plan.py'); s=p.read_text()\ns=s.replace('from trailhead.pace import leg_hours','from trailhead.pace import format_duration, leg_hours')\ns=s.replace('        whole, minutes = divmod(int(hours * 60), 60)\\n','')\ns=s.replace('{whole}h {minutes:02d}m','{format_duration(hours)}')\np.write_text(s)\np=pathlib.Path('tests/test_pace.py'); s=p.read_text()\ns=s.replace('from trailhead.pace import leg_hours, naismith_hours, tobler_kmh','from trailhead.pace import format_duration, leg_hours, naismith_hours, tobler_kmh')\ns+='''\n\n@pytest.mark.parametrize(\n    (\"hours\", \"text\"),\n    [\n        (3.74 / 5, \"0h 45m\"),  # 44.88 minutes: rounds up, not truncated to 44\n        (44.4 / 60, \"0h 44m\"),\n        (1.15, \"1h 09m\"),  # 1.15 * 60 is 68.99999999999999 in floating point\n        (5.999, \"6h 00m\"),  # rounding carries into the hour\n        (12.0, \"12h 00m\"),\n        (0.0, \"0h 00m\"),\n    ],\n)\ndef test_format_duration(hours, text):\n    assert format_duration(hours) == text\n'''\np.write_text(s)\np=pathlib.Path('tests/test_plan.py'); s=p.read_text()\ns=s.replace('(1, 0, 14, 6.07), (2, 14, 31, 0.75)','(1, 0, 14, 6.07), (2, 14, 31, 0.74)')\np.write_text(s)\nE\ngit diff tests/test_plan.py | grep '^[+-]'; python -m pytest -q 2>&1 | tail -3; ruff check 2>&1 | tail -3; mypy 2>&1 | tail -2\nprintf 'lat,lon,ele\\n0,0,0\\n0,0.033635,0\\n' > $TMPDIR/flat.csv; PYTHONPATH=src python -m trailhead summary $TMPDIR/flat.csv",
+    "python - <<'E'\nimport pathlib\np=pathlib.Path('src/trailhead/pace.py'); s=p.read_text()\ns=s.replace('from math import exp\\n','from math import exp, floor\\n')\ns+='''\n\ndef format_duration(hours: float) -> str:\n    \"\"\"``<hours>h <minutes>m``, rounded to the nearest minute (halves round up).\"\"\"\n    whole, minutes = divmod(floor(hours * 60 + 0.5), 60)\n    return f\"{whole}h {minutes:02d}m\"\n'''\np.write_text(s)\np=pathlib.Path('src/trailhead/report.py'); s=p.read_text()\ns=s.replace('from trailhead.pace import naismith_hours','from trailhead.pace import format_duration, naismith_hours')\ns=s.replace('    whole, minutes = divmod(int(summary.hours * 60), 60)\\n','')\ns=s.replace('f\"  time      {whole}h {minutes:02d}m\"','f\"  time      {format_duration(summary.hours)}\"')\np.write_text(s)\np=pathlib.Path('src/trailhead/plan.py'); s=p.read_text()\ns=s.replace('from trailhead.pace import leg_hours','from trailhead.pace import format_duration, leg_hours')\ns=s.replace('        whole, minutes = divmod(int(hours * 60), 60)\\n','')\ns=s.replace('{whole}h {minutes:02d}m','{format_duration(hours)}')\np.write_text(s)\np=pathlib.Path('tests/test_pace.py'); s=p.read_text()\ns=s.replace('from trailhead.pace import leg_hours, naismith_hours, tobler_kmh','from trailhead.pace import format_duration, leg_hours, naismith_hours, tobler_kmh')\ns+='''\n\n@pytest.mark.parametrize(\n    (\"hours\", \"text\"),\n    [\n        (3.74 / 5, \"0h 45m\"),  # 44.88 minutes: rounds up, not truncated to 44\n        (44.4 / 60, \"0h 44m\"),\n        (1.15, \"1h 09m\"),  # 1.15 * 60 is 68.99999999999999 in floating point\n        (5.999, \"6h 00m\"),  # rounding carries into the hour\n        (12.0, \"12h 00m\"),\n        (0.0, \"0h 00m\"),\n    ],\n)\ndef test_format_duration(hours, text):\n    assert format_duration(hours) == text\n'''\np.write_text(s)\npathlib.Path('flat_tmp.csv').write_text('lat,lon,ele\\n0,0,0\\n0,0.033635,0\\n')\nE\npython -m pytest -q 2>&1 | tail -3; ruff check 2>&1 | tail -3; mypy 2>&1 | tail -2\nPYTHONPATH=src python -m trailhead summary flat_tmp.csv; PYTHONPATH=src python -m trailhead plan flat_tmp.csv; rm flat_tmp.csv; git status --short"
+  ],
+  "permission_denials": [
+    {
+      "command": "python - <<'E'\nimport re,pathlib\np=pathlib.Path('src/trailhead/pace.py'); s=p.read_text()\ns=s.replace('from math import exp\\n','from math import exp, floor\\n')\ns+='''\n\ndef format_duration(hours: float) -> str:\n    \"\"\"``<hours>h <minutes>m``, rounded to the nearest minute (halves round up).\"\"\"\n    whole, minutes = divmod(floor(hours * 60 + 0.5), 60)\n    return f\"{whole}h {minutes:02d}m\"\n'''\np.write_text(s)\np=pathlib.Path('src/trailhead/report.py'); s=p.read_text()\ns=s.replace('from trailhead.pace import naismith_hours','from trailhead.pace import format_duration, naismith_hours')\ns=s.replace('    whole, minutes = divmod(int(summary.hours * 60), 60)\\n','')\ns=s.replace('f\"  time      {whole}h {minutes:02d}m\"','f\"  time      {format_duration(summary.hours)}\"')\np.write_text(s)\np=pathlib.Path('src/trailhead/plan.py'); s=p.read_text()\ns=s.replace('from trailhead.pace import leg_hours','from trailhead.pace import format_duration, leg_hours')\ns=s.replace('        whole, minutes = divmod(int(hours * 60), 60)\\n','')\ns=s.replace('{whole}h {minutes:02d}m','{format_duration(hours)}')\np.write_text(s)\np=pathlib.Path('tests/test_pace.py'); s=p.read_text()\ns=s.replace('from trailhead.pace import leg_hours, naismith_hours, tobler_kmh','from trailhead.pace import format_duration, leg_hours, naismith_hours, tobler_kmh')\ns+='''\n\n@pytest.mark.parametrize(\n    (\"hours\", \"text\"),\n    [\n        (3.74 / 5, \"0h 45m\"),  # 44.88 minutes: rounds up, not truncated to 44\n        (44.4 / 60, \"0h 44m\"),\n        (1.15, \"1h 09m\"),  # 1.15 * 60 is 68.99999999999999 in floating point\n        (5.999, \"6h 00m\"),  # rounding carries into the hour\n        (12.0, \"12h 00m\"),\n        (0.0, \"0h 00m\"),\n    ],\n)\ndef test_format_duration(hours, text):\n    assert format_duration(hours) == text\n'''\np.write_text(s)\np=pathlib.Path('tests/test_plan.py'); s=p.read_text()\ns=s.replace('(1, 0, 14, 6.07), (2, 14, 31, 0.75)','(1, 0, 14, 6.07), (2, 14, 31, 0.74)')\np.write_text(s)\nE\ngit diff tests/test_plan.py | grep '^[+-]'; python -m pytest -q 2>&1 | tail -3; ruff check 2>&1 | tail -3; mypy 2>&1 | tail -2\nprintf 'lat,lon,ele\\n0,0,0\\n0,0.033635,0\\n' > $TMPDIR/flat.csv; PYTHONPATH=src python -m trailhead summary $TMPDIR/flat.csv",
+      "description": "Add shared duration formatter, use it in both places, add tests, verify"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_pace.py"
+    ],
+    "lines_added": 27,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_pace.py"
+    ],
+    "lines_added": 27,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  }
+}

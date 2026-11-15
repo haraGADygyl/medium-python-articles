@@ -1,0 +1,9 @@
+`ruff check` now passes with no config changes and no `noqa` comments. The test suite also passes (46 tests).
+
+Fixes, all in `src/trailhead/`:
+
+- **`pace.py:22` (F841):** `naismith_hours` computed the fitness-scaled `hours` and then returned the unscaled value, so `fitness` had no effect. I changed the return to `hours`, which matches the docstring. This is a behaviour change: callers passing `fitness` other than 1.0 will now get different times. The existing tests only use the default, so they don't cover it.
+- **`track.py:8` (F401):** removed the unused `import os`.
+- **`track.py:3` (I001):** moved the `trailhead.geo` import into its own first-party block after the stdlib imports, so the import block is sorted.
+- **`track.py:77` (E722):** replaced the bare `except:` with `except ValueError as err:`. `float()` only raises `ValueError` here, since the field count is already checked.
+- **`track.py:78` (B904):** the re-raise now uses `from err`.

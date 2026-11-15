@@ -1,0 +1,27 @@
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index e147dce..db056bb 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -83,4 +83,5 @@ def _parse_point(line: str, number: int) -> Point:
+ def load_track(path: str | Path) -> Track:
+     """Read a track file; without a ``# name:`` line the track is named after the file."""
+     path = Path(path)
+-    return parse_track(path.read_text(encoding="utf-8"), default_name=path.stem)
++    # utf-8-sig drops the byte-order mark some apps (e.g. Garmin) write at the start of the file.
++    return parse_track(path.read_text(encoding="utf-8-sig"), default_name=path.stem)
+diff --git a/tests/test_track.py b/tests/test_track.py
+index ba1bbad..061f233 100644
+--- a/tests/test_track.py
++++ b/tests/test_track.py
+@@ -30,6 +30,11 @@ def test_default_name_comes_from_the_file(write_track):
+     assert load_track(path).name == "vihren"
+ 
+ 
++def test_file_with_byte_order_mark_and_crlf(write_track):
++    path = write_track("﻿lat,lon,ele\r\n0,0,0\r\n0,0.01,0\r\n")
++    assert len(load_track(path).points) == 2
++
++
+ def test_bad_header():
+     with pytest.raises(TrackError, match="line 1:"):
+         parse_track("latitude,longitude,elevation\n0,0,0\n0,1,0\n")

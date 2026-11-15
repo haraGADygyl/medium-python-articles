@@ -1,0 +1,11 @@
+`Track.leg_lengths_km()` now caches its results, so summarising a track computes each leg's distance once instead of twice (`length_km()` and `steepest_grade()` both call it). All 49 tests pass, and ruff and mypy are clean.
+
+**The change** (`src/trailhead/track.py`): the README says a `Track` is mutable and its lengths must always reflect the current points, so a cache that is simply filled once would go stale. Instead, each call takes a snapshot of the points and compares it to the snapshot the cached lengths were computed from. If they match, it returns the cached lengths; if not, it recomputes them. This catches all the ways the points can change: appending, replacing an item (`track.points[i] = ...`), or assigning a whole new list. Points can't be changed in place, so equal points always give the same distances and results can't drift.
+
+- The comparison still goes through every point on each call, but that is much cheaper than the trigonometry it skips. When nothing has changed, the snapshot holds the same point objects, so the check is fast.
+- Each call returns a fresh copy of the list, so a caller that modifies the result can't corrupt the cache.
+- The two cache fields are left out of `__init__`, `repr` and equality, so creating, printing and comparing tracks works as before.
+
+**Tests** (`tests/test_track.py`):
+- One test counts distance calculations during `summarise` on a 3-point track and expects exactly 2, one per leg. Without the cache it fails, because the count doubles.
+- Another test checks that appending, replacing an item, assigning a new list, and modifying a returned list all still give correct lengths.

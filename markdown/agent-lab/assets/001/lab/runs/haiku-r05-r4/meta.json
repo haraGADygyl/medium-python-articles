@@ -1,0 +1,140 @@
+{
+  "run_id": "haiku-r05-r4",
+  "task": "r05",
+  "tier": "refactor/feature",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Add Tobler's hiking function as an alternative to Naismith's rule for walking time. Give `pace.leg_hours`, `plan.split_days` and `report.summarise` a keyword argument `pace: str = \"naismith\"` that accepts `\"naismith\"` or `\"tobler\"` (anything else is a `ValueError`), and give both CLI commands a `--pace {naismith,tobler}` option. Under Tobler, a leg takes its length divided by `tobler_kmh(grade)` hours, where grade is the leg's elevation change divided by its horizontal length (both in metres); a zero-length leg takes no time; fitness divides the time as it does for Naismith; and the summary time is the sum of the leg times. Naismith stays the default and existing output must not change. Update the README.",
+  "harness_timeout": false,
+  "wall_s": 72.2,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 17,
+  "duration_ms": 69885,
+  "duration_api_ms": 67243,
+  "api_equivalent_usd": 0.02001262,
+  "usage": {
+    "input_tokens": 34,
+    "cache_creation_input_tokens": 34495,
+    "cache_read_input_tokens": 603222,
+    "output_tokens": 14156,
+    "output_tokens_details": {
+      "thinking_tokens": 3920
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 34495,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 809,
+        "cache_read_input_tokens": 46504,
+        "cache_creation_input_tokens": 754,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 754
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 34,
+      "outputTokens": 14156,
+      "cacheReadInputTokens": 603222,
+      "cacheCreationInputTokens": 34495,
+      "webSearchRequests": 0,
+      "costUSD": 0.02001262,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 3920,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 34495,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 8,
+    "Edit": 8
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && cat README.md 2>/dev/null | head -200",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r4/src/trailhead && cat pace.py plan.py report.py cli.py",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r4 && cat src/trailhead/track.py src/trailhead/elevation.py && cat tests/test_pace.py tests/test_plan.py tests/test_cli.py tests/conftest.py && cat pyproject.toml && git log --oneline | head",
+    "cat tests/test_report.py && python -m pytest -q 2>&1 | tail -3",
+    "cat >> tests/test_pace.py <<'EOF'\n\n\ndef test_tobler_leg_hours_use_the_grade(make_track):\n    # Flat leg, then a leg climbing 300 m over about 1.11 km.\n    track = make_track((0, 0, 1000), (0, 0.01, 1000), (0, 0.02, 1300))\n    flat, climb = leg_hours(track, pace=\"tobler\")\n    flat_km = 1.11195\n    assert flat == pytest.approx(flat_km / tobler_kmh(0.0), abs=1e-4)\n    assert climb == pytest.approx(flat_km / tobler_kmh(300 / (flat_km * 1000)), abs=1e-4)\n\n\ndef test_tobler_zero_length_leg_takes_no_time(make_track):\n    track = make_track((0, 0, 1000), (0, 0, 1050), (0, 0.01, 1050))\n    repeated, leg = leg_hours(track, pace=\"tobler\")\n    assert repeated == 0.0\n    assert leg > 0\n\n\ndef test_tobler_fitness_divides_time(make_track):\n    track = make_track((0, 0, 1000), (0, 0.01, 1100))\n    base = leg_hours(track, pace=\"tobler\")[0]\n    assert leg_hours(track, fitness=2.0, pace=\"tobler\")[0] == pytest.approx(base / 2)\n\n\ndef test_tobler_rejects_non_positive_fitness(make_track):\n    track = make_track((0, 0, 0), (0, 0.01, 0))\n    with pytest.raises(ValueError):\n        leg_hours(track, fitness=0, pace=\"tobler\")\n\n\n@pytest.mark.parametrize(\"pace\", [\"Naismith\", \"tobler \", \"\", \"minetti\"])\ndef test_unknown_pace_is_an_error(make_track, pace):\n    track = make_track((0, 0, 0), (0, 0.01, 0))\n    with pytest.raises(ValueError):\n        leg_hours(track, pace=pace)\nEOF\ncat >> tests/test_plan.py <<'EOF'\n\n\ndef test_days_under_tobler_add_up_to_the_summary(make_track):\n    track = make_track((0, 0, 1000), (0, 0.01, 1200), (0, 0.02, 1100), (0, 0.03, 1100))\n    days = split_days(track, max_hours_per_day=100, pace=\"tobler\")\n    assert days[0][3] == pytest.approx(sum(leg_hours(track, pace=\"tobler\")), abs=0.01)\n\n\ndef test_plan_pace_changes_the_days(make_track):\n    track = make_track((0, 0, 1000), (0, 0.05, 1000), (0, 0.10, 1000))\n    naismith = split_days(track, max_hours_per_day=2.0)\n    tobler = split_days(track, max_hours_per_day=2.0, pace=\"tobler\")\n    assert naismith != tobler\n\n\ndef test_invalid_pace_is_an_error(five_flat_hours):\n    with pytest.raises(ValueError):\n        split_days(five_flat_hours, pace=\"minetti\")\nEOF\nsed -i 's/^from trailhead.plan import describe_plan, split_days$/from trailhead.pace import leg_hours\\nfrom trailhead.plan import describe_plan, split_days/' tests/test_plan.py\ncat >> tests/test_report.py <<'EOF'\n\n\ndef test_tobler_summary_time_is_the_sum_of_leg_times(make_track):\n    track = make_track(*RIDGE)\n    summary = summarise(track, fitness=1.25, pace=\"tobler\")\n    assert summary.hours == pytest.approx(sum(leg_hours(track, 1.25, pace=\"tobler\")))\n    assert summary.hours != pytest.approx(summarise(track, fitness=1.25).hours, abs=1e-3)\n\n\ndef test_naismith_is_the_default_pace(make_track):\n    track = make_track(*RIDGE)\n    assert summarise(track) == summarise(track, pace=\"naismith\")\n\n\ndef test_summary_rejects_unknown_pace(make_track):\n    with pytest.raises(ValueError):\n        summarise(make_track(*RIDGE), pace=\"minetti\")\nEOF\nsed -i 's/^from trailhead.report import format_summary, summarise$/from trailhead.pace import leg_hours\\nfrom trailhead.report import format_summary, summarise/' tests/test_report.py\ncat >> tests/test_cli.py <<'EOF'\n\n\ndef test_summary_pace_option(write_track, capsys):\n    path = str(write_track(TRACK))\n    assert main([\"summary\", path]) == 0\n    naismith = capsys.readouterr().out\n    assert main([\"summary\", path, \"--pace\", \"tobler\"]) == 0\n    tobler = capsys.readouterr().out\n    assert tobler.startswith(\"Ridge\\n\") and tobler != naismith\n\n\ndef test_plan_pace_option(write_track, capsys):\n    assert main([\"plan\", str(write_track(TRACK)), \"--pace\", \"tobler\"]) == 0\n    assert capsys.readouterr().out.startswith(\"Day 1: points 0-2, \")\n\n\ndef test_unknown_pace_is_rejected_by_the_parser(write_track):\n    with pytest.raises(SystemExit):\n        main([\"summary\", str(write_track(TRACK)), \"--pace\", \"minetti\"])\nEOF\nsed -i 's/^from trailhead.cli import main$/import pytest\\n\\nfrom trailhead.cli import main/' tests/test_cli.py\npython -m pytest -q 2>&1 | tail -30; ruff check; mypy",
+    "python - <<'EOF'\nfrom pathlib import Path\np = Path(\"README.md\")\ns = p.read_text(encoding=\"utf-8\")\n\ndef rep(old, new):\n    global s\n    assert s.count(old) == 1, old[:60]\n    s = s.replace(old, new)\n\nrep(\"\"\"python -m trailhead plan rila.csv --max-hours 6 --fitness 1.2\n```\n\"\"\", \"\"\"python -m trailhead plan rila.csv --max-hours 6 --fitness 1.2\npython -m trailhead summary rila.csv --pace tobler\n```\n\"\"\")\n\nrep(\"\"\"- **Walking time** uses Naismith's rule: 5 km/h on the flat plus one hour for every\n  600 m of ascent; descent adds nothing. `fitness` divides the time: 1.25 is 25%\n  faster than average. Zero or negative fitness, and negative distance or ascent, are\n  a `ValueError`. Times are not rounded until they are displayed.\n- **Tobler's hiking function** (`pace.tobler_kmh`) gives speed on a slope as\n  `6 * exp(-3.5 * |grade + 0.05|)` km/h, with grade as rise over run.\n- **Day plans** (`plan.split_days`) group consecutive legs into days, timing each leg\n  by Naismith's rule. A leg's climb is the ascent the summary's rule (with the\n  default 3 m threshold) credits to it, so the days of a plan add up to the summary\n  time for the same track and fitness. The default limit is 7 hours a day. A day never goes over the limit unless a single leg on its own does, in which\n  case that leg is a day by itself. `fitness` applies to the plan exactly as it does\n  to the summary.\n\"\"\", \"\"\"- **Walking time** uses one of two rules, chosen with `pace`: `\"naismith\"` (the\n  default) or `\"tobler\"`. Any other value is a `ValueError`. `fitness` divides the\n  time under either rule: 1.25 is 25% faster than average. Zero or negative fitness,\n  and negative distance or ascent, are a `ValueError`. Times are not rounded until\n  they are displayed.\n- **Naismith's rule**: 5 km/h on the flat plus one hour for every 600 m of ascent;\n  descent adds nothing.\n- **Tobler's rule** (`pace.tobler_kmh`) gives speed on a slope as\n  `6 * exp(-3.5 * |grade + 0.05|)` km/h, with grade as rise over run. A leg takes its\n  length divided by the speed at its grade, where grade is the leg's elevation change\n  divided by its horizontal length (both in metres). Descents count, so a steep\n  descent is slower than the flat. A zero-length leg takes no time. The summary time\n  is the sum of the leg times.\n- **Day plans** (`plan.split_days`) group consecutive legs into days, timing each leg\n  with the chosen `pace`. Under Naismith, a leg's climb is the ascent the summary's\n  rule (with the default 3 m threshold) credits to it, so the days of a plan add up to\n  the summary time for the same track and fitness. The default limit is 7 hours a\n  day. A day never goes over the limit unless a single leg on its own does, in which\n  case that leg is a day by itself. `fitness` applies to the plan exactly as it does\n  to the summary.\n- **Command line**: `summary` and `plan` both take `--pace {naismith,tobler}`, which\n  defaults to `naismith`.\n\"\"\")\np.write_text(s, encoding=\"utf-8\")\nEOF\ngit diff --stat; git diff README.md | head -5 >/dev/null; python -m trailhead summary tests/../README.md 2>&1 | tail -1",
+    "T=$(mktemp -d) && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1090\\n0,0.02,1050\\n0,0.02,1050\\n' > $T/ridge.csv && export PYTHONPATH=src && python -m trailhead summary $T/ridge.csv && python -m trailhead summary $T/ridge.csv --pace tobler && python -m trailhead plan $T/ridge.csv --pace tobler --max-hours 0.3; python -m trailhead summary $T/ridge.csv --pace foo; echo \"exit $?\"; rm -rf $T",
+    "mkdir -p \"$TMPDIR/th\" && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1090\\n0,0.02,1050\\n0,0.02,1050\\n' > \"$TMPDIR/th/ridge.csv\" && PYTHONPATH=src python -m trailhead summary \"$TMPDIR/th/ridge.csv\" && PYTHONPATH=src python -m trailhead summary \"$TMPDIR/th/ridge.csv\" --pace tobler && PYTHONPATH=src python -m trailhead plan \"$TMPDIR/th/ridge.csv\" --pace tobler --max-hours 0.3; PYTHONPATH=src python -m trailhead summary \"$TMPDIR/th/ridge.csv\" --pace foo; echo \"exit $?\""
+  ],
+  "permission_denials": [
+    {
+      "command": "T=$(mktemp -d) && printf '# name: Ridge\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1090\\n0,0.02,1050\\n0,0.02,1050\\n' > $T/ridge.csv && export PYTHONPATH=src && python -m trailhead summary $T/ridge.csv && python -m trailhead summary $T/ridge.csv --pace tobler && python -m trailhead plan $T/ridge.csv --pace tobler --max-hours 0.3; python -m trailhead summary $T/ridge.csv --pace foo; echo \"exit $?\"; rm -rf $T",
+      "description": "Run CLI with both pace rules on a sample track"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.10s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M README.md",
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_cli.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 169,
+    "lines_removed": 21,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.10s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M README.md",
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_cli.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 169,
+    "lines_removed": 21,
+    "own_suite_pass_as_left": true
+  }
+}

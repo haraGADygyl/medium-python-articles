@@ -1,0 +1,13 @@
+You can now choose Tobler's hiking function instead of Naismith's rule for walking time, from Python and from both CLI commands. Naismith is still the default, and its output hasn't changed. All 59 tests pass, and `ruff` and `mypy` report no problems. I also ran `summary` and `plan` on a sample track before and after the change, and the default output was identical.
+
+**What changed**
+- **`pace.leg_hours`, `plan.split_days`, `report.summarise`** each take `pace: str = "naismith"`. I made it keyword-only (you pass it as `pace=...`), which keeps it apart from the existing positional arguments. Anything other than `"naismith"` or `"tobler"` raises a `ValueError`.
+- **Tobler time per leg:** the leg's length divided by `tobler_kmh(grade)`, divided by fitness. A zero-length leg takes no time. Zero or negative fitness is a `ValueError`, as it is under Naismith.
+- **Summary time under Tobler** is the sum of the leg times, so a Tobler plan's days add up to the Tobler summary time, just as they do for Naismith.
+- **CLI:** `summary` and `plan` both take `--pace {naismith,tobler}`. An invalid value gets argparse's usual "invalid choice" error.
+- **README:** documents the option, the Tobler rule, and that day plans follow the chosen pace.
+- **Tests:** added for Tobler leg times, zero-length legs, fitness, rejecting unknown paces, plans, summaries, and the CLI option.
+
+**One decision for you:** for the grade I used the raw height difference between each leg's two points, not the 3 m threshold that the ascent totals use. So under Tobler, `--threshold` changes only the ascent and descent figures, not the time. I documented this in the README; if you'd rather Tobler use the thresholded climbs, it's a small change.
+
+**Something to check:** `git status` lists untracked files I didn't create (`.bashrc`, `.gitconfig`, `.claude/`, `.idea`, and others). They're probably left over from the sandbox. I haven't touched them, and nothing is committed.

@@ -1,0 +1,20 @@
+I've written `tests/test_report.py`. It has 39 tests, all passing, and `ruff check` is clean on it. I didn't touch anything under `src/`.
+
+The tests cover:
+- **`summarise`:**
+  - every field, including that the length is rounded to 0.1 km while the time uses the unrounded length;
+  - fitness scaling and the `ValueError` for bad fitness and a negative threshold;
+  - the jitter threshold, and a slow climb in 1 m steps still counting in full;
+  - steepest grade in percent, including descents;
+  - feet-to-metres conversion.
+- **Heading:**
+  - all eight compass points;
+  - the heading depends only on start and finish;
+  - the 0.1 km loop boundary, tested at 99 m and 101 m.
+- **`format_summary`:**
+  - the exact layout;
+  - duration formatting (`5h 07m`, `0h 45m`, `12h 00m`, rounding up and down, and rounding that carries into the next hour);
+  - no trailing newline;
+  - an end-to-end `summarise` then `format_summary` check.
+
+I found no discrepancies between `report.py` and the README or docstrings, so no test fails.

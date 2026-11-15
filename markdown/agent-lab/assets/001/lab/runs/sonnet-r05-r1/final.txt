@@ -1,0 +1,13 @@
+Tobler's hiking function is now available as `pace="tobler"` on `leg_hours`, `split_days` and `summarise`, and as `--pace {naismith,tobler}` on both CLI commands. The existing tests, `ruff` and `mypy` pass. I tried both commands by hand on a small track, and the default (Naismith) summary output is the same as before. I didn't add tests for the new option.
+
+- **Pace values:** `"naismith"` is the default and `"tobler"` is the alternative. Any other value raises `ValueError`, including in `summarise`, which checks it up front.
+- **Leg time:** a leg takes its length divided by `tobler_kmh(grade)`, divided by fitness. Grade is the leg's raw elevation change over its length in metres. A zero-length leg takes 0 hours.
+- **Summary time:** under Tobler it is the sum of the leg times.
+- **Naismith legs:** the existing logic is unchanged.
+- **Code and README:** `check_pace`, `tobler_hours` and the `PACES` constant are new in `src/trailhead/pace.py`. The README has a new "Pace" bullet and a CLI example.
+
+**Design choices:**
+- **Raw elevation change:** Tobler uses each leg's raw elevation change, not the 3 m threshold-filtered change that Naismith uses. Your wording ("the leg's elevation change") pointed that way, but it means `--threshold` has no effect on Tobler time. The README says so.
+- **Fitness validation:** `tobler_hours` rejects zero or negative fitness even for a zero-length leg.
+
+I haven't committed anything.

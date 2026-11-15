@@ -1,0 +1,145 @@
+{
+  "run_id": "sonnet-t05-r1",
+  "task": "t05",
+  "tier": "tests",
+  "baseline": false,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "sonnet",
+  "prompt": "`src/trailhead/report.py` has no tests. Write `tests/test_report.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 49.8,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 8,
+  "duration_ms": 45906,
+  "duration_api_ms": 44145,
+  "api_equivalent_usd": 0.17319110000000001,
+  "usage": {
+    "input_tokens": 14,
+    "cache_creation_input_tokens": 23018,
+    "cache_read_input_tokens": 191411,
+    "output_tokens": 6195,
+    "output_tokens_details": {
+      "thinking_tokens": 702
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 23018,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 563,
+        "cache_read_input_tokens": 35367,
+        "cache_creation_input_tokens": 414,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 414
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 14,
+      "outputTokens": 6195,
+      "cacheReadInputTokens": 191411,
+      "cacheCreationInputTokens": 23018,
+      "webSearchRequests": 0,
+      "costUSD": 0.17319110000000001,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 702,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 23018,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Read": 1,
+    "Bash": 6
+  },
+  "bash_commands": [
+    "git ls-files && cat README*",
+    "cat tests/conftest.py src/trailhead/elevation.py src/trailhead/geo.py src/trailhead/pace.py src/trailhead/track.py; head -30 tests/test_plan.py",
+    "cat > tests/test_report.py <<'EOF'\nimport dataclasses\n\nimport pytest\n\nfrom trailhead.pace import naismith_hours\nfrom trailhead.plan import split_days\nfrom trailhead.report import Summary, format_summary, summarise\nfrom trailhead.track import parse_track\n\n# One degree of latitude along a meridian is this many km on the README's sphere.\nKM_PER_DEGREE = 6371.0088 * 3.141592653589793 / 180\n\n\ndef degrees_for_km(km: float) -> float:\n    return km / KM_PER_DEGREE\n\n\ndef make_summary(**overrides) -> Summary:\n    values = dict(\n        name=\"Test\",\n        length_km=12.34,\n        gain_m=850.0,\n        loss_m=420.0,\n        highest_m=2100.0,\n        lowest_m=1500.0,\n        steepest_pct=18.0,\n        hours=5.0 + 7 / 60,\n        heading=\"NE\",\n    )\n    values.update(overrides)\n    return Summary(**values)\n\n\n# --- summarise -------------------------------------------------------------\n\n\ndef test_summary_basic_fields(make_track):\n    step = degrees_for_km(5)\n    track = make_track(\n        (0, 0, 100), (step, 0, 200), (2 * step, 0, 150), (3 * step, 0, 300), name=\"Ridge\"\n    )\n    summary = summarise(track)\n    assert summary.name == \"Ridge\"\n    assert summary.length_km == 15.0\n    assert summary.gain_m == 250.0\n    assert summary.loss_m == 50.0\n    assert summary.highest_m == 300\n    assert summary.lowest_m == 100\n    assert summary.heading == \"N\"\n\n\ndef test_summary_length_is_rounded_to_a_tenth(make_track):\n    track = make_track((0, 0, 0), (degrees_for_km(1.2345), 0, 0))\n    assert summarise(track).length_km == 1.2\n\n\ndef test_summary_steepest_grade_is_in_percent(make_track):\n    # 18 m up over 100 m is 18.0 per the README.\n    track = make_track((0, 0, 0), (degrees_for_km(0.1), 0, 18))\n    assert summarise(track).steepest_pct == 18.0\n\n\ndef test_steepest_grade_counts_downhill(make_track):\n    track = make_track((0, 0, 100), (degrees_for_km(0.1), 0, 70))\n    assert summarise(track).steepest_pct == 30.0\n\n\ndef test_summary_time_is_naismith(make_track):\n    step = degrees_for_km(5)\n    track = make_track((0, 0, 0), (step, 0, 600))\n    # 5 km flat = 1 h, 600 m ascent = 1 h\n    assert summarise(track).hours == pytest.approx(2.0)\n\n\ndef test_fitness_divides_the_time(make_track):\n    step = degrees_for_km(5)\n    track = make_track((0, 0, 0), (step, 0, 600))\n    assert summarise(track, fitness=1.25).hours == pytest.approx(2.0 / 1.25)\n\n\ndef test_bad_fitness_is_a_value_error(make_track):\n    track = make_track((0, 0, 0), (0.01, 0, 0))\n    with pytest.raises(ValueError):\n        summarise(track, fitness=0)\n    with pytest.raises(ValueError):\n        summarise(track, fitness=-1)\n\n\ndef test_time_uses_unrounded_length(make_track):\n    # Length is rounded to 0.1 km in the summary, but time must not be.\n    track = make_track((0, 0, 0), (degrees_for_km(1.04), 0, 0))\n    summary = summarise(track)\n    assert summary.length_km == 1.0\n    assert summary.hours == pytest.approx(1.04 / 5)\n\n\ndef test_jitter_below_threshold_is_ignored(make_track):\n    track = make_track(\n        (0, 0, 100), (0.001, 0, 101), (0.002, 0, 100), (0.003, 0, 101), (0.004, 0, 100)\n    )\n    summary = summarise(track)\n    assert summary.gain_m == 0\n    assert summary.loss_m == 0\n\n\ndef test_slow_climb_in_small_steps_still_counts(make_track):\n    track = make_track(*[(index * 0.0001, 0, index) for index in range(301)])\n    assert summarise(track).gain_m == 300.0\n\n\ndef test_custom_threshold(make_track):\n    track = make_track((0, 0, 0), (0.001, 0, 5), (0.002, 0, 0))\n    assert summarise(track).gain_m == 5.0\n    assert summarise(track, threshold=10).gain_m == 0.0\n\n\ndef test_negative_threshold_is_a_value_error(make_track):\n    track = make_track((0, 0, 0), (0.001, 0, 5))\n    with pytest.raises(ValueError):\n        summarise(track, threshold=-1)\n\n\ndef test_summary_time_matches_day_plan_total(make_track):\n    step = degrees_for_km(4)\n    track = make_track(\n        (0, 0, 0), (step, 0, 40), (2 * step, 0, 35), (3 * step, 0, 120), (4 * step, 0, 90)\n    )\n    summary = summarise(track, fitness=1.2)\n    days = split_days(track, fitness=1.2)\n    assert sum(day[3] for day in days) == pytest.approx(summary.hours)\n\n\ndef test_feet_are_reported_in_metres():\n    text = \"# units: ft\\nlat,lon,ele\\n0,0,1000\\n0.01,0,2000\\n\"\n    summary = summarise(parse_track(text))\n    assert summary.lowest_m == pytest.approx(304.8)\n    assert summary.highest_m == pytest.approx(609.6)\n    assert summary.gain_m == pytest.approx(304.8)\n\n\ndef test_summary_is_immutable():\n    with pytest.raises(dataclasses.FrozenInstanceError):\n        make_summary().name = \"other\"\n\n\n# --- heading ---------------------------------------------------------------\n\n\n@pytest.mark.parametrize(\n    (\"finish\", \"expected\"),\n    [\n        ((0.1, 0.0), \"N\"),\n        ((0.1, 0.1), \"NE\"),\n        ((0.0, 0.1), \"E\"),\n        ((-0.1, 0.1), \"SE\"),\n        ((-0.1, 0.0), \"S\"),\n        ((-0.1, -0.1), \"SW\"),\n        ((0.0, -0.1), \"W\"),\n        ((0.1, -0.1), \"NW\"),\n    ],\n)\ndef test_heading_is_the_compass_point_from_start_to_finish(make_track, finish, expected):\n    track = make_track((0, 0, 0), (*finish, 0))\n    assert summarise(track).heading == expected\n\n\ndef test_heading_ignores_the_route_in_between(make_track):\n    track = make_track((0, 0, 0), (0.0, 0.5, 0), (0.0, 0.5, 0), (0.1, 0.0, 0))\n    assert summarise(track).heading == \"N\"\n\n\ndef test_out_and_back_is_a_loop(make_track):\n    track = make_track((42.0, 23.0, 1000), (42.1, 23.1, 1500), (42.0, 23.0, 1000))\n    assert summarise(track).heading == \"loop\"\n\n\ndef test_finish_within_100_m_is_a_loop(make_track):\n    track = make_track((0, 0, 0), (degrees_for_km(0.099), 0, 0))\n    assert summarise(track).heading == \"loop\"\n\n\ndef test_finish_beyond_100_m_is_not_a_loop(make_track):\n    track = make_track((0, 0, 0), (degrees_for_km(0.101), 0, 0))\n    assert summarise(track).heading == \"N\"\n\n\n# --- format_summary --------------------------------------------------------\n\n\ndef test_format_summary_layout():\n    assert format_summary(make_summary()).splitlines() == [\n        \"Test\",\n        \"  distance  12.3 km\",\n        \"  ascent    +850 m / -420 m\",\n        \"  altitude  1500-2100 m\",\n        \"  steepest  18.0%\",\n        \"  time      5h 07m\",\n        \"  heading   NE\",\n    ]\n\n\n@pytest.mark.parametrize(\n    (\"hours\", \"expected\"),\n    [\n        (5 + 7 / 60, \"5h 07m\"),\n        (0.75, \"0h 45m\"),\n        (12.0, \"12h 00m\"),\n        (0.0, \"0h 00m\"),\n        (2 + 29.4 / 60, \"2h 29m\"),\n        (2 + 29.6 / 60, \"2h 30m\"),\n    ],\n)\ndef test_duration_display(hours, expected):\n    assert f\"time      {expected}\" in format_summary(make_summary(hours=hours)).splitlines()\n\n\ndef test_minutes_round_up_into_the_next_hour():\n    # 1h 59.6m is displayed as 2h 00m, never \"1h 60m\".\n    assert \"  time      2h 00m\" in format_summary(make_summary(hours=1 + 59.6 / 60))\n\n\ndef test_distance_is_shown_with_one_decimal():\n    assert \"  distance  3.0 km\" in format_summary(make_summary(length_km=3.0))\n\n\ndef test_ascent_and_descent_are_whole_metres():\n    text = format_summary(make_summary(gain_m=849.6, loss_m=0.0))\n    assert \"  ascent    +850 m / -0 m\" in text\n\n\ndef test_steepest_has_one_decimal_and_percent_sign():\n    assert \"  steepest  7.5%\" in format_summary(make_summary(steepest_pct=7.5))\n\n\ndef test_loop_heading_is_shown():\n    assert format_summary(make_summary(heading=\"loop\")).splitlines()[-1] == \"  heading   loop\"\n\n\ndef test_format_of_a_real_summary(make_track):\n    step = degrees_for_km(5)\n    track = make_track((0, 0, 0), (step, 0, 600), name=\"Climb\")\n    assert format_summary(summarise(track)).splitlines() == [\n        \"Climb\",\n        \"  distance  5.0 km\",\n        \"  ascent    +600 m / -0 m\",\n        \"  altitude  0-600 m\",\n        \"  steepest  \" + f\"{summarise(track).steepest_pct:.1f}%\",\n        \"  time      2h 00m\",\n        \"  heading   N\",\n    ]\n\n\ndef test_summary_time_matches_naismith_for_display(make_track):\n    track = make_track((0, 0, 0), (degrees_for_km(10), 0, 300))\n    expected = naismith_hours(track.length_km(), 300.0)\n    assert summarise(track).hours == pytest.approx(expected)\nEOF\npython -m pytest tests/test_report.py -q 2>&1 | tail -30; ruff check tests/test_report.py 2>&1 | tail; git status --short",
+    "sed -i 's/assert f\"time      {expected}\" in/assert f\"  time      {expected}\" in/' tests/test_report.py && python -m pytest tests/test_report.py -q 2>&1 | grep -E \"^E|passed|failed\" | head -20",
+    "cat src/trailhead/plan.py",
+    "sed -i 's/assert sum(day\\[3\\] for day in days) == pytest.approx(summary.hours)/# split_days rounds each day to 0.01 h\\n    assert sum(day[3] for day in days) == pytest.approx(summary.hours, abs=0.01)/' tests/test_report.py && python -m pytest -q 2>&1 | tail -3; ruff check tests/test_report.py; git status --short src"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_report.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".........................................                                [100%]\n41 passed in 0.07s\n",
+    "src_changed": [],
+    "killed": [
+      "loop radius 1 km",
+      "heading measured finish to start",
+      "time uses descent",
+      "fitness dropped",
+      "threshold dropped",
+      "minutes truncated"
+    ],
+    "survived": [
+      "steepest rounded to whole percent"
+    ],
+    "kills": 6,
+    "mutants": 7,
+    "changed": [
+      "A tests/test_report.py"
+    ],
+    "lines_added": 257,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_report.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".........................................                                [100%]\n41 passed in 0.06s\n",
+    "src_changed": [],
+    "killed": [
+      "loop radius 1 km",
+      "heading measured finish to start",
+      "distance rounded to 0.01",
+      "time uses descent",
+      "fitness dropped",
+      "threshold dropped",
+      "altitude printed high-low",
+      "minutes truncated"
+    ],
+    "survived": [
+      "steepest rounded to whole percent"
+    ],
+    "kills": 8,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_report.py"
+    ],
+    "lines_added": 257,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

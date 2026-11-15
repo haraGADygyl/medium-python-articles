@@ -1,0 +1,16 @@
+Tobler's hiking function now works as an alternative pace. All 61 tests pass, `ruff check`, `ruff format --check` and `mypy` are clean, and the CLI runs as expected.
+
+**What changed**
+- **`pace.py`**: added `PACES`, `DEFAULT_PACE` and `check_pace()`, which raises `ValueError` for anything other than `"naismith"` or `"tobler"`. A new `tobler_hours(distance_km, rise_m, fitness)` gives a leg's time as its length divided by `tobler_kmh(rise_m / (km*1000))`, then divided by fitness. A zero-length leg takes no time. It also rejects a negative distance or a fitness of zero or less, the same as Naismith. `leg_hours` now takes a keyword-only `pace`.
+- **`plan.split_days`** and **`report.summarise`**: both take a keyword-only `pace`. Under Tobler, the summary time is `sum(leg_hours(..., pace="tobler"))`, so a plan's days still add up to the summary time.
+- **`cli.py`**: `summary` and `plan` both take `--pace {naismith,tobler}`, defaulting to `naismith`. Any other value gets argparse's usual error.
+- **README**: added the `--pace` option to the usage section and a "Pace" entry under Behaviour, and changed the Walking time and Day plans entries to match.
+- **Tests**: added tests for Tobler leg times, fitness, zero-length legs, rejecting unknown paces in all three functions and the CLI, the summary equalling the sum of leg times, and plan days adding up to the summary.
+
+**Naismith output is unchanged.** All existing tests pass without edits. On a sample ridge track the CLI gives 0h 36m with Naismith and 0h 29m with Tobler.
+
+**Decisions for you to check:**
+- **Tobler ignores the ascent threshold.** A leg's grade comes from the actual elevation difference between its two points, the same way `steepest_grade` works, so 1–2 m of GPS jitter does affect Tobler times. This matched your wording ("the leg's elevation change"), but it means `--threshold` doesn't affect the time when `--pace tobler` is used.
+- **The new arguments are keyword-only**, so existing positional calls can't change meaning by accident.
+
+There are some untracked dotfiles in the repo root (`.bashrc`, `.gitconfig`, `.claude/…` and others). They aren't real files: the sandbox puts empty placeholders over those paths, so I left them alone, and they shouldn't be committed. I haven't committed anything.

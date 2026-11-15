@@ -1,0 +1,12 @@
+`pace="naismith"` or `"tobler"` now works on `pace.leg_hours`, `plan.split_days` and `report.summarise`, and both CLI commands take `--pace {naismith,tobler}`. The existing 47 tests pass, along with `ruff check` and `mypy`. I didn't add tests for the new behaviour, only ran a hand check.
+
+The hand check was a small track with a 100 m climb, a repeated point and a 100 m descent. The default summary gave 0h 37m, same as before, and `--pace tobler` gave 0h 31m. `plan --pace tobler` ran, and `--pace bogus` is rejected by argparse. I didn't call the Python functions directly with a bad `pace`, so the `ValueError` path is unexercised.
+
+- **Validation:** any other `pace` value raises `ValueError`. That check runs before any other validation or work.
+- **Tobler:** each leg takes its length divided by `tobler_kmh(grade)`. A zero-length leg takes 0 hours, and `fitness` divides the time. A zero or negative `fitness` raises `ValueError`, as under Naismith. The summary time is the sum of the leg times.
+- **Naismith:** the code path is unchanged and still the default.
+- **README:** it has a new Pace entry and an example command, and the Day plans paragraph no longer says legs are always timed by Naismith.
+
+I used the leg's raw elevation difference for Tobler's grade, not the 3 m-threshold ascent that Naismith uses. Your wording ("the leg's elevation change") reads that way to me. The consequence is that GPS jitter feeds into Tobler times, and the day plan still adds up to the summary time because both use the same leg times. The README says this.
+
+I also left a helper script at `/tmp/claude/edit_pace.py` (plus `fix_readme.py` and `t.csv` next to it) outside the repo; delete them if you like.

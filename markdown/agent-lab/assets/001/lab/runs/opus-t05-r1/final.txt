@@ -1,0 +1,32 @@
+I wrote `tests/test_report.py` with 51 tests, and they all pass. The full suite (96 tests) also passes, `ruff check` is clean, and nothing under `src/` was changed. None of the tests turned up a bug in `report.py`: it does what the README and docstrings say.
+
+**`summarise`**
+- **Name:** the summary keeps the track's name.
+- **Distance:** it's the great-circle distance, rounded to 0.1 km. Two checks use known lengths: 0.01° along the equator shows as 1.1 km, and one degree of latitude as 111.2 km.
+- **Ascent and descent:**
+  - A metre of jitter either way adds nothing.
+  - A 300 m climb recorded in 1 m steps counts as 300 m.
+  - Totals are rounded to 0.1 m.
+  - The `threshold` argument changes the totals, including a threshold of 0.
+  - A negative threshold raises `ValueError`.
+- **Highest and lowest points:** checked on a track whose extremes are in the middle.
+- **Steepest grade:** given in percent (18 m over 100 m is `18.0`). Downhill legs count, and repeated points are skipped.
+- **Walking time:**
+  - 5 km/h on the flat, plus an hour per 600 m of ascent; descent adds nothing.
+  - `fitness` divides the time, and zero or negative fitness raises `ValueError`.
+  - The time uses the unrounded distance, so 1.112 km shows as 1.1 km but isn't timed as 1.1 km.
+  - Jitter that doesn't count as ascent adds no time, and the time changes with the threshold.
+- **Heading:** all eight compass points are covered. The heading goes from start to finish, ignoring the route in between. A finish within 100 m of the start is `loop`; one 110 m away is not.
+- **Other:**
+  - A track in feet gives its summary in metres.
+  - `Summary` can't be modified after it's created.
+  - For three fitness values, a plan's days add up to the summary time. Each day is rounded to 0.01 h, so the check allows a small difference.
+
+**`format_summary`**
+- One test checks the whole output against a hand-built `Summary`, and another checks it against a real `summarise` result.
+- **Durations:** the README examples are covered (`5h 07m`, `0h 45m`, `12h 00m`), plus rounding up and down to the nearest minute. That includes 11h 59.7m shown as `12h 00m`, not `11h 60m`.
+- **Number formats:** metres are shown as whole numbers, while km and percent keep one decimal. A `loop` heading is shown as is.
+
+The duration tests deliberately avoid exact half-minutes. The README says "nearest minute" without saying which way a tie goes, and Python's `round` sends ties to the even number.
+
+`git status` lists several untracked files in the repo root that I didn't create or touch: `.bashrc`, `.zshrc`, `.gitconfig`, `.claude/`, `.idea`, `.vscode`, `.mcp.json` and a few more. You may want to check where they came from before committing.

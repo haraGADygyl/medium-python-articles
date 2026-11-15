@@ -1,0 +1,48 @@
+diff --git a/src/trailhead/geo.py b/src/trailhead/geo.py
+index 7cb3c70..0b8f135 100644
+--- a/src/trailhead/geo.py
++++ b/src/trailhead/geo.py
+@@ -15,7 +15,7 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+     return 2 * EARTH_RADIUS_KM * asin(sqrt(a))
+ 
+ 
+-def initial_bearing(lat1, lon1, lat2, lon2):
++def initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+     """Compass bearing in degrees, 0 <= bearing < 360, from the first point to the second."""
+     phi1, phi2 = radians(lat1), radians(lat2)
+     d_lambda = radians(lon2 - lon1)
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 18f0ba2..69880a1 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -25,7 +25,7 @@ class Summary:
+     lowest_m: float
+     steepest_pct: float
+     hours: float
+-    heading: str
++    heading: str | None  # None when the track is a loop
+ 
+ 
+ def _heading(track: Track) -> str | None:
+@@ -64,6 +64,6 @@ def format_summary(summary: Summary) -> str:
+             f"  altitude  {summary.lowest_m:.0f}-{summary.highest_m:.0f} m",
+             f"  steepest  {summary.steepest_pct:.1f}%",
+             f"  time      {whole}h {minutes:02d}m",
+-            f"  heading   {summary.heading}",
++            f"  heading   {summary.heading or 'loop'}",
+         ]
+     )
+diff --git a/tests/test_report.py b/tests/test_report.py
+index 74fbed8..56440b3 100644
+--- a/tests/test_report.py
++++ b/tests/test_report.py
+@@ -26,3 +26,9 @@ def test_format_summary(make_track):
+             "  heading   NE",
+         ]
+     )
++
++
++def test_a_loop_has_no_heading(make_track):
++    summary = summarise(make_track((0, 0, 1000), (0.01, 0.01, 1095), (0, 0.0005, 1000)))
++    assert summary.heading is None
++    assert format_summary(summary).splitlines()[-1] == "  heading   loop"

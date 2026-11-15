@@ -1,0 +1,20 @@
+The plan and the summary now agree on your kind of track. The cause was in `pace.leg_hours`, which is why the plan came out longer.
+
+**Cause:** `leg_hours` charged each leg the raw rise between consecutive points, `max(b.ele - a.ele, 0)`. Every 1 m wiggle on a GPS track therefore added climb to the plan. The summary (`elevation.gain_and_loss`) only counts a change after it reaches the 3 m threshold, so the jitter cancels out there. The README says the plan must use the summary's rule, so the plan was wrong.
+
+**Reproduction:** I built a noisy test track with ±0.3 m jitter and a real slow climb. Before the fix, the summary said 35.208 h and the plan's legs summed to 36.208 h. The 1 h gap was 600 m of jitter climb.
+
+**Fix:**
+- `src/trailhead/pace.py`: `leg_hours` now takes each leg's climb from `elevation.counted_changes`, the same rule the summary uses. I removed the now-unused `pairwise` import.
+- `src/trailhead/plan.py`: `split_days` takes a `threshold` argument (default 3 m) and passes it through.
+- `src/trailhead/cli.py`: `plan` gets a `--threshold` flag, matching `summary`, so the two commands can be compared under any threshold.
+
+**Verification:**
+- Reproduction after the fix: summary 35.208 h, plan 35.208 h.
+- Two regression tests were added in `tests/test_pace.py` and `tests/test_plan.py`. They fail on the original source and pass with the fix.
+- Full suite: 50 passed. `ruff check` and `mypy` are both clean.
+
+**Choices I made:**
+- I added `--threshold` to `plan`. It is not strictly needed for the bug, but without it `plan` could not match `summary --threshold X`.
+- I did not commit anything; the changes are in the working tree.
+- My scratch repro script is still in `scratchpad/work/`, one level above the repo. I could not delete it because the sandbox asked for approval on that command. It is harmless, and you can remove it.

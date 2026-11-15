@@ -1,0 +1,118 @@
+{
+  "run_id": "haiku-b04-r3",
+  "task": "b04",
+  "tier": "bug",
+  "baseline": false,
+  "repeat": 3,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"Track files exported from my Garmin app fail with `trailhead: line 1: expected the header 'lat,lon,ele'`, but when I open one in my editor the first line is exactly `lat,lon,ele`. One of the files is attached as `garmin-export.csv`.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 23.6,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 8,
+  "duration_ms": 21203,
+  "duration_api_ms": 19791,
+  "api_equivalent_usd": 0.00648487,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 16798,
+    "cache_read_input_tokens": 138557,
+    "output_tokens": 3477,
+    "output_tokens_details": {
+      "thinking_tokens": 661
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 16798,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 575,
+        "cache_read_input_tokens": 28832,
+        "cache_creation_input_tokens": 729,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 729
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 3477,
+      "cacheReadInputTokens": 138557,
+      "cacheCreationInputTokens": 16798,
+      "webSearchRequests": 0,
+      "costUSD": 0.00648487,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 661,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 16798,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 5,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && find . -name 'garmin-export.csv' -not -path './.git/*'",
+    "head -c 300 garmin-export.csv | od -c | head -20; echo; wc -l garmin-export.csv; echo ---; cat src/trailhead/track.py",
+    "grep -rn \"read_text\\|open(\\|parse_track\\|load_track\\|encoding\" src tests; echo ---; cat tests/test_track.py; echo ---; cat tests/conftest.py | head -50; echo ---; python -m pytest -q 2>&1 | tail -5",
+    "python -m pytest -q 2>&1 | tail -3 && PYTHONPATH=src python -m trailhead garmin-export.csv 2>&1 | tail -15; echo \"exit=$?\"; git stash -q && PYTHONPATH=src python -m trailhead garmin-export.csv 2>&1 | tail -2; git stash pop -q && git status --short src tests",
+    "echo \"== after fix\" && PYTHONPATH=src python -m trailhead summary garmin-export.csv; echo \"exit=$?\"; git stash push -q -- src && echo \"== before fix\" && PYTHONPATH=src python -m trailhead summary garmin-export.csv; git stash pop -q && git diff --stat"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 14,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 14,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

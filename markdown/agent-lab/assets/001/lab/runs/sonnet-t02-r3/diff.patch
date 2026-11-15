@@ -1,0 +1,121 @@
+diff --git a/tests/test_pace.py b/tests/test_pace.py
+new file mode 100644
+index 0000000..b0259c1
+--- /dev/null
++++ b/tests/test_pace.py
+@@ -0,0 +1,115 @@
++from math import exp
++
++import pytest
++
++from trailhead.elevation import gain_and_loss
++from trailhead.pace import leg_hours, naismith_hours, tobler_kmh
++
++# One 5 km leg along the equator.
++STEP = 5 / 111.19508
++
++
++def test_flat_walk_is_five_km_per_hour():
++    assert naismith_hours(10, 0) == pytest.approx(2.0)
++
++
++def test_climb_is_one_hour_per_600_m():
++    assert naismith_hours(0, 600) == pytest.approx(1.0)
++    assert naismith_hours(0, 300) == pytest.approx(0.5)
++
++
++def test_distance_and_ascent_add_up():
++    assert naismith_hours(15, 1200) == pytest.approx(3.0 + 2.0)
++
++
++def test_zero_distance_and_ascent_take_no_time():
++    assert naismith_hours(0, 0) == 0
++
++
++def test_fitness_divides_the_time():
++    base = naismith_hours(10, 600)
++    assert naismith_hours(10, 600, fitness=1.25) == pytest.approx(base / 1.25)
++    assert naismith_hours(10, 600, fitness=0.8) == pytest.approx(base / 0.8)
++    assert naismith_hours(10, 600, fitness=1.25) < base < naismith_hours(10, 600, fitness=0.8)
++
++
++def test_time_is_not_rounded():
++    assert naismith_hours(1, 1) == pytest.approx(1 / 5 + 1 / 600, abs=1e-12)
++
++
++@pytest.mark.parametrize("fitness", [0, -1.0])
++def test_non_positive_fitness_is_an_error(fitness):
++    with pytest.raises(ValueError):
++        naismith_hours(5, 100, fitness)
++
++
++def test_negative_distance_is_an_error():
++    with pytest.raises(ValueError):
++        naismith_hours(-1, 0)
++
++
++def test_negative_ascent_is_an_error():
++    with pytest.raises(ValueError):
++        naismith_hours(1, -1)
++
++
++def test_tobler_fastest_on_a_five_percent_descent():
++    assert tobler_kmh(-0.05) == pytest.approx(6.0)
++    for grade in (-0.2, -0.1, 0.0, 0.05, 0.3):
++        assert tobler_kmh(grade) < 6.0
++
++
++def test_tobler_on_the_flat():
++    assert tobler_kmh(0.0) == pytest.approx(6 * exp(-3.5 * 0.05))
++
++
++def test_tobler_matches_formula_for_climb_and_descent():
++    assert tobler_kmh(0.1) == pytest.approx(6 * exp(-3.5 * 0.15))
++    assert tobler_kmh(-0.15) == pytest.approx(6 * exp(-3.5 * 0.10))
++
++
++def test_tobler_is_slower_on_a_climb_than_the_same_descent():
++    assert tobler_kmh(0.1) < tobler_kmh(-0.1)
++
++
++def test_leg_hours_one_value_per_leg(make_track):
++    track = make_track(*[(0, i * STEP, 0) for i in range(4)])
++    assert leg_hours(track) == pytest.approx([1.0, 1.0, 1.0])
++
++
++def test_leg_hours_credits_climb_to_the_leg(make_track):
++    track = make_track((0, 0, 0), (0, STEP, 60), (0, 2 * STEP, 60))
++    assert leg_hours(track) == pytest.approx([1.0 + 0.1, 1.0])
++
++
++def test_leg_hours_descent_adds_nothing(make_track):
++    track = make_track((0, 0, 100), (0, STEP, 0))
++    assert leg_hours(track) == pytest.approx([1.0])
++
++
++def test_leg_hours_ignores_jitter(make_track):
++    track = make_track((0, 0, 0), (0, STEP, 1), (0, 2 * STEP, 0))
++    assert leg_hours(track) == pytest.approx([1.0, 1.0])
++
++
++def test_leg_hours_counts_a_long_climb_in_small_steps(make_track):
++    # 1 m per leg: the climb counts once it has moved 3 m from the last counted elevation.
++    track = make_track(*[(0, i * STEP, i) for i in range(7)])
++    expected = [1.0, 1.0, 1.0 + 3 / 600, 1.0, 1.0, 1.0 + 3 / 600]
++    assert leg_hours(track) == pytest.approx(expected)
++
++
++def test_leg_hours_applies_fitness(make_track):
++    track = make_track((0, 0, 0), (0, STEP, 60))
++    assert leg_hours(track, fitness=1.25) == pytest.approx([1.1 / 1.25])
++
++
++def test_legs_add_up_to_the_summary_time(make_track):
++    elevations = [0, 1, 2, 3, 4, 10, 8, 7, 3, 4, 5, 6, 30, 31]
++    track = make_track(*[(0, i * STEP, ele) for i, ele in enumerate(elevations)])
++    gain, _ = gain_and_loss(elevations)
++    total_km = track.length_km()
++    for fitness in (1.0, 1.25, 0.8):
++        assert sum(leg_hours(track, fitness)) == pytest.approx(
++            naismith_hours(total_km, gain, fitness)
++        )

@@ -1,0 +1,9 @@
+Fixed: a steady climb recorded in 1 m steps now counts in full (300 m up gives +300 m), and the test suite passes with a new regression test for this case.
+
+**Cause:** in `counted_changes` (`src/trailhead/elevation.py`), a stray `reference = elevation` at the end of the loop moved the comparison point to every new point, counted or not. Each step was therefore compared only with the previous point, so 1 m steps never reached the 3 m threshold. Tracks with bigger gaps looked fine because each individual step exceeded the threshold.
+
+**Fix:** I removed that line, so the reference only moves when a change is actually counted, which is what the README and docstring already describe. Jitter of a metre either way still adds nothing.
+
+Walking-time estimates and day plans use the same function, so they were under-counting climb on such tracks too and are corrected by the same change.
+
+The change is uncommitted in the working tree.

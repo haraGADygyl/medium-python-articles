@@ -1,0 +1,13 @@
+The cause was in `counted_changes` in `src/trailhead/elevation.py`. The line `reference = elevation` ran on every leg, including legs whose change was below the 3 m threshold. Each small step became the new baseline, so a climb made of sub-threshold steps never reached the threshold. Your 300 m climb with a point per metre was therefore counted as 0 m. Tracks with larger gaps between points have steps above 3 m, so they were counted correctly.
+
+**Fix:** I removed the unconditional reassignment. The baseline now only moves when a change is actually counted, which is what the function's docstring describes.
+
+**Test:** I added `test_long_climb_in_small_steps_is_counted` to `tests/test_elevation.py`. It uses a climb of 0.5 m steps. On the original code it fails with `0.0`. With the fix it returns `48.0` m.
+
+The expected value is 48.0 rather than the full 49.5 m because counting happens in whole 3 m chunks. The last 1.5 m short of the next chunk is not counted. That is the threshold's intended behaviour, so I left it alone.
+
+**Results:** The full suite passes (47 passed).
+
+**Not done:**
+- I did not commit. Say the word and I will commit with the attribution line.
+- The repository has untracked dotfiles in its root (`.bashrc`, `.zshrc`, `.gitconfig`, `.claude/`, and others). They were not created by this change and I left them untouched. They may be worth checking before any commit.

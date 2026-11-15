@@ -1,0 +1,9 @@
+Garmin track files now load. The cause was a hidden byte-order mark at the start of the export. All 48 tests pass, including a new one for this case. I didn't run `garmin-export.csv` through the CLI, because `python -m trailhead` isn't importable in this environment.
+
+**Cause:** `garmin-export.csv` starts with a UTF-8 byte-order mark (the bytes `ef bb bf`). Editors hide it, so the first line looks like `lat,lon,ele`. `load_track` read the file with `encoding="utf-8"`, which keeps the mark as the character `\ufeff`. The header became `\ufefflat`, which didn't match `lat`, so the parser rejected it on line 1. The file also uses `\r\n` line endings, but the parser already handles those.
+
+**Fix:** `load_track` in `src/trailhead/track.py` now reads with `encoding="utf-8-sig"`. That strips the mark when it's there and does nothing when it isn't.
+
+**Test:** `test_load_track_accepts_a_utf8_bom` in `tests/test_track.py` loads a BOM-prefixed file with CRLF line endings.
+
+`parse_track` called directly on a string that starts with `\ufeff` would still fail. Nothing in the repo does that today, since the only caller that reads a file is `load_track`.

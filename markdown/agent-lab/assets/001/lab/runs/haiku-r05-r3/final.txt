@@ -1,0 +1,19 @@
+Tobler is available as `pace="tobler"` on `pace.leg_hours`, `plan.split_days` and `report.summarise`, and as `--pace {naismith,tobler}` on both CLI commands. Naismith stays the default and its output is unchanged. The changes are uncommitted in the working tree.
+
+**Verification**
+- 65 tests pass (47 existing, 18 new). ruff check, ruff format and mypy are clean.
+- I captured `summary` and `plan` output on a sample track before the change and diffed it afterwards: identical.
+- The bad-pace case fails from the CLI with argparse's exit 2 and an "invalid choice" message. From the API it raises `ValueError`.
+
+**What changed**
+- `pace.py`: `check_pace` plus a `pace` argument on `leg_hours`. Under Tobler each leg takes `length / tobler_kmh(grade)` hours, divided by fitness, with grade taken from the raw elevation difference of the leg. Zero-length legs take no time.
+- `report.py`: under Tobler, the summary time is the sum of the leg times. Naismith still uses the existing formula.
+- `plan.py`: `split_days` passes `pace` through to `leg_hours`.
+- `cli.py`: `--pace` on `summary` and `plan`, restricted to the two choices.
+- `README.md`: the walking-time, pace, Tobler and day-plan sections are updated.
+
+**Choices I made**
+- Under Tobler the ascent threshold does not affect time. The summary's ascent and descent figures still use it.
+- Under Tobler the day plan's legs sum exactly to the summary time, the same guarantee Naismith gives.
+
+**Known limit:** a leg whose elevation change is more than about 213 times its horizontal length (for example, a 213 m rise over 1 m) makes `tobler_kmh` underflow to 0, which raises `ZeroDivisionError`. I left the literal formula as specified. If you want such legs handled, I can add a guard.

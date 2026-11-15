@@ -1,0 +1,15 @@
+I added `tests/test_report.py` with 31 pytest tests. All 76 tests in the suite pass, and `ruff check` is clean on the new file. `src/` is untouched.
+
+Everything the README and docstrings say about `report.py` is covered:
+
+- **Summary fields:** distance rounded to 0.1 km, ascent and descent, altitude, steepest grade in percent, and the threshold being passed through.
+- **Jitter and the README's example:** a 300 m climb in 1 m steps counts as 300 m, and jitter under the threshold adds nothing.
+- **Walking time:** Naismith's rule, fitness dividing the time, and the time left unrounded in the `Summary`.
+- **Heading:** the eight compass points, `loop` when the finish is within 0.1 km of the start (checked on both sides of the boundary), and out-and-back tracks reported as `loop`.
+- **Display:** durations as `<h>h <mm>m` rounded to the nearest minute, including the 59.6-minute carry into the hours.
+- **Errors:** a negative threshold and zero or negative fitness raise `ValueError`.
+- **End to end:** a track file loaded and summarised.
+
+Two of my first expectations were wrong, and I corrected the tests rather than the code. One was the heading in a descent test, since the helper always moves north. The other was the gain for `0, 2, 4, 6` with a 3 m threshold, which is 4.0 because the 4 m rise counts once and the following 2 m does not.
+
+I did not test the exact text layout of `format_summary` beyond the values and the duration format, because the README doesn't document it. I also didn't run mypy, since its config only checks `src/`. Nothing is committed.

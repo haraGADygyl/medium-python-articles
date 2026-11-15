@@ -1,0 +1,7 @@
+Fixed: a climb recorded in 1 m steps now counts in full (a 301-point, 300 m climb gives +300 m). The test suite passes, including a new regression test for this case; I did not run the `trailhead summary` CLI itself on a track file.
+
+**Cause:** in `counted_changes` (`src/trailhead/elevation.py`), a stray `reference = elevation` at the end of the loop reset the comparison baseline on every point, not only when a change was counted. Each point was therefore compared with its immediate neighbour, so 1 m steps never reached the 3 m threshold. Tracks with bigger gaps looked fine because each individual step already exceeded the threshold.
+
+**Fix:** removed that one line, so the baseline only moves when a change is counted, which is what the docstring and README already describe.
+
+The per-leg times behind the day plan use the same function, so they were under-counting climb on such tracks too and are corrected by the same change.

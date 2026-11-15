@@ -1,0 +1,14 @@
+The bug was a UTF-8 byte order mark (BOM) at the start of the file, and it's fixed. The attached `garmin-export.csv` now parses and `summary` runs on it.
+
+**Cause:** The file begins with the bytes `EF BB BF`, which is a UTF-8 BOM. `load_track` reads it with plain `utf-8`, so line 1 becomes `\ufefflat,lon,ele`. The header check in `parse_track` strips whitespace, but Python's `str.strip()` doesn't remove a BOM, so the comparison with `lat,lon,ele` failed. Your editor hides the BOM, which is why the line looked correct.
+
+**Fix** (`src/trailhead/track.py`): `parse_track` now removes a leading `\ufeff` before parsing. Because the fix is in `parse_track`, it covers both files and strings.
+
+**Tests** (`tests/test_track.py`): I added two regression tests, one for a BOM in a string and one for a BOM-prefixed file loaded through `load_track`.
+
+**Verification:**
+- Full suite: 49 passed (47 before, plus the 2 new tests).
+- `trailhead summary garmin-export.csv` before the fix: `line 1: expected the header 'lat,lon,ele'`.
+- The same command after the fix: distance 0.6 km, ascent +141 m, altitude 2140–2281 m, steepest 28.1%, time 22m, heading NW.
+
+I haven't committed anything. The changes are in the working tree (`git diff` shows both files).

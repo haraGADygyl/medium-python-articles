@@ -1,0 +1,7 @@
+I renamed `haversine_km` to `distance_km`, and the old name still works as a deprecated alias. All 48 tests pass with deprecation warnings treated as errors, which confirms nothing in `src/` or `tests/` still calls the old name. `ruff` passes too.
+
+- **`src/trailhead/geo.py`:** the function is now `distance_km`. `haversine_km` is a small wrapper that emits a `DeprecationWarning` and returns `distance_km(...)`. The warning uses `stacklevel=2`, so it points at the caller's line rather than at `geo.py`.
+- **Updated to the new name:** `src/trailhead/report.py`, `src/trailhead/track.py` and `tests/test_geo.py`.
+- **New test:** `test_haversine_km_is_deprecated_alias` in `tests/test_geo.py` checks that the alias warns and returns the same result as `distance_km`.
+
+`src/trailhead/pace.py` already uses `distance_km` as a parameter name in `naismith_hours`. It doesn't import from `geo`, so the two don't conflict, and I left it alone.

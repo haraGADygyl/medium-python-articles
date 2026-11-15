@@ -1,0 +1,160 @@
+diff --git a/tests/test_pace.py b/tests/test_pace.py
+new file mode 100644
+index 0000000..31c3c85
+--- /dev/null
++++ b/tests/test_pace.py
+@@ -0,0 +1,154 @@
++from math import exp
++
++import pytest
++
++from trailhead.pace import leg_hours, naismith_hours, tobler_kmh
++from trailhead.report import summarise
++
++# One degree of longitude along the equator, in km, on the README's sphere.
++KM_PER_DEGREE = 111.19508
++
++
++# --- naismith_hours -------------------------------------------------------------------
++
++
++def test_flat_walking_is_five_km_per_hour():
++    assert naismith_hours(5, 0) == pytest.approx(1.0)
++    assert naismith_hours(12.5, 0) == pytest.approx(2.5)
++
++
++def test_every_600_m_of_ascent_adds_an_hour():
++    assert naismith_hours(0, 600) == pytest.approx(1.0)
++    assert naismith_hours(10, 900) == pytest.approx(2.0 + 1.5)
++
++
++def test_nothing_to_walk_takes_no_time():
++    assert naismith_hours(0, 0) == 0.0
++
++
++def test_time_is_not_rounded():
++    # 1 km on the flat is 12 minutes; 1 m of ascent is 6 seconds.
++    assert naismith_hours(1, 1) == pytest.approx(0.2 + 1 / 600)
++
++
++def test_fitness_divides_the_time():
++    assert naismith_hours(10, 600, fitness=1.25) == pytest.approx(3.0 / 1.25)
++    assert naismith_hours(10, 600, fitness=0.8) == pytest.approx(3.0 / 0.8)
++
++
++def test_default_fitness_is_average():
++    assert naismith_hours(10, 600) == naismith_hours(10, 600, fitness=1.0)
++
++
++def test_fitter_walkers_are_faster():
++    assert naismith_hours(10, 600, fitness=1.25) < naismith_hours(10, 600)
++    assert naismith_hours(10, 600, fitness=0.8) > naismith_hours(10, 600)
++
++
++@pytest.mark.parametrize("fitness", [0, -1, -0.5])
++def test_fitness_must_be_positive(fitness):
++    with pytest.raises(ValueError):
++        naismith_hours(10, 600, fitness=fitness)
++
++
++def test_distance_must_not_be_negative():
++    with pytest.raises(ValueError):
++        naismith_hours(-1, 0)
++
++
++def test_ascent_must_not_be_negative():
++    # Descent adds nothing, and is not to be passed in as negative ascent.
++    with pytest.raises(ValueError):
++        naismith_hours(5, -100)
++
++
++# --- tobler_kmh -----------------------------------------------------------------------
++
++
++def test_tobler_fastest_on_a_gentle_descent():
++    assert tobler_kmh(-0.05) == pytest.approx(6.0)
++    assert tobler_kmh(-0.05) > tobler_kmh(-0.04)
++    assert tobler_kmh(-0.05) > tobler_kmh(-0.06)
++
++
++def test_tobler_on_the_flat():
++    assert tobler_kmh(0) == pytest.approx(6 * exp(-0.175))
++    assert tobler_kmh(0) == pytest.approx(5.036, abs=0.001)
++
++
++@pytest.mark.parametrize("grade", [-1.0, -0.3, -0.1, 0.0, 0.1, 0.25, 1.0])
++def test_tobler_matches_the_formula(grade):
++    assert tobler_kmh(grade) == pytest.approx(6 * exp(-3.5 * abs(grade + 0.05)))
++
++
++def test_tobler_takes_grade_as_rise_over_run_not_percent():
++    # A 10% climb is 0.1; at that slope walking is a little over 3.5 km/h.
++    assert tobler_kmh(0.1) == pytest.approx(6 * exp(-0.525))
++    assert 3.5 < tobler_kmh(0.1) < 3.6
++
++
++@pytest.mark.parametrize("offset", [0.01, 0.05, 0.1, 0.5])
++def test_tobler_is_symmetric_about_the_fastest_grade(offset):
++    assert tobler_kmh(-0.05 + offset) == pytest.approx(tobler_kmh(-0.05 - offset))
++
++
++def test_tobler_slows_as_the_climb_steepens():
++    speeds = [tobler_kmh(grade) for grade in (0.0, 0.1, 0.2, 0.4, 0.8)]
++    assert speeds == sorted(speeds, reverse=True)
++
++
++# --- leg_hours ------------------------------------------------------------------------
++
++
++def test_one_time_per_leg(make_track):
++    step = 1 / KM_PER_DEGREE
++    track = make_track(*[(0, index * step, 0) for index in range(5)])
++    assert len(leg_hours(track)) == 4
++
++
++def test_flat_legs_are_timed_by_distance(make_track):
++    # Legs of 5 km and 2.5 km on the equator.
++    track = make_track((0, 0, 0), (0, 5 / KM_PER_DEGREE, 0), (0, 7.5 / KM_PER_DEGREE, 0))
++    assert leg_hours(track) == pytest.approx([1.0, 0.5], rel=1e-4)
++
++
++def test_climb_is_credited_to_its_leg_and_descent_adds_nothing(make_track):
++    # Two legs on the spot: up 600 m, then back down.
++    track = make_track((0, 0, 1000), (0, 0, 1600), (0, 0, 1000))
++    assert leg_hours(track) == pytest.approx([1.0, 0.0])
++
++
++def test_jitter_below_the_default_threshold_adds_nothing(make_track):
++    track = make_track((0, 0, 100), (0, 0, 102), (0, 0, 99), (0, 0, 101))
++    assert leg_hours(track) == [0.0, 0.0, 0.0]
++
++
++def test_climb_in_small_steps_is_credited_where_it_reaches_the_threshold(make_track):
++    # 1 m steps: the default 3 m threshold is reached on the third and sixth legs.
++    track = make_track(*[(0, 0, 100 + index) for index in range(7)])
++    assert leg_hours(track) == pytest.approx([0, 0, 3 / 600, 0, 0, 3 / 600])
++
++
++def test_leg_hours_applies_fitness(make_track):
++    track = make_track((0, 0, 0), (0, 5 / KM_PER_DEGREE, 600))
++    assert leg_hours(track, fitness=1.25) == pytest.approx([2.0 / 1.25], rel=1e-4)
++
++
++def test_leg_hours_rejects_bad_fitness(make_track):
++    track = make_track((0, 0, 0), (0, 0.01, 0))
++    with pytest.raises(ValueError):
++        leg_hours(track, fitness=0)
++
++
++@pytest.fixture
++def bumpy_track(make_track):
++    # Climbs, descents, jitter and a climb in small steps.
++    elevations = [1000, 1001, 1004, 1003, 1010, 1010, 1060, 1058, 1020, 1021, 1022, 1023, 1150]
++    step = 0.4 / KM_PER_DEGREE
++    return make_track(*[(0.001 * index, index * step, ele) for index, ele in enumerate(elevations)])
++
++
++@pytest.mark.parametrize("fitness", [0.8, 1.0, 1.25])
++def test_legs_add_up_to_the_summary_time(bumpy_track, fitness):
++    total = sum(leg_hours(bumpy_track, fitness))
++    assert total == pytest.approx(summarise(bumpy_track, fitness).hours)

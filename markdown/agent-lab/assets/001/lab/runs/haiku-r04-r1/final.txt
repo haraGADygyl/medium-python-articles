@@ -1,0 +1,14 @@
+`Track.leg_lengths_km()` now caches its result, so a summary computes each leg's distance once. The full suite passes (48 tests).
+
+**The change** (`src/trailhead/track.py`):
+- `Track` keeps a private cache of `(snapshot of points, leg lengths)`. It is excluded from `__init__`, `repr` and equality, so existing construction and comparisons are unaffected.
+- `points` is a mutable list, so the cache is only reused while the points still match the snapshot. If a caller appends or replaces a point, the legs are recomputed rather than returned stale.
+- The method returns a copy of the cached list, so a caller that mutates the result cannot corrupt the cache.
+
+**Verification:**
+- Before the change, `summarise()` called `haversine_km` 6 times on a 3-leg track (`length_km()` and `steepest_grade()` each recomputed). After the change, it is 3 times, once per leg.
+- I added `test_leg_lengths_are_computed_once_per_track` to `tests/test_track.py`. It counts distance calls, checks that mutating the returned list doesn't affect later results, and checks that appending a point triggers a recompute. My first draft of that test had the wrong expected count after the append, which I corrected; the code was behaving correctly.
+
+**Choices I made:**
+- I kept the staleness check as a full comparison of the points against the snapshot instead of caching on the list's identity. That costs a linear pass of point comparisons, which is much cheaper than the trigonometry it avoids, and it means results can't go stale.
+- I did not commit anything. The changes are in the working tree for you to review.

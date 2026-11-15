@@ -1,0 +1,14 @@
+I added `tests/test_report.py` with 30 pytest tests for `src/trailhead/report.py`. The full suite passes (75 tests), ruff is clean, and nothing under `src/` changed.
+
+The tests cover what the README and docstrings state:
+
+- **Summary fields:** name, distance rounded to 0.1 km, ascent and descent, highest and lowest points, steepest grade, and heading.
+- **Ascent threshold:** jitter adds nothing, the default is 3 m, a custom threshold is passed through, a negative threshold raises `ValueError`, and a climb in 1 m steps still counts in full.
+- **Steepest grade:** rise over run in percent for uphill and downhill, the steepest leg rather than the overall slope, and zero-length legs skipped.
+- **Time:** Naismith's rule with fitness, descent adds no time, non-positive fitness raises `ValueError`, and time is not rounded before display.
+- **Heading:** all eight compass points, `loop` within 0.1 km of the start, and not `loop` just beyond that.
+- **Display:** `format_summary` layout checked exactly, and durations rounded to the nearest minute (`5h 07m`, `0h 45m`, `12h 00m`, and a carry case where 59.99 minutes shows as `1h 00m`).
+
+One test failed on the first run. The error was in my test data, not the module: I had used a zero-length leg followed by a leg that dropped 32 m, which is correctly 32.0%. I fixed the fixture so the real leg is an 18 m climb.
+
+The new file is untracked and I did not commit it.

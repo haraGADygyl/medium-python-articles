@@ -1,0 +1,123 @@
+{
+  "run_id": "opus-b01-r4",
+  "task": "b01",
+  "tier": "bug",
+  "baseline": true,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "opus",
+  "prompt": "Bug report from a user: \"I recorded a long, steady climb with a point for every metre of height, about 300 m up in total. `trailhead summary` shows the ascent as +0 m. Tracks with bigger gaps between points look fine.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 38.1,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 12,
+  "duration_ms": 35927,
+  "duration_api_ms": 35022,
+  "api_equivalent_usd": 0.21870520000000002,
+  "usage": {
+    "input_tokens": 13,
+    "cache_creation_input_tokens": 16304,
+    "cache_read_input_tokens": 169006,
+    "output_tokens": 2721,
+    "output_tokens_details": {
+      "thinking_tokens": 278
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 16304,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 535,
+        "cache_read_input_tokens": 28731,
+        "cache_creation_input_tokens": 336,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 336
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 13,
+      "outputTokens": 2721,
+      "cacheReadInputTokens": 169006,
+      "cacheCreationInputTokens": 16304,
+      "webSearchRequests": 0,
+      "costUSD": 0.21870520000000002,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 278,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 16304,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 5,
+    "Read": 3,
+    "Edit": 3
+  },
+  "bash_commands": [
+    "git ls-files; grep -rn -i \"ascent\\|threshold\\|hysteres\" --include=*.py . | head -50",
+    "python -m pytest -q 2>&1 | tail -15",
+    "grep -n \"def \\|gpx\\|csv\\|write\" tests/test_cli.py tests/conftest.py | head -20",
+    "sed -n 1,5p tests/test_cli.py; python - <<'EOF' > $TMPDIR/climb.csv\nprint(\"lat,lon,ele\")\nfor i in range(301):\n    print(f\"0,{i*0.0001:.4f},{1000+i}\")\nEOF\nhead -3 $TMPDIR/climb.csv; PYTHONPATH=src python -m trailhead summary $TMPDIR/climb.csv",
+    "sed -n 1,5p tests/test_cli.py; python -c '\nimport sys\nwith open(sys.argv[1], \"w\") as f:\n    f.write(\"lat,lon,ele\\n\")\n    for i in range(301):\n        f.write(f\"0,{i*0.0001:.4f},{1000+i}\\n\")\n' \"$TMPDIR/climb.csv\"; PYTHONPATH=src python -m trailhead summary \"$TMPDIR/climb.csv\""
+  ],
+  "permission_denials": [
+    {
+      "command": "sed -n 1,5p tests/test_cli.py; python - <<'EOF' > $TMPDIR/climb.csv\nprint(\"lat,lon,ele\")\nfor i in range(301):\n    print(f\"0,{i*0.0001:.4f},{1000+i}\")\nEOF\nhead -3 $TMPDIR/climb.csv; PYTHONPATH=src python -m trailhead summary $TMPDIR/climb.csv"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 16,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 16,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

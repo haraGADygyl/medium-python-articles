@@ -1,0 +1,140 @@
+{
+  "run_id": "opus-r05-r4",
+  "task": "r05",
+  "tier": "refactor/feature",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "opus",
+  "prompt": "Add Tobler's hiking function as an alternative to Naismith's rule for walking time. Give `pace.leg_hours`, `plan.split_days` and `report.summarise` a keyword argument `pace: str = \"naismith\"` that accepts `\"naismith\"` or `\"tobler\"` (anything else is a `ValueError`), and give both CLI commands a `--pace {naismith,tobler}` option. Under Tobler, a leg takes its length divided by `tobler_kmh(grade)` hours, where grade is the leg's elevation change divided by its horizontal length (both in metres); a zero-length leg takes no time; fitness divides the time as it does for Naismith; and the summary time is the sum of the leg times. Naismith stays the default and existing output must not change. Update the README.",
+  "harness_timeout": false,
+  "wall_s": 79.0,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 10,
+  "duration_ms": 76866,
+  "duration_api_ms": 74097,
+  "api_equivalent_usd": 0.43749499999999997,
+  "usage": {
+    "input_tokens": 19,
+    "cache_creation_input_tokens": 27270,
+    "cache_read_input_tokens": 314795,
+    "output_tokens": 7815,
+    "output_tokens_details": {
+      "thinking_tokens": 643
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 27270,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 793,
+        "cache_read_input_tokens": 39248,
+        "cache_creation_input_tokens": 785,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 785
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 19,
+      "outputTokens": 7815,
+      "cacheReadInputTokens": 314795,
+      "cacheCreationInputTokens": 27270,
+      "webSearchRequests": 0,
+      "costUSD": 0.43749499999999997,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 643,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 27270,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 9
+  },
+  "bash_commands": [
+    "cd . && git ls-files && cat README.md && cat $(git ls-files | grep '\\.py$' | grep -v test) ",
+    "cat tests/conftest.py tests/test_pace.py tests/test_cli.py; head -30 tests/test_plan.py tests/test_report.py; cat pyproject.toml",
+    "python - <<'EOF'\nimport re\np='src/trailhead/pace.py'\ns=open(p).read()\ns=s.replace('''from math import exp\n\nfrom trailhead.elevation import counted_changes\nfrom trailhead.track import Track\n\nFLAT_SPEED_KMH = 5.0\nCLIMB_M_PER_HOUR = 600.0\n''','''from itertools import pairwise\nfrom math import exp\n\nfrom trailhead.elevation import counted_changes\nfrom trailhead.track import Track\n\nFLAT_SPEED_KMH = 5.0\nCLIMB_M_PER_HOUR = 600.0\nPACES = (\"naismith\", \"tobler\")\nDEFAULT_PACE = \"naismith\"\n\n\ndef check_pace(pace: str) -> None:\n    \"\"\"Raise ``ValueError`` unless ``pace`` is one of `PACES`.\"\"\"\n    if pace not in PACES:\n        raise ValueError(f\"pace must be one of {', '.join(PACES)}, not {pace!r}\")\n''')\ni=s.index('def leg_hours')\ns=s[:i]+'''def leg_hours(track: Track, fitness: float = 1.0, pace: str = DEFAULT_PACE) -> list[float]:\n    \"\"\"Walking time in hours for every leg, by Naismith's rule or Tobler's function.\n\n    Under ``\"naismith\"``, a leg's climb is the ascent the summary's rule credits to\n    it (`elevation.counted_changes` with the default threshold), so the legs of a\n    track add up to its summary time.\n\n    Under ``\"tobler\"``, a leg takes its length over `tobler_kmh` of its grade, the\n    raw elevation change over the horizontal length; a zero-length leg takes no\n    time. ``fitness`` divides the time either way.\n    \"\"\"\n    check_pace(pace)\n    if pace == \"tobler\":\n        if fitness <= 0:\n            raise ValueError(\"fitness must be positive\")\n        hours: list[float] = []\n        for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):\n            if km == 0:\n                hours.append(0.0)\n                continue\n            grade = (b.ele - a.ele) / (km * 1000)\n            hours.append(km / tobler_kmh(grade) / fitness)\n        return hours\n    climbs = [max(change, 0.0) for change in counted_changes([p.ele for p in track.points])]\n    return [\n        naismith_hours(km, climb, fitness)\n        for km, climb in zip(track.leg_lengths_km(), climbs, strict=True)\n    ]\n'''\nopen(p,'w').write(s)\n\np='src/trailhead/plan.py'\ns=open(p).read()\ns=s.replace(\"from trailhead.pace import leg_hours\",\"from trailhead.pace import DEFAULT_PACE, leg_hours\")\ns=s.replace('''    track: Track, max_hours_per_day: float = DEFAULT_MAX_HOURS, fitness: float = 1.0\n) -> list[tuple[int, int, int, float]]:''','''    track: Track,\n    max_hours_per_day: float = DEFAULT_MAX_HOURS,\n    fitness: float = 1.0,\n    *,\n    pace: str = DEFAULT_PACE,\n) -> list[tuple[int, int, int, float]]:''')\ns=s.replace('''    ``max_hours_per_day`` unless a single leg on its own does.\n    \"\"\"''','''    ``max_hours_per_day`` unless a single leg on its own does. Legs are timed\n    by ``pace``, ``\"naismith\"`` or ``\"tobler\"`` (see `pace.leg_hours`).\n    \"\"\"''')\ns=s.replace(\"leg_hours(track, fitness)\",\"leg_hours(track, fitness, pace)\")\nopen(p,'w').write(s)\n\np='src/trailhead/report.py'\ns=open(p).read()\ns=s.replace(\"from trailhead.pace import naismith_hours\",\"from trailhead.pace import DEFAULT_PACE, check_pace, leg_hours, naismith_hours\")\ns=s.replace('''    track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M\n) -> Summary:\n''','''    track: Track,\n    fitness: float = 1.0,\n    threshold: float = DEFAULT_THRESHOLD_M,\n    *,\n    pace: str = DEFAULT_PACE,\n) -> Summary:\n    \"\"\"Summarise a track; ``pace`` is ``\"naismith\"`` (the default) or ``\"tobler\"``.\n\n    Under Tobler the time is the sum of `pace.leg_hours`; ``threshold`` affects\n    only the ascent and descent then, not the time.\n    \"\"\"\n    check_pace(pace)\n''')\ns=s.replace('''        hours=naismith_hours(length, gain, fitness),''','''        hours=(\n            sum(leg_hours(track, fitness, pace))\n            if pace == \"tobler\"\n            else naismith_hours(length, gain, fitness)\n        ),''')\nopen(p,'w').write(s)\n\np='src/trailhead/cli.py'\ns=open(p).read()\ns=s.replace(\"from trailhead.elevation import DEFAULT_THRESHOLD_M\\n\",\"from trailhead.elevation import DEFAULT_THRESHOLD_M\\nfrom trailhead.pace import DEFAULT_PACE, PACES\\n\")\ns=s.replace('''    summary.add_argument(\"--threshold\", type=float, default=DEFAULT_THRESHOLD_M)\n''','''    summary.add_argument(\"--threshold\", type=float, default=DEFAULT_THRESHOLD_M)\n    summary.add_argument(\"--pace\", choices=PACES, default=DEFAULT_PACE)\n''')\ns=s.replace('''    plan.add_argument(\"--fitness\", type=float, default=1.0)\n''','''    plan.add_argument(\"--fitness\", type=float, default=1.0)\n    plan.add_argument(\"--pace\", choices=PACES, default=DEFAULT_PACE)\n''')\ns=s.replace(\"summarise(track, args.fitness, args.threshold)\",\"summarise(track, args.fitness, args.threshold, pace=args.pace)\")\ns=s.replace(\"split_days(track, args.max_hours, args.fitness)\",\"split_days(track, args.max_hours, args.fitness, pace=args.pace)\")\nopen(p,'w').write(s)\nEOF\ngit diff --stat",
+    "sed -i 's/def leg_hours(track: Track, fitness: float = 1.0, pace: str = DEFAULT_PACE)/def leg_hours(track: Track, fitness: float = 1.0, *, pace: str = DEFAULT_PACE)/' src/trailhead/pace.py\nsed -i 's/leg_hours(track, fitness, pace)/leg_hours(track, fitness, pace=pace)/' src/trailhead/plan.py src/trailhead/report.py\ngrep -n \"leg_hours\" src -r; ruff check && ruff format --check; mypy",
+    "cat >> tests/test_pace.py <<'EOF'\n\n\ndef test_tobler_leg_hours(make_track):\n    track = make_track((0, 0, 1000), (0, 0.01, 1300), (0, 0.01, 1300), (0, 0.02, 1000))\n    climb, repeat, descent = leg_hours(track, pace=\"tobler\")\n    km = 1.11195\n    assert climb == pytest.approx(km / tobler_kmh(300 / (km * 1000)), rel=1e-4)\n    assert repeat == 0.0\n    assert descent == pytest.approx(km / tobler_kmh(-300 / (km * 1000)), rel=1e-4)\n\n\ndef test_tobler_uses_raw_elevation_and_fitness(make_track):\n    # A 2 m rise is below the ascent threshold but still steepens the leg for Tobler.\n    track = make_track((0, 0, 0), (0, 0.001, 2))\n    (hours,) = leg_hours(track, pace=\"tobler\")\n    km = track.length_km()\n    assert hours == pytest.approx(km / tobler_kmh(2 / (km * 1000)))\n    assert leg_hours(track, 2.0, pace=\"tobler\") == [pytest.approx(hours / 2)]\n\n\n@pytest.mark.parametrize(\"pace\", [\"\", \"Tobler\", \"fast\"])\ndef test_unknown_pace(make_track, pace):\n    with pytest.raises(ValueError):\n        leg_hours(make_track((0, 0, 0), (0, 0.01, 0)), pace=pace)\n\n\ndef test_tobler_rejects_bad_fitness(make_track):\n    with pytest.raises(ValueError):\n        leg_hours(make_track((0, 0, 0), (0, 0, 0)), 0, pace=\"tobler\")\nEOF\ncat >> tests/test_plan.py <<'EOF'\n\n\ndef test_tobler_days(five_flat_hours):\n    # Flat legs of 5 km at tobler_kmh(0) each; two fit in 2.5 hours.\n    leg = 5 / 5.0363\n    days = split_days(five_flat_hours, max_hours_per_day=2.5, pace=\"tobler\")\n    assert [(day, first, last) for day, first, last, _ in days] == [\n        (1, 0, 2),\n        (2, 2, 4),\n        (3, 4, 5),\n    ]\n    assert days[0][3] == pytest.approx(round(2 * leg, 2))\n\n\ndef test_unknown_pace_in_plan(five_flat_hours):\n    with pytest.raises(ValueError):\n        split_days(five_flat_hours, pace=\"scarf\")\nEOF\ncat >> tests/test_report.py <<'EOF'\n\n\ndef test_tobler_summary_sums_leg_times(make_track):\n    from trailhead.pace import leg_hours\n\n    track = make_track(*RIDGE)\n    summary = summarise(track, 1.25, pace=\"tobler\")\n    assert summary.hours == pytest.approx(sum(leg_hours(track, 1.25, pace=\"tobler\")))\n    assert summary.hours != pytest.approx(summarise(track, 1.25).hours)\n    assert summarise(track, pace=\"naismith\") == summarise(track)\n\n\ndef test_unknown_pace_in_summary(make_track):\n    with pytest.raises(ValueError):\n        summarise(make_track(*RIDGE), pace=\"naismith \")\nEOF\ncat >> tests/test_cli.py <<'EOF'\n\n\ndef test_pace_option(write_track, capsys):\n    path = str(write_track(TRACK))\n    assert main([\"summary\", path, \"--pace\", \"naismith\"]) == 0\n    naismith = capsys.readouterr().out\n    assert main([\"summary\", path]) == 0\n    assert capsys.readouterr().out == naismith\n    assert main([\"summary\", path, \"--pace\", \"tobler\"]) == 0\n    assert capsys.readouterr().out != naismith\n    assert main([\"plan\", path, \"--pace\", \"tobler\"]) == 0\n    assert capsys.readouterr().out.startswith(\"Day 1: points 0-2, \")\n\n\ndef test_unknown_pace_option(write_track):\n    import pytest\n\n    with pytest.raises(SystemExit):\n        main([\"plan\", str(write_track(TRACK)), \"--pace\", \"fast\"])\nEOF\npython -m pytest -q 2>&1 | tail -5; ruff check; ruff format --check tests src",
+    "python - <<'EOF'\np='tests/test_report.py'; s=open(p).read()\ns=s.replace(\"    from trailhead.pace import leg_hours\\n\\n\",\"\")\ns=s.replace(\"from trailhead.report import\",\"from trailhead.pace import leg_hours\\nfrom trailhead.report import\",1)\nopen(p,'w').write(s)\np='tests/test_cli.py'; s=open(p).read()\ns=s.replace(\"    import pytest\\n\\n\",\"\")\ns=\"import pytest\\n\\n\"+s\nopen(p,'w').write(s)\nEOF\nruff check && ruff format --check tests && python -m pytest -q | tail -1",
+    "python - <<'EOF'\np='README.md'; s=open(p).read()\ns=s.replace('''python -m trailhead plan rila.csv --max-hours 6 --fitness 1.2\n```''','''python -m trailhead plan rila.csv --max-hours 6 --fitness 1.2\npython -m trailhead summary rila.csv --pace tobler\n```\n\nBoth commands take `--pace {naismith,tobler}` to choose how walking time is\nestimated; the default is `naismith`.''')\ns=s.replace('''  `6 * exp(-3.5 * |grade + 0.05|)` km/h, with grade as rise over run.\n''','''  `6 * exp(-3.5 * |grade + 0.05|)` km/h, with grade as rise over run.\n- **Pace** chooses the walking-time rule. `pace.leg_hours`, `plan.split_days` and\n  `report.summarise` take a keyword argument `pace`, either `\"naismith\"` (the\n  default) or `\"tobler\"`; anything else is a `ValueError`. Under Tobler, each leg\n  takes its length divided by `tobler_kmh(grade)` hours, where grade is the leg's\n  elevation change over its horizontal length, both in metres. The elevation change\n  is the raw difference between the leg's endpoints (no threshold), so the summary's\n  `threshold` affects only ascent and descent, not Tobler time. A zero-length leg\n  takes no time, `fitness` divides the time as it does for Naismith, and the summary\n  time is the sum of the leg times, so a Tobler plan's days also add up to the\n  Tobler summary time.\n''')\ns=s.replace('''group consecutive legs into days, timing each leg\n  by Naismith's rule. A leg's climb''','''group consecutive legs into days, timing each leg\n  by the chosen pace, Naismith's rule by default. Under Naismith, a leg's climb''')\nopen(p,'w').write(s)\nEOF\ngit diff README.md | head -60",
+    "python - <<'EOF'\np='README.md'; s=open(p).read()\ns=s.replace('''  by the chosen pace, Naismith's rule by default. Under Naismith, a leg's climb is the ascent the summary's rule (with the\n  default 3 m threshold) credits to it''','''  by the chosen pace, Naismith's rule by default. Under Naismith, a leg's climb is\n  the ascent the summary's rule (with the default 3 m threshold) credits to it''')\nopen(p,'w').write(s)\nEOF\ngit stash -q && for c in \"summary\" \"plan --max-hours 0.3\"; do printf '# name: R\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1090\\n0,0.02,1050\\n' > $TMPDIR/t.csv; PYTHONPATH=src python -m trailhead $c $TMPDIR/t.csv; done > $TMPDIR/before; git stash pop -q && for c in \"summary\" \"plan --max-hours 0.3\"; do PYTHONPATH=src python -m trailhead $c $TMPDIR/t.csv; done > $TMPDIR/after; diff $TMPDIR/before $TMPDIR/after && echo SAME; PYTHONPATH=src python -m trailhead summary $TMPDIR/t.csv --pace tobler; PYTHONPATH=src python -m trailhead plan $TMPDIR/t.csv --pace bogus 2>&1 | tail -1",
+    "printf '# name: R\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1090\\n0,0.02,1050\\n' > $TMPDIR/t.csv\ngit stash -q\nPYTHONPATH=src python -m trailhead summary $TMPDIR/t.csv > $TMPDIR/before\nPYTHONPATH=src python -m trailhead plan --max-hours 0.3 $TMPDIR/t.csv >> $TMPDIR/before\ngit stash pop -q\nPYTHONPATH=src python -m trailhead summary $TMPDIR/t.csv > $TMPDIR/after\nPYTHONPATH=src python -m trailhead plan --max-hours 0.3 $TMPDIR/t.csv >> $TMPDIR/after\ndiff $TMPDIR/before $TMPDIR/after && echo SAME\nPYTHONPATH=src python -m trailhead summary $TMPDIR/t.csv --pace tobler\nPYTHONPATH=src python -m trailhead plan $TMPDIR/t.csv --pace bogus 2>&1 | tail -1\ngit status --short"
+  ],
+  "permission_denials": [
+    {
+      "command": "python - <<'EOF'\np='README.md'; s=open(p).read()\ns=s.replace('''  by the chosen pace, Naismith's rule by default. Under Naismith, a leg's climb is the ascent the summary's rule (with the\n  default 3 m threshold) credits to it''','''  by the chosen pace, Naismith's rule by default. Under Naismith, a leg's climb is\n  the ascent the summary's rule (with the default 3 m threshold) credits to it''')\nopen(p,'w').write(s)\nEOF\ngit stash -q && for c in \"summary\" \"plan --max-hours 0.3\"; do printf '# name: R\\nlat,lon,ele\\n0,0,1000\\n0,0.01,1090\\n0,0.02,1050\\n' > $TMPDIR/t.csv; PYTHONPATH=src python -m trailhead $c $TMPDIR/t.csv; done > $TMPDIR/before; git stash pop -q && for c in \"summary\" \"plan --max-hours 0.3\"; do PYTHONPATH=src python -m trailhead $c $TMPDIR/t.csv; done > $TMPDIR/after; diff $TMPDIR/before $TMPDIR/after && echo SAME; PYTHONPATH=src python -m trailhead summary $TMPDIR/t.csv --pace tobler; PYTHONPATH=src python -m trailhead plan $TMPDIR/t.csv --pace bogus 2>&1 | tail -1",
+      "description": "Check default output unchanged and try Tobler"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.10s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M README.md",
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_cli.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 154,
+    "lines_removed": 14,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M README.md",
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_cli.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 154,
+    "lines_removed": 14,
+    "own_suite_pass_as_left": true
+  }
+}

@@ -1,0 +1,7 @@
+`haversine_km` is now `distance_km` in `src/trailhead/geo.py`, and the tests pass (48 passed).
+
+- **Callers:** `src/trailhead/track.py`, `src/trailhead/report.py` and `tests/test_geo.py` all use the new name.
+- **Alias:** `haversine_km` is still importable from `trailhead.geo`. It emits a `DeprecationWarning` and returns whatever `distance_km` returns. I set `stacklevel=2` so the warning points at the caller.
+- **New test:** I added one in `tests/test_geo.py` that checks the warning is raised and the result matches `distance_km`.
+
+I haven't committed anything.

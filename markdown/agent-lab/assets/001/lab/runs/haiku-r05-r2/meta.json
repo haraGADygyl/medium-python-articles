@@ -1,0 +1,136 @@
+{
+  "run_id": "haiku-r05-r2",
+  "task": "r05",
+  "tier": "refactor/feature",
+  "baseline": false,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Add Tobler's hiking function as an alternative to Naismith's rule for walking time. Give `pace.leg_hours`, `plan.split_days` and `report.summarise` a keyword argument `pace: str = \"naismith\"` that accepts `\"naismith\"` or `\"tobler\"` (anything else is a `ValueError`), and give both CLI commands a `--pace {naismith,tobler}` option. Under Tobler, a leg takes its length divided by `tobler_kmh(grade)` hours, where grade is the leg's elevation change divided by its horizontal length (both in metres); a zero-length leg takes no time; fitness divides the time as it does for Naismith; and the summary time is the sum of the leg times. Naismith stays the default and existing output must not change. Update the README.",
+  "harness_timeout": false,
+  "wall_s": 76.3,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 22,
+  "duration_ms": 74036,
+  "duration_api_ms": 70360,
+  "api_equivalent_usd": 0.01943156,
+  "usage": {
+    "input_tokens": 24,
+    "cache_creation_input_tokens": 37637,
+    "cache_read_input_tokens": 418876,
+    "output_tokens": 15426,
+    "output_tokens_details": {
+      "thinking_tokens": 4254
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 37637,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 732,
+        "cache_read_input_tokens": 49362,
+        "cache_creation_input_tokens": 1038,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1038
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 24,
+      "outputTokens": 15426,
+      "cacheReadInputTokens": 418876,
+      "cacheCreationInputTokens": 37637,
+      "webSearchRequests": 0,
+      "costUSD": 0.01943156,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 4254,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 37637,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 9,
+    "Edit": 12
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && cat README.md 2>/dev/null | head -200",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r2/src/trailhead && cat pace.py plan.py report.py cli.py",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-r05-r2 && cat src/trailhead/elevation.py src/trailhead/geo.py src/trailhead/track.py | head -400; cat tests/test_pace.py tests/test_plan.py | head -300",
+    "cat tests/conftest.py tests/test_report.py tests/test_cli.py pyproject.toml; python -m pytest -q 2>&1 | tail -5; ruff check 2>&1 | tail -2; mypy 2>&1 | tail -2",
+    "echo placeholder",
+    "cat >> tests/test_pace.py <<'EOF'\n\n\nDESCENT_6KM = ((0, 0, 300), (0, 6 / 111.19508, 0))  # 5% down over 6 km\n\n\ndef test_tobler_leg_takes_length_over_speed(make_track):\n    # A 5% descent is Tobler's fastest slope: 6 km at 6 km/h is one hour.\n    assert leg_hours(make_track(*DESCENT_6KM), pace=\"tobler\") == pytest.approx([1.0], abs=1e-4)\n\n\ndef test_tobler_ignores_fitness_only_as_a_divisor(make_track):\n    track = make_track(*DESCENT_6KM)\n    assert leg_hours(track, fitness=2.0, pace=\"tobler\") == pytest.approx([0.5], abs=1e-4)\n\n\ndef test_tobler_zero_length_leg_takes_no_time(make_track):\n    track = make_track((0, 0, 1000), (0, 0, 1200), (0, 0.01, 1000))\n    zero, flat_ish = leg_hours(track, pace=\"tobler\")\n    assert zero == 0.0\n    assert flat_ish > 0\n\n\ndef test_pace_is_keyword_only_and_validated(make_track):\n    track = make_track(*DESCENT_6KM)\n    with pytest.raises(ValueError):\n        leg_hours(track, pace=\"garmin\")\n    with pytest.raises(ValueError):\n        leg_hours(track, 1.0, \"tobler\")  # type: ignore[misc]\n    with pytest.raises(ValueError):\n        leg_hours(track, fitness=0, pace=\"tobler\")\nEOF\ncat >> tests/test_plan.py <<'EOF'\n\n\ndef test_tobler_pace_times_the_legs(make_track):\n    track = make_track((0, 0, 300), (0, 6 / 111.19508, 0))  # 6 km at 5% down\n    assert split_days(track, pace=\"tobler\") == [(1, 0, 1, 1.0)]\n    assert split_days(track) == [(1, 0, 1, 1.2)]\n\n\ndef test_invalid_pace_in_plan(five_flat_hours):\n    with pytest.raises(ValueError):\n        split_days(five_flat_hours, pace=\"langford\")\nEOF\ncat >> tests/test_report.py <<'EOF'\n\n\ndef test_tobler_summary_time_is_the_sum_of_leg_times(make_track):\n    track = make_track((0, 0, 300), (0, 6 / 111.19508, 0))  # 6 km at 5% down\n    summary = summarise(track, pace=\"tobler\")\n    assert summary.hours == pytest.approx(1.0, abs=1e-4)\n    assert summarise(track).hours == pytest.approx(1.2, abs=1e-4)\n\n\ndef test_tobler_summary_uses_fitness(make_track):\n    track = make_track((0, 0, 300), (0, 6 / 111.19508, 0))\n    assert summarise(track, fitness=2.0, pace=\"tobler\").hours == pytest.approx(0.5, abs=1e-4)\n\n\ndef test_invalid_pace_in_summary(make_track):\n    with pytest.raises(ValueError):\n        summarise(make_track(*RIDGE), pace=\"minetti\")\nEOF\ncat >> tests/test_cli.py <<'EOF'\n\n\ndef test_pace_option_on_summary(write_track, capsys):\n    path = str(write_track(\"lat,lon,ele\\n0,0,300\\n0,0.054,0\\n\", \"down.csv\"))\n    assert main([\"summary\", path]) == 0\n    assert \"  time      1h 12m\\n\" in capsys.readouterr().out\n    assert main([\"summary\", path, \"--pace\", \"tobler\"]) == 0\n    assert \"  time      1h 00m\\n\" in capsys.readouterr().out\n\n\ndef test_pace_option_on_plan(write_track, capsys):\n    path = str(write_track(\"lat,lon,ele\\n0,0,300\\n0,0.054,0\\n\", \"down.csv\"))\n    assert main([\"plan\", path, \"--pace\", \"tobler\"]) == 0\n    assert capsys.readouterr().out == \"Day 1: points 0-1, 1h 00m\\n\"\n\n\ndef test_unknown_pace_is_rejected(write_track):\n    with pytest.raises(SystemExit):\n        main([\"plan\", str(write_track(TRACK)), \"--pace\", \"garmin\"])\nEOF\nsed -i '1i import pytest\\n' tests/test_cli.py && head -5 tests/test_cli.py && python -m pytest -q 2>&1 | tail -30; ruff check; ruff format --check src tests; mypy",
+    "python -m pytest -q 2>&1 | tail -30; ruff check; ruff format --check src tests; mypy",
+    "printf '# name: Down\\nlat,lon,ele\\n0,0,300\\n0,0.054,0\\n' > $TMPDIR/down.csv && PYTHONPATH=src python -m trailhead summary $TMPDIR/down.csv --pace tobler && PYTHONPATH=src python -m trailhead plan $TMPDIR/down.csv --pace tobler; PYTHONPATH=src python -m trailhead plan $TMPDIR/down.csv --pace garmin; echo \"exit $?\"",
+    "python -m pytest -q 2>&1 | tail -2; ruff check && mypy && git diff --stat"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.10s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M README.md",
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_cli.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 159,
+    "lines_removed": 27,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.10s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M README.md",
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_cli.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 159,
+    "lines_removed": 27,
+    "own_suite_pass_as_left": true
+  }
+}

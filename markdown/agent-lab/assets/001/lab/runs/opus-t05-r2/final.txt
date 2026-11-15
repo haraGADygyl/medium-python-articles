@@ -1,0 +1,21 @@
+I wrote `tests/test_report.py` with 47 tests. The whole suite passes (88 tests), `ruff check` reports nothing on the new file, and nothing under `src/` was changed.
+
+**What the tests cover**
+
+- **`summarise`**
+  - **Name and distance:** the name is taken from the track, and distance is great-circle length rounded to 0.1 km.
+  - **Ascent and descent:** a 1 m wobble counts for nothing, a 300 m climb in 1 m steps counts in full, a custom `threshold` is used when given, and a negative threshold raises `ValueError`.
+  - **Height and gradient:** highest and lowest points are correct. Steepest grade is in percent (18 m per 100 m gives `18.0`), counts downhill legs too, and skips repeated points.
+  - **Walking time:** follows Naismith's rule (descent adds nothing), and `fitness` divides the time. Zero or negative fitness raises `ValueError`.
+  - **Time is not rounded:** it uses the exact distance, not the rounded 2.2 km shown.
+  - **Matches the day plan:** the days from `split_days` add up to the summary's time for the same track and fitness.
+  - **Heading:** all eight compass points are checked. It goes by start and finish only, ignoring the route in between. A finish about 56 m from the start is `loop`; one about 167 m away is not.
+  - **Feet:** a track in feet loaded with `load_track` is summarised in metres, and is named after its file.
+- **`format_summary`**
+  - The exact seven-line layout.
+  - Durations from the README (`5h 07m`, `0h 45m`, `12h 00m`), plus rounding up and down to the nearest minute and 59.7 minutes rolling over to `2h 00m`.
+  - A full run from a track file through to the printed text.
+
+**Two cases I left out:**
+- **Exactly 0.1 km from the start.** The code counts this as a loop, which matches the README's "within 0.1 km". I didn't pin it down because floating-point error makes a test at exactly that distance unreliable.
+- **Exactly half a minute.** Python's `round` sends a tie to the even number, so 0.5 minutes shows as `0m` but 1.5 shows as `2m`. The README just says "nearest minute", so I didn't test either way.

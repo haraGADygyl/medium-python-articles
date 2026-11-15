@@ -1,0 +1,135 @@
+{
+  "run_id": "haiku-h04-r1",
+  "task": "h04",
+  "tier": "two-file bug",
+  "baseline": false,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"`trailhead summary` shows `time 0h 44m` for a flat 3.74 km walk. By Naismith's rule that is 44.9 minutes, and the README says times are rounded to the nearest minute.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 42.8,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 16,
+  "duration_ms": 40026,
+  "duration_api_ms": 36796,
+  "api_equivalent_usd": 0.011199550000000003,
+  "usage": {
+    "input_tokens": 22,
+    "cache_creation_input_tokens": 24354,
+    "cache_read_input_tokens": 316705,
+    "output_tokens": 6319,
+    "output_tokens_details": {
+      "thinking_tokens": 1184
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 24354,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 375,
+        "cache_read_input_tokens": 36560,
+        "cache_creation_input_tokens": 557,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 557
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 22,
+      "outputTokens": 6319,
+      "cacheReadInputTokens": 316705,
+      "cacheCreationInputTokens": 24354,
+      "webSearchRequests": 0,
+      "costUSD": 0.011199550000000003,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 1184,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 24354,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 9,
+    "Edit": 6
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && cat README.md 2>/dev/null | head -100",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h04-r1/src/trailhead && cat -n pace.py report.py && grep -n \"def \\|minute\\|hours\\|fmt\\|format\" cli.py | head -60",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/haiku-h04-r1 && grep -rn \"int(\\|divmod\\|:02d\\|round(\" src/ && grep -rn \"h \\|format\\|time\" tests/test_report.py tests/test_cli.py tests/test_plan.py | head -40",
+    "sed -n 1,12p src/trailhead/plan.py && sed -n 30,40p src/trailhead/plan.py && python -m pytest -q 2>&1 | tail -3",
+    "cat tests/conftest.py tests/test_pace.py && sed -n 1,30p tests/test_report.py",
+    "python - <<'EOF'\nimport re\np='tests/test_pace.py'\ns=open(p).read()\ns=s.replace(\"from trailhead.pace import leg_hours, naismith_hours, tobler_kmh\",\n\"from trailhead.pace import format_duration, leg_hours, naismith_hours, tobler_kmh\")\ns+='''\n\n@pytest.mark.parametrize(\n    (\"hours\", \"text\"),\n    [\n        (44.9 / 60, \"0h 45m\"),\n        (44.4 / 60, \"0h 44m\"),\n        (59.6 / 60, \"1h 00m\"),\n        (5 + 7.2 / 60, \"5h 07m\"),\n        (12.0, \"12h 00m\"),\n    ],\n)\ndef test_format_duration_rounds_to_nearest_minute(hours, text):\n    assert format_duration(hours) == text\n'''\nopen(p,'w').write(s)\n\np='tests/test_report.py'\ns=open(p).read()\ns+='''\n\ndef test_flat_walk_time_is_rounded_not_truncated(make_track):\n    # 3.74 km on the flat is 44.88 minutes by Naismith's rule: shown as 45m.\n    track = make_track((0, 0, 100), (0, 0.0336, 100), name=\"Flat\")\n    summary = summarise(track)\n    assert summary.length_km == 3.7\n    assert summary.hours * 60 == pytest.approx(44.9, abs=0.05)\n    assert \"  time      0h 45m\" in format_summary(summary).splitlines()\n'''\nopen(p,'w').write(s)\n\np='tests/test_plan.py'\nEOF\nsed -n 1,45p tests/test_plan.py",
+    "python - <<'EOF'\np='tests/test_report.py'\ns=open(p).read()\ns=s.replace('''    track = make_track((0, 0, 100), (0, 0.0336, 100), name=\"Flat\")\n    summary = summarise(track)\n    assert summary.length_km == 3.7\n    assert summary.hours * 60 == pytest.approx(44.9, abs=0.05)\n''','''    # One degree of longitude on the equator is about 111.195 km.\n    track = make_track((0, 0, 100), (0, 3.74 / 111.19508, 100), name=\"Flat\")\n    summary = summarise(track)\n    assert summary.length_km == 3.7\n    assert summary.hours * 60 == pytest.approx(44.88, abs=0.02)\n''')\nopen(p,'w').write(s)\np='tests/test_plan.py'\ns=open(p).read()\ns+='''\n\ndef test_describe_plan_rounds_to_nearest_minute():\n    assert describe_plan([(1, 0, 3, 44.9 / 60), (2, 3, 5, 59.6 / 60)]) == [\n        \"Day 1: points 0-3, 0h 45m\",\n        \"Day 2: points 3-5, 1h 00m\",\n    ]\n'''\nopen(p,'w').write(s)\nEOF\npython -m pytest -q 2>&1 | tail -15; ruff check 2>&1 | tail -3; mypy 2>&1 | tail -2; python -m trailhead summary tests/../README.md 2>&1 | tail -1",
+    "d=$(mktemp -d) && python3 -c \"\ns=3.74/111.19508\nprint('lat,lon,ele')\nprint('0,0,100')\nprint('0,%.9f,100' % s)\" > $d/flat.csv && PYTHONPATH=src python -m trailhead summary $d/flat.csv && git diff --stat",
+    "mkdir -p \"$TMPDIR/flat\" && python3 -c \"\ns=3.74/111.19508\nprint('lat,lon,ele')\nprint('0,0,100')\nprint('0,%.9f,100' % s)\" > \"$TMPDIR/flat/flat.csv\" && PYTHONPATH=src python -m trailhead summary \"$TMPDIR/flat/flat.csv\" && git diff --stat -- src tests"
+  ],
+  "permission_denials": [
+    {
+      "command": "d=$(mktemp -d) && python3 -c \"\ns=3.74/111.19508\nprint('lat,lon,ele')\nprint('0,0,100')\nprint('0,%.9f,100' % s)\" > $d/flat.csv && PYTHONPATH=src python -m trailhead summary $d/flat.csv && git diff --stat",
+      "description": "Run CLI on flat 3.74 km track and show diff stat"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 46,
+    "lines_removed": 7,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.10s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 46,
+    "lines_removed": 7,
+    "own_suite_pass_as_left": true
+  }
+}

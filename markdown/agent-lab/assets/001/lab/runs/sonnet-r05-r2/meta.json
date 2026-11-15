@@ -1,0 +1,134 @@
+{
+  "run_id": "sonnet-r05-r2",
+  "task": "r05",
+  "tier": "refactor/feature",
+  "baseline": false,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "sonnet",
+  "prompt": "Add Tobler's hiking function as an alternative to Naismith's rule for walking time. Give `pace.leg_hours`, `plan.split_days` and `report.summarise` a keyword argument `pace: str = \"naismith\"` that accepts `\"naismith\"` or `\"tobler\"` (anything else is a `ValueError`), and give both CLI commands a `--pace {naismith,tobler}` option. Under Tobler, a leg takes its length divided by `tobler_kmh(grade)` hours, where grade is the leg's elevation change divided by its horizontal length (both in metres); a zero-length leg takes no time; fitness divides the time as it does for Naismith; and the summary time is the sum of the leg times. Naismith stays the default and existing output must not change. Update the README.",
+  "harness_timeout": false,
+  "wall_s": 45.3,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 8,
+  "duration_ms": 43088,
+  "duration_api_ms": 41059,
+  "api_equivalent_usd": 0.16285219999999997,
+  "usage": {
+    "input_tokens": 16,
+    "cache_creation_input_tokens": 21127,
+    "cache_read_input_tokens": 215222,
+    "output_tokens": 5679,
+    "output_tokens_details": {
+      "thinking_tokens": 412
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 21127,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 583,
+        "cache_read_input_tokens": 33362,
+        "cache_creation_input_tokens": 528,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 528
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 16,
+      "outputTokens": 5679,
+      "cacheReadInputTokens": 215222,
+      "cacheCreationInputTokens": 21127,
+      "webSearchRequests": 0,
+      "costUSD": 0.16285219999999997,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 412,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 21127,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 7
+  },
+  "bash_commands": [
+    "git ls-files; cat README.md; cat */pace.py */plan.py */report.py */cli.py 2>/dev/null || true",
+    "cd src/trailhead; cat pace.py plan.py report.py cli.py elevation.py; sed -n 1,40p geo.py",
+    "cd /tmp/claude-1000/-home-manushev-GitHub-python-articles-writer/c00e7a54-fe2c-45eb-bf41-847a467f2d01/scratchpad/work/sonnet-r05-r2 && python - <<'EOF'\nimport re\np='src/trailhead/pace.py'\ns=open(p).read()\ni=s.index('def leg_hours')\ns=s[:i]+'''PACES = (\"naismith\", \"tobler\")\n\n\ndef check_pace(pace: str) -> None:\n    \"\"\"Raise ``ValueError`` unless ``pace`` is ``\"naismith\"`` or ``\"tobler\"``.\"\"\"\n    if pace not in PACES:\n        raise ValueError(f\"pace must be one of {', '.join(PACES)}, not {pace!r}\")\n\n\ndef leg_hours(track: Track, fitness: float = 1.0, pace: str = \"naismith\") -> list[float]:\n    \"\"\"Walking time for every leg, by Naismith's rule or Tobler's hiking function.\n\n    Under Naismith, a leg's climb is the ascent the summary's rule credits to it\n    (`elevation.counted_changes` with the default threshold), so the legs of a\n    track add up to its summary time. Under Tobler, a leg takes its length over\n    ``tobler_kmh`` of its grade (elevation change over horizontal length); a\n    zero-length leg takes no time. ``fitness`` divides the time in both.\n    \"\"\"\n    check_pace(pace)\n    if pace == \"tobler\":\n        if fitness <= 0:\n            raise ValueError(\"fitness must be positive\")\n        hours: list[float] = []\n        for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):\n            if km == 0:\n                hours.append(0.0)\n            else:\n                grade = (b.ele - a.ele) / (km * 1000)\n                hours.append(km / tobler_kmh(grade) / fitness)\n        return hours\n    climbs = [max(change, 0.0) for change in counted_changes([p.ele for p in track.points])]\n    return [\n        naismith_hours(km, climb, fitness)\n        for km, climb in zip(track.leg_lengths_km(), climbs, strict=True)\n    ]\n'''\ns=s.replace('from math import exp\\n','from itertools import pairwise\\nfrom math import exp\\n')\nopen(p,'w').write(s)\n\np='src/trailhead/plan.py'\ns=open(p).read()\ns=s.replace('''    track: Track, max_hours_per_day: float = DEFAULT_MAX_HOURS, fitness: float = 1.0\n)''','''    track: Track,\n    max_hours_per_day: float = DEFAULT_MAX_HOURS,\n    fitness: float = 1.0,\n    pace: str = \"naismith\",\n)''')\ns=s.replace('leg_hours(track, fitness)','leg_hours(track, fitness, pace)')\ns=s.replace('''    ``max_hours_per_day`` unless a single leg on its own does.\n''','''    ``max_hours_per_day`` unless a single leg on its own does. ``pace`` is\n    ``\"naismith\"`` or ``\"tobler\"``.\n''')\ns=s.replace('''        raise ValueError(\"max_hours_per_day must be positive\")\n''','''        raise ValueError(\"max_hours_per_day must be positive\")\n    check_pace(pace)\n''')\ns=s.replace('import leg_hours','import check_pace, leg_hours')\nopen(p,'w').write(s)\n\np='src/trailhead/report.py'\ns=open(p).read()\ns=s.replace('import naismith_hours','import check_pace, leg_hours, naismith_hours')\ns=s.replace('''    track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M\n) -> Summary:\n''','''    track: Track,\n    fitness: float = 1.0,\n    threshold: float = DEFAULT_THRESHOLD_M,\n    pace: str = \"naismith\",\n) -> Summary:\n    check_pace(pace)\n''')\ns=s.replace('''    length = track.length_km()\n''','''    length = track.length_km()\n    if pace == \"tobler\":\n        hours = sum(leg_hours(track, fitness, pace))\n    else:\n        hours = naismith_hours(length, gain, fitness)\n''')\ns=s.replace('hours=naismith_hours(length, gain, fitness),','hours=hours,')\nopen(p,'w').write(s)\n\np='src/trailhead/cli.py'\ns=open(p).read()\ns=s.replace('from trailhead.plan','from trailhead.pace import PACES\\nfrom trailhead.plan')\ns=s.replace('''    summary.add_argument(\"--threshold\", type=float, default=DEFAULT_THRESHOLD_M)\n''','''    summary.add_argument(\"--threshold\", type=float, default=DEFAULT_THRESHOLD_M)\n    summary.add_argument(\"--pace\", choices=PACES, default=\"naismith\")\n''')\ns=s.replace('''    plan.add_argument(\"--fitness\", type=float, default=1.0)\n''','''    plan.add_argument(\"--fitness\", type=float, default=1.0)\n    plan.add_argument(\"--pace\", choices=PACES, default=\"naismith\")\n''')\ns=s.replace('summarise(track, args.fitness, args.threshold)','summarise(track, args.fitness, args.threshold, args.pace)')\ns=s.replace('split_days(track, args.max_hours, args.fitness)','split_days(track, args.max_hours, args.fitness, args.pace)')\nopen(p,'w').write(s)\n\np='README.md'\ns=open(p).read()\ns=s.replace('''--fitness 1.2\n```''','''--fitness 1.2\npython -m trailhead summary rila.csv --pace tobler\n```''')\ns=s.replace('''- **Tobler's hiking function** (`pace.tobler_kmh`) gives speed on a slope as\n  `6 * exp(-3.5 * |grade + 0.05|)` km/h, with grade as rise over run.\n''','''- **Tobler's hiking function** (`pace.tobler_kmh`) gives speed on a slope as\n  `6 * exp(-3.5 * |grade + 0.05|)` km/h, with grade as rise over run.\n- **Choosing the pace**: `pace.leg_hours`, `plan.split_days` and `report.summarise`\n  take `pace=\"naismith\"` (the default) or `pace=\"tobler\"`; anything else is a\n  `ValueError`. Both CLI commands take `--pace {naismith,tobler}`. Under Tobler a leg\n  takes its length divided by `tobler_kmh(grade)` hours, where grade is the leg's\n  elevation change (point to point, no jitter threshold) over its horizontal length,\n  both in metres; a zero-length leg takes no time. `fitness` divides the time as it\n  does for Naismith, and the summary time is the sum of the leg times.\n''')\ns=s.replace('timing each leg\\n  by Naismith\\'s rule.','timing each leg\\n  by Naismith\\'s rule (or Tobler\\'s with `pace=\"tobler\"`).')\nopen(p,'w').write(s)\nEOF\npython -m pytest -q 2>&1|tail -3; ruff check; mypy 2>&1|tail -2; git diff --stat",
+    "cat tests/conftest.py | head -30; printf '# name: t\\nlat,lon,ele\\n42,23,100\\n42.01,23,160\\n42.01,23,160\\n42.02,23,100\\n' > $TMPDIR/t.csv; python -m trailhead summary $TMPDIR/t.csv --pace tobler; python -m trailhead plan $TMPDIR/t.csv --pace tobler --max-hours 1; python -m trailhead summary $TMPDIR/t.csv",
+    "export PYTHONPATH=src; for a in \"summary --pace tobler\" \"plan --pace tobler --max-hours 1\" \"summary\"; do python -m trailhead ${a%% *} $TMPDIR/t.csv ${a#* }; done\ncat >> tests/test_pace.py <<'EOF'\n\n\ndef test_tobler_leg_hours(make_track):\n    from math import isclose\n\n    from trailhead.pace import leg_hours, tobler_kmh\n\n    track = make_track((42, 23, 100), (42.01, 23, 160), (42.01, 23, 160))\n    km = track.leg_lengths_km()[0]\n    expected = km / tobler_kmh(60 / (km * 1000))\n    hours = leg_hours(track, 2.0, \"tobler\")\n    assert isclose(hours[0], expected / 2)\n    assert hours[1] == 0.0\n\n\ndef test_unknown_pace_rejected(make_track):\n    import pytest\n\n    from trailhead.pace import leg_hours\n    from trailhead.plan import split_days\n    from trailhead.report import summarise\n\n    track = make_track((42, 23, 100), (42.01, 23, 160))\n    for call in (leg_hours, split_days, summarise):\n        with pytest.raises(ValueError):\n            call(track, pace=\"fast\")\nEOF\npython -m pytest -q 2>&1|tail -2; ruff check",
+    "export PYTHONPATH=src\npython -m trailhead summary $TMPDIR/t.csv --pace tobler\npython -m trailhead plan $TMPDIR/t.csv --pace tobler --max-hours 1\npython -m trailhead summary $TMPDIR/t.csv\ncat >> tests/test_pace.py <<'EOF'\n\n\ndef test_tobler_leg_hours(make_track):\n    from math import isclose\n\n    from trailhead.pace import leg_hours, tobler_kmh\n\n    track = make_track((42, 23, 100), (42.01, 23, 160), (42.01, 23, 160))\n    km = track.leg_lengths_km()[0]\n    expected = km / tobler_kmh(60 / (km * 1000))\n    hours = leg_hours(track, 2.0, \"tobler\")\n    assert isclose(hours[0], expected / 2)\n    assert hours[1] == 0.0\n\n\ndef test_unknown_pace_rejected(make_track):\n    import pytest\n\n    from trailhead.pace import leg_hours\n    from trailhead.plan import split_days\n    from trailhead.report import summarise\n\n    track = make_track((42, 23, 100), (42.01, 23, 160))\n    for call in (leg_hours, split_days, summarise):\n        with pytest.raises(ValueError):\n            call(track, pace=\"fast\")\nEOF\npython -m pytest -q 2>&1 | tail -2; ruff check",
+    "cat >> tests/test_pace.py <<'EOF'\n\n\ndef test_tobler_leg_hours(make_track):\n    from math import isclose\n\n    from trailhead.pace import leg_hours, tobler_kmh\n\n    track = make_track((42, 23, 100), (42.01, 23, 160), (42.01, 23, 160))\n    km = track.leg_lengths_km()[0]\n    expected = km / tobler_kmh(60 / (km * 1000))\n    hours = leg_hours(track, 2.0, \"tobler\")\n    assert isclose(hours[0], expected / 2)\n    assert hours[1] == 0.0\n\n\ndef test_unknown_pace_rejected(make_track):\n    import pytest\n\n    from trailhead.pace import leg_hours\n    from trailhead.plan import split_days\n    from trailhead.report import summarise\n\n    track = make_track((42, 23, 100), (42.01, 23, 160))\n    for call in (leg_hours, split_days, summarise):\n        with pytest.raises(ValueError):\n            call(track, pace=\"fast\")\nEOF\npython -m pytest -q 2>&1 | tail -2; ruff check"
+  ],
+  "permission_denials": [
+    {
+      "command": "export PYTHONPATH=src; for a in \"summary --pace tobler\" \"plan --pace tobler --max-hours 1\" \"summary\"; do python -m trailhead ${a%% *} $TMPDIR/t.csv ${a#* }; done\ncat >> tests/test_pace.py <<'EOF'\n\n\ndef test_tobler_leg_hours(make_track):\n    from math import isclose\n\n    from trailhead.pace import leg_hours, tobler_kmh\n\n    track = make_track((42, 23, 100), (42.01, 23, 160), (42.01, 23, 160))\n    km = track.leg_lengths_km()[0]\n    expected = km / tobler_kmh(60 / (km * 1000))\n    hours = leg_hours(track, 2.0, \"tobler\")\n    assert isclose(hours[0], expected / 2)\n    assert hours[1] == 0.0\n\n\ndef test_unknown_pace_rejected(make_track):\n    import pytest\n\n    from trailhead.pace import leg_hours\n    from trailhead.plan import split_days\n    from trailhead.report import summarise\n\n    track = make_track((42, 23, 100), (42.01, 23, 160))\n    for call in (leg_hours, split_days, summarise):\n        with pytest.raises(ValueError):\n            call(track, pace=\"fast\")\nEOF\npython -m pytest -q 2>&1|tail -2; ruff check"
+    },
+    {
+      "command": "export PYTHONPATH=src\npython -m trailhead summary $TMPDIR/t.csv --pace tobler\npython -m trailhead plan $TMPDIR/t.csv --pace tobler --max-hours 1\npython -m trailhead summary $TMPDIR/t.csv\ncat >> tests/test_pace.py <<'EOF'\n\n\ndef test_tobler_leg_hours(make_track):\n    from math import isclose\n\n    from trailhead.pace import leg_hours, tobler_kmh\n\n    track = make_track((42, 23, 100), (42.01, 23, 160), (42.01, 23, 160))\n    km = track.leg_lengths_km()[0]\n    expected = km / tobler_kmh(60 / (km * 1000))\n    hours = leg_hours(track, 2.0, \"tobler\")\n    assert isclose(hours[0], expected / 2)\n    assert hours[1] == 0.0\n\n\ndef test_unknown_pace_rejected(make_track):\n    import pytest\n\n    from trailhead.pace import leg_hours\n    from trailhead.plan import split_days\n    from trailhead.report import summarise\n\n    track = make_track((42, 23, 100), (42.01, 23, 160))\n    for call in (leg_hours, split_days, summarise):\n        with pytest.raises(ValueError):\n            call(track, pace=\"fast\")\nEOF\npython -m pytest -q 2>&1 | tail -2; ruff check"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.10s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M README.md",
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_pace.py"
+    ],
+    "lines_added": 88,
+    "lines_removed": 14,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".........................................................                [100%]\n57 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M README.md",
+      "M src/trailhead/cli.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_pace.py"
+    ],
+    "lines_added": 88,
+    "lines_removed": 14,
+    "own_suite_pass_as_left": true
+  }
+}

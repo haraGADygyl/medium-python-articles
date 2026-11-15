@@ -1,0 +1,13 @@
+`trailhead plan` now adds up to the same time as `trailhead summary`. All 48 tests pass, including a new one for this case.
+
+**Cause:** `pace.leg_hours`, which `plan` uses, counted each leg's raw climb (`max(b.ele - a.ele, 0)`). On a noisy track every 2 m jitter upward counted as ascent. `summary` uses the thresholded ascent from `elevation.counted_changes` (3 m by default), which ignores that noise. The README says the plan's per-leg climb should be what the summary's rule credits to that leg, and the code didn't do that. That is why the plan came out at 9h 40m against 7h 05m.
+
+**Fix:**
+- **`src/trailhead/pace.py`:** `leg_hours` now takes the per-leg climb from `counted_changes`, so the legs sum to the summary's ascent. It also takes a `threshold` argument that defaults to 3 m.
+- **`src/trailhead/plan.py`:** `split_days` accepts `threshold` and passes it to `leg_hours`.
+- **`src/trailhead/cli.py`:** I added `--threshold` to `plan`, matching the option `summary` already had. Without it, someone running `summary --threshold 5` couldn't get a matching plan.
+- **`tests/test_plan.py`:** the new test builds a jittery track and checks the plan's hours match `summarise(track).hours`.
+
+The plan rounds each day to 0.01 h, so on a long multi-day track the two totals can differ by a few hundredths of an hour.
+
+I didn't commit anything.

@@ -1,0 +1,119 @@
+{
+  "run_id": "fable-l01-r1",
+  "task": "l01",
+  "tier": "lint",
+  "baseline": true,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "`ruff check` reports problems in `src/`. Fix them so that `ruff check` passes, without changing the ruff configuration and without `noqa` comments.",
+  "harness_timeout": false,
+  "wall_s": 22.1,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 4,
+  "duration_ms": 20015,
+  "duration_api_ms": 19252,
+  "api_equivalent_usd": 0.3020346,
+  "usage": {
+    "input_tokens": 8,
+    "cache_creation_input_tokens": 14989,
+    "cache_read_input_tokens": 87333,
+    "output_tokens": 1117,
+    "output_tokens_details": {
+      "thinking_tokens": 75
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 14989,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 287,
+        "cache_read_input_tokens": 27109,
+        "cache_creation_input_tokens": 643,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 643
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 8,
+      "outputTokens": 1117,
+      "cacheReadInputTokens": 87333,
+      "cacheCreationInputTokens": 14989,
+      "webSearchRequests": 0,
+      "costUSD": 0.3020346,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 75,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 14989,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 3
+  },
+  "bash_commands": [
+    "ruff check; git ls-files",
+    "cat src/trailhead/pace.py; sed -n 55,90p src/trailhead/track.py; cat tests/test_pace.py; grep -n -i \"fitness\" -r README.md src tests | grep -v \"^src/trailhead/pace.py\"",
+    "python - <<'E'\nimport re,pathlib\np=pathlib.Path('src/trailhead/pace.py');s=p.read_text()\ns=s.replace(\"\"\"    hours = (distance_km / FLAT_SPEED_KMH + ascent_m / CLIMB_M_PER_HOUR) / fitness\n    return distance_km / FLAT_SPEED_KMH + ascent_m / CLIMB_M_PER_HOUR\n\"\"\",\"\"\"    return (distance_km / FLAT_SPEED_KMH + ascent_m / CLIMB_M_PER_HOUR) / fitness\n\"\"\");p.write_text(s)\np=pathlib.Path('src/trailhead/track.py');s=p.read_text()\ns=s.replace(\"from trailhead.geo import haversine_km\\nimport os\\n\",\"from trailhead.geo import haversine_km\\n\")\ns=s.replace(\"\"\"    except:\n        raise TrackError(f\"line {number}: not a number\")\"\"\",\"\"\"    except ValueError as err:\n        raise TrackError(f\"line {number}: not a number\") from err\"\"\");p.write_text(s)\nE\ngrep -n \"os\\.\" src/trailhead/track.py; ruff check; python -m pytest -q 2>&1 | tail -15; git diff --stat"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {
+      "ruff": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/track.py"
+    ],
+    "lines_added": 3,
+    "lines_removed": 5,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {
+      "ruff": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/track.py"
+    ],
+    "lines_added": 3,
+    "lines_removed": 5,
+    "own_suite_pass_as_left": true
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "run_id": "fable-b05-r2",
+  "task": "b05",
+  "tier": "bug",
+  "baseline": false,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "Bug report from a user: \"My GPS app writes the `# units: ft` line at the end of the file, after the points. trailhead then reports a highest point of 14115 m for a hike that tops out at 14,115 ft (about 4302 m). The file is attached as `pikes-peak.csv`.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 25.1,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 4,
+  "duration_ms": 22771,
+  "duration_api_ms": 21173,
+  "api_equivalent_usd": 0.3776024,
+  "usage": {
+    "input_tokens": 8,
+    "cache_creation_input_tokens": 18759,
+    "cache_read_input_tokens": 95172,
+    "output_tokens": 1459,
+    "output_tokens_details": {
+      "thinking_tokens": 129
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 18759,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 295,
+        "cache_read_input_tokens": 30540,
+        "cache_creation_input_tokens": 982,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 982
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 8,
+      "outputTokens": 1459,
+      "cacheReadInputTokens": 95172,
+      "cacheCreationInputTokens": 18759,
+      "webSearchRequests": 0,
+      "costUSD": 0.3776024,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 129,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 18759,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 3
+  },
+  "bash_commands": [
+    "git ls-files; echo ---; cat pikes-peak.csv 2>/dev/null | head -30; echo ---; cat $(git ls-files | grep -E '\\.py$' | grep -v test)",
+    "cat README.md; grep -n -i \"unit\\|ft\" -r tests | head -40",
+    "python - <<'EOF'\nimport re,pathlib\np=pathlib.Path('src/trailhead/track.py'); s=p.read_text()\ns=s.replace('''        points.append(_parse_point(line, number, scale))\n    if len(points) < 2:\n        raise TrackError(\"a track needs at least two points\")\n    return Track(name, points)''','''        points.append(_parse_point(line, number))\n    if len(points) < 2:\n        raise TrackError(\"a track needs at least two points\")\n    # Settings apply to the whole track wherever they appear, so the units are\n    # only known once every line has been read.\n    if scale != 1.0:\n        points = [Point(p.lat, p.lon, p.ele * scale) for p in points]\n    return Track(name, points)''')\ns=s.replace(\"def _parse_point(line: str, number: int, scale: float) -> Point:\",\"def _parse_point(line: str, number: int) -> Point:\")\ns=s.replace(\"    return Point(lat, lon, ele * scale)\",\"    return Point(lat, lon, ele)\")\np.write_text(s)\np=pathlib.Path('tests/test_track.py'); s=p.read_text()\ns+='''\n\ndef test_units_line_after_the_points_applies_to_the_whole_track():\n    track = parse_track(\"lat,lon,ele\\\\n0,0,1000\\\\n0,0.01,2000\\\\n# units: ft\\\\n\")\n    assert [point.ele for point in track.points] == pytest.approx([304.8, 609.6])\n\n\ndef test_units_line_between_points_applies_to_the_whole_track():\n    track = parse_track(\"lat,lon,ele\\\\n0,0,1000\\\\n# units: ft\\\\n0,0.01,2000\\\\n\")\n    assert [point.ele for point in track.points] == pytest.approx([304.8, 609.6])\n'''\np.write_text(s)\nEOF\ngrep -n \"^import\\|^from\" tests/test_track.py; python -m pytest -q 2>&1 | tail -5; PYTHONPATH=src python -m trailhead summary pikes-peak.csv; ruff check; mypy 2>&1 | tail -2"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".....................................................                    [100%]\n53 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 17,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".....................................................                    [100%]\n53 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 17,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  }
+}

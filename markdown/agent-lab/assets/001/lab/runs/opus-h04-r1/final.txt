@@ -1,0 +1,11 @@
+Fixed. A flat 3.74 km track now shows `time 0h 45m`; before the fix it showed `0h 44m`.
+
+**Cause:** `format_summary` in `src/trailhead/report.py` turned hours into minutes with `int(summary.hours * 60)`. `int()` cuts off the decimals instead of rounding, so 44.88 minutes became 44. `describe_plan` in `src/trailhead/plan.py` had the same bug, so the per-day times from the `plan` command were also up to a minute short.
+
+**Fix:**
+- I added a shared `format_duration(hours)` to `src/trailhead/pace.py`. It rounds to the nearest minute, with exact halves rounding up, and outputs `<h>h <mm>m`. Both the summary and the plan output now use it, so they can't drift apart again.
+- When rounding pushes the minutes to 60, it carries into the hour: 59.5 minutes becomes `1h 00m`, not `0h 60m`.
+
+**Tests:** I added a parametrized test in `tests/test_pace.py` covering the reported case (44.88 min → `0h 45m`), the README examples (`5h 07m`, `0h 45m`, `12h 00m`), zero, and the carry into the hour. All 54 tests pass. Running the `summary` command on a flat 3.74 km track gave `0h 44m` before the change and `0h 45m` after.
+
+The working tree also has some untracked files I didn't create (`.bashrc`, `.zshrc`, `.gitconfig`, `.claude/`, `.idea`, `.vscode` and others), probably from the environment setup. I didn't touch them, and nothing is committed.

@@ -1,0 +1,9 @@
+`mypy` now passes with no ignores, casts, `Any` or config changes; `ruff check` and the 48 existing tests pass too.
+
+All eight errors had one cause: `Point.ele` is `float | None` (the GPS can lose elevation), but the ascent, highest/lowest, steepest-grade and walking-time code used it as a plain `float`. A track with an empty elevation would have crashed at runtime.
+
+The fix is a new `Track.elevations()` method in `src/trailhead/track.py` that fills the gaps the way the README specifies: a point without an elevation takes the nearest earlier one, or the nearest later one if there is none. `elevation.py`, `pace.py` and `report.py` now call it instead of reading `point.ele` directly.
+
+Decision for you: the README doesn't say what happens when a track has no elevations at all. I made that a `TrackError` ("the track has no elevations") and widened the `try` in `cli.py` so it prints the message and exits 1 instead of a traceback. The alternative is to treat such a track as flat, which keeps distance and time working but would print an invented "altitude 0-0 m" — say if you'd prefer that.
+
+I added no tests for the gap-filling or the no-elevation case; I only ran a track with gaps and one with no elevations through the CLI by hand, and both behaved as described.

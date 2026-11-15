@@ -1,0 +1,9 @@
+The bug was that the duration formatting truncated minutes instead of rounding them. `format_summary` in `src/trailhead/report.py:58` used `int(summary.hours * 60)`, which drops the fraction. 44.9 minutes therefore showed as `44m` instead of `45m`.
+
+`describe_plan` in `src/trailhead/plan.py:35` had the same `int(hours * 60)` truncation, so `trailhead plan` had the same bug. I fixed both by changing `int(...)` to `round(...)`, which matches the README ("rounded to the nearest minute").
+
+Rounding is applied to total minutes before the hours/minutes split. A value like 59.6 minutes now becomes `1h 00m` rather than `0h 60m`.
+
+The existing 47 tests pass. I didn't add a regression test for the 44.9-minute case.
+
+`round()` in Python rounds exact halves to the nearest even minute, so 30.5 minutes shows as `30m` and 31.5 as `32m`. That is unlikely to matter here, but say so if you want half-up rounding.

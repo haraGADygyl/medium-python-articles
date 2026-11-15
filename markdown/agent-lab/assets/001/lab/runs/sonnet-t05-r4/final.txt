@@ -1,0 +1,22 @@
+I've written `tests/test_report.py` with 38 tests. All of them pass and `ruff check` is clean. I didn't touch anything under `src/`.
+
+The tests cover:
+- **`summarise`:**
+  - Basic fields come out right.
+  - Time follows Naismith's rule and uses the unrounded length.
+  - `fitness` divides the time, and bad fitness values are rejected.
+  - The ascent threshold is applied.
+  - Gradients are in percent, and feet tracks are reported in metres.
+- **Heading:**
+  - All eight compass points.
+  - The heading is start to finish, not along the route.
+  - `loop` applies when the finish is within 0.1 km of the start, with cases just inside and just outside that radius.
+- **`format_summary`:**
+  - The full layout.
+  - Durations such as `5h 07m`, `0h 45m` and `12h 00m`, plus rounding across the hour boundary.
+  - The `loop` heading line.
+- **Other checks:** `Summary` is frozen, and there is one end-to-end `summarise` then `format_summary` test.
+
+Every test passed on the first run, so I found no bugs in `report.py`.
+
+`git status` also shows untracked dotfiles in the working directory (`.bashrc`, `.claude/` and so on). They were already there and aren't from me.

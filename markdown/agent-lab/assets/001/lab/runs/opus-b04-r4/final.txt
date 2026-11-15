@@ -1,0 +1,12 @@
+Fixed. The Garmin file begins with a UTF-8 byte-order mark (BOM), the three bytes `EF BB BF`, before `lat,lon,ele`. Editors hide it, which is why the first line looks right.
+
+**Cause:** `load_track` decodes the file as plain UTF-8, so the BOM stays in the text as the character `\ufeff`. `str.strip()` doesn't remove it because it isn't whitespace. So the parser saw the first column as `"\ufefflat"`, and that failed the header check. The file also uses Windows (CRLF) line endings, but those were already handled correctly.
+
+**Fix** (`src/trailhead/track.py`): `parse_track` now drops a leading BOM with `text.removeprefix("\ufeff")` before splitting the text into lines. I put the fix in the parser rather than in the file read, so it works for any caller that passes in text, not just `load_track`.
+
+**Verification:**
+- I added `test_byte_order_mark_and_crlf_are_accepted` to `tests/test_track.py`. It fails against the old code and passes with the fix.
+- The full test suite passes (48 tests).
+- `garmin-export.csv` now loads: 4 points, 0.648 km.
+
+Unrelated: `git status` lists untracked dotfiles in the repo root (`.bashrc`, `.gitconfig`, `.idea`, `.vscode`, etc.). I didn't create them; they look like leftovers from the sandbox environment. I left them alone, so check them before you commit.

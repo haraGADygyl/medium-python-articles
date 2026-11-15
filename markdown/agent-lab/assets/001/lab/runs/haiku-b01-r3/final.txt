@@ -1,0 +1,11 @@
+The bug is fixed and a regression test covers it. `trailhead summary` should now report the full climb for steady tracks.
+
+**Cause:** In `counted_changes` (`src/trailhead/elevation.py`), the loop reset `reference = elevation` on every leg, including legs that counted nothing. So the 3 m threshold was measured from the previous GPS point rather than the last counted elevation, as the docstring describes. A climb of 1 m per point never reached 3 m in any single step, so it counted as 0 m. Tracks with bigger gaps between points cross the threshold within one step, which is why they looked correct.
+
+**Fix:** I removed the unconditional reset. The reference now only moves when a change is counted, so small steps accumulate until they reach the threshold.
+
+**Test:** `test_long_climb_in_small_steps_is_counted` in `tests/test_elevation.py` builds a 100-point climb of 1 m per step and expects 99.0 m of gain. It fails on the old code and passes with the fix. The full suite passes (47 tests).
+
+Two things to know:
+- The same `counted_changes` function feeds the per-leg climb used by the Naismith time estimate in `pace.py`, so planned times for steady climbs will also go up. That's the intended correction, but it's a visible change.
+- `git status` shows several untracked dotfiles (`.bashrc`, `.zshrc`, `.claude/`, and others) in the repo. I didn't create them and left them alone. I haven't committed anything; the fix is in the working tree for you to review.

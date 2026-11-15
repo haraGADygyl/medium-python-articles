@@ -1,0 +1,15 @@
+I found and fixed the bug. `trailhead plan` and `trailhead summary` now agree on noisy tracks.
+
+**Cause:** in `src/trailhead/pace.py`, `leg_hours` (which `plan.split_days` uses to time each leg) added climbing time for every metre a leg went up (`max(b.ele - a.ele, 0)`). The summary instead uses the 3 m threshold rule in `elevation.counted_changes`, which ignores GPS jitter. On a noisy track, every small bump added climbing time to the plan but not to the summary, so the days came out much longer (9h 40m against 7h 05m in the report). The README says a leg's climb should be whatever the summary's rule credits to that leg.
+
+**Fix:** `leg_hours` now times each leg with the climb `counted_changes` credits to it, using the same default 3 m threshold. The days of a plan therefore add up to the summary's time. Fitness still applies the same way to both.
+
+**Tests added:**
+- `tests/test_pace.py`: 1 m jitter adds no time, and a 300 m climb recorded in 1 m steps still counts as 300 m.
+- `tests/test_plan.py`: on a noisy climbing track, the days add up to the summary time at two fitness values.
+
+Both new failing-case tests fail on the old code and pass now. All 50 tests pass, and `ruff check` and `mypy` are clean.
+
+One small difference remains: the summary rounds total ascent to 0.1 m and each day is rounded to 0.01 h. So the two totals can still differ by a minute after display rounding, but no longer by hours.
+
+Some untracked dotfiles, such as `.bashrc`, `.gitconfig` and `.claude/`, appeared in the repo directory during the session. I didn't create them and left them alone. Nothing is committed.

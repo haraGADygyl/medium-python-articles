@@ -1,0 +1,9 @@
+`ruff check` now passes, and all 46 tests pass. I didn't touch the config or add any `noqa` comments.
+
+**One fix changes behaviour: `src/trailhead/pace.py:23`.** Ruff flagged `hours` as assigned but never used. That was hiding a real bug: `naismith_hours` worked out the time divided by `fitness`, then returned the time *without* that division. So `fitness` had no effect, and `--fitness` did nothing in either CLI command. The docstring says fitness should scale the result, so I made the function return `hours`. Ruff's suggested fix would have deleted the line and kept the bug.
+
+Walking times for any `fitness` other than 1.0 will now come out different, which also affects how hikes are split into days. No test checks a fitness other than 1.0, which is why the bug went unnoticed. It would be worth adding one.
+
+**`src/trailhead/track.py`:**
+- Removed the unused `import os`, which also fixes the import-order warning.
+- Changed the bare `except:` to `except ValueError as exc:` and added `from exc` when re-raising. That's the error `float()` raises on bad input, so the "not a number" message still appears as before. The difference is that unrelated errors, like Ctrl-C, are no longer caught and reported as bad input.

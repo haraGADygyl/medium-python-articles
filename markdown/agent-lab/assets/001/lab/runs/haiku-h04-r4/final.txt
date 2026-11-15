@@ -1,0 +1,15 @@
+The bug was truncation, not the Naismith calculation. `trailhead summary` now shows `0h 45m` for the 3.74 km flat walk, and the full suite passes (50 tests, including 3 new ones), with `ruff` and `mypy` clean.
+
+**Cause:** `report.py` turned hours into minutes with `int(summary.hours * 60)`, which drops the fraction. 3.74 / 5 = 0.748 h = 44.88 min, so it printed 44. `plan.py` had the same `int(...)` pattern in `describe_plan`, so plan day lines were truncated too.
+
+**Fix:**
+- `src/trailhead/pace.py`: new `format_duration(hours)` rounds the total to the nearest minute before splitting into hours and minutes. That means 59.99 min shows as `1h 00m`, not `0h 60m`.
+- `src/trailhead/report.py` and `src/trailhead/plan.py` now both use it.
+
+**Tests added:**
+- `tests/test_pace.py`: rounding cases (44.88 → 45, 5.1 h → 5h 06m) and the carry into the hour.
+- `tests/test_report.py`: the reported 3.74 km flat walk now shows `0h 45m`. This test fails on the old code.
+
+**Not changed:** `split_days` still rounds each day's hours to 0.01 before display, as its docstring documents. That can occasionally move a plan line by one minute compared with unrounded arithmetic. I left it alone because it's a documented behaviour and outside this report. Say if you want it removed.
+
+I haven't committed. The working tree also has several untracked dotfiles (`.bashrc`, `.zshrc`, `.claude/`, and others) that were already there; I didn't touch them.

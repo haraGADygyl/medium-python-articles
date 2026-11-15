@@ -1,0 +1,13 @@
+The bug is fixed. `trailhead summary` now shows `0h 45m` for the 3.74 km flat walk, and the test suite passes (48 tests), along with `ruff` and `mypy`.
+
+**Cause:** `format_summary` in `src/trailhead/report.py` converted hours to minutes with `int(summary.hours * 60)`, which truncates. 3.74 km at 5 km/h is 0.748 h, or 44.88 min, so the display showed 44 minutes. The README says durations are rounded to the nearest minute.
+
+**Fix:**
+- Added `format_hours()` to `src/trailhead/pace.py`. It rounds to the nearest minute, with halves rounding up.
+- `report.py` now uses that helper for the `time` line.
+- `plan.py` had the same truncation in `describe_plan`, so the day lines now use the helper too.
+- Added `test_format_hours_rounds_to_nearest_minute` in `tests/test_pace.py`. It covers the reported 3.74 km case and a few other values.
+
+I did not commit the change.
+
+**Remaining issue (not fixed):** `plan.split_days` rounds each day's hours to 0.01 before returning them. The README says times are not rounded until display, so that early rounding can occasionally push a minute value across a half-minute boundary. Fixing it means changing the `split_days` return values, so I left it for you to decide.

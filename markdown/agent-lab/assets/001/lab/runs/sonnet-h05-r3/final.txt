@@ -1,0 +1,10 @@
+I fixed it. `trailhead plan` and `trailhead summary` now give the same total on a noisy track. All 48 tests pass.
+
+**Cause:** the two commands counted climb differently. `summary` used the thresholded ascent from `elevation.counted_changes`, which ignores jitter under 3 m. `pace.leg_hours`, which `plan` uses, added up every raw uphill step between consecutive points. On a track with a lot of small up-and-down noise, those small ups piled up as extra climb time. That is the gap between 9h 40m and 7h 05m. The README says a leg's climb should be the ascent the summary's rule credits to it, so `leg_hours` was the part that was wrong.
+
+**Fix:**
+- **`pace.py`:** `leg_hours` now takes each leg's climb from `counted_changes`, the same rule `summary` uses. It has a new `threshold` parameter, which defaults to 3 m.
+- **`plan.py` and `cli.py`:** `split_days` passes a threshold through, and `plan` gets a `--threshold` option like `summary` has. Without it, a custom `summary --threshold` could never be matched by `plan`.
+- **Test:** I added a test in `tests/test_plan.py` that builds a noisy track and checks the plan's total against the summary's time. I didn't run it against the old code to confirm it fails there.
+
+Day boundaries will also move for noisy tracks, because each leg is now shorter. That is the correct result.

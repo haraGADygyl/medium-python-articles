@@ -1,0 +1,139 @@
+diff --git a/src/trailhead/elevation.py b/src/trailhead/elevation.py
+index 38ee915..3ecaafd 100644
+--- a/src/trailhead/elevation.py
++++ b/src/trailhead/elevation.py
+@@ -3,11 +3,30 @@
+ from collections.abc import Sequence
+ from itertools import pairwise
+ 
+-from trailhead.track import Track
++from trailhead.track import Track, TrackError
+ 
+ DEFAULT_THRESHOLD_M = 3.0
+ 
+ 
++def filled_elevations(track: Track) -> list[float]:
++    """Elevation of every point in metres, with gaps filled as the README describes.
++
++    A missing elevation takes the nearest earlier known one or, if there is none,
++    the nearest later one.
++    """
++    raw = [point.ele for point in track.points]
++    first_known = next((ele for ele in raw if ele is not None), None)
++    if first_known is None:
++        raise TrackError("no point has an elevation")
++    filled: list[float] = []
++    last = first_known
++    for ele in raw:
++        if ele is not None:
++            last = ele
++        filled.append(last)
++    return filled
++
++
+ def counted_changes(
+     elevations: Sequence[float], threshold: float = DEFAULT_THRESHOLD_M
+ ) -> list[float]:
+@@ -48,7 +67,7 @@ def gain_and_loss(
+ 
+ def highest_and_lowest(track: Track) -> tuple[float, float]:
+     """Highest and lowest elevation on the track, in metres."""
+-    elevations = [point.ele for point in track.points]
++    elevations = filled_elevations(track)
+     return max(elevations), min(elevations)
+ 
+ 
+@@ -58,9 +77,10 @@ def steepest_grade(track: Track) -> float:
+     Gradient is the change in elevation over the horizontal distance. Legs of
+     zero length (repeated points) are skipped.
+     """
++    elevations = filled_elevations(track)
+     steepest = 0.0
+-    for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):
++    for (a, b), km in zip(pairwise(elevations), track.leg_lengths_km(), strict=True):
+         if km == 0:
+             continue
+-        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000) * 100)
++        steepest = max(steepest, abs(b - a) / (km * 1000) * 100)
+     return round(steepest, 1)
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index d2fe23c..260ede6 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -2,7 +2,7 @@
+ 
+ from math import exp
+ 
+-from trailhead.elevation import counted_changes
++from trailhead.elevation import counted_changes, filled_elevations
+ from trailhead.track import Track
+ 
+ FLAT_SPEED_KMH = 5.0
+@@ -38,7 +38,7 @@ def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:
+     (`elevation.counted_changes` with the default threshold), so the legs of a
+     track add up to its summary time.
+     """
+-    climbs = [max(change, 0.0) for change in counted_changes([p.ele for p in track.points])]
++    climbs = [max(change, 0.0) for change in counted_changes(filled_elevations(track))]
+     return [
+         naismith_hours(km, climb, fitness)
+         for km, climb in zip(track.leg_lengths_km(), climbs, strict=True)
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 9c7e1a7..e0ae50d 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -4,6 +4,7 @@ from dataclasses import dataclass
+ 
+ from trailhead.elevation import (
+     DEFAULT_THRESHOLD_M,
++    filled_elevations,
+     gain_and_loss,
+     highest_and_lowest,
+     steepest_grade,
+@@ -38,7 +39,7 @@ def _heading(track: Track) -> str:
+ def summarise(
+     track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M
+ ) -> Summary:
+-    gain, loss = gain_and_loss([point.ele for point in track.points], threshold)
++    gain, loss = gain_and_loss(filled_elevations(track), threshold)
+     highest, lowest = highest_and_lowest(track)
+     length = track.length_km()
+     return Summary(
+diff --git a/tests/test_elevation.py b/tests/test_elevation.py
+index 2912f90..8c59f91 100644
+--- a/tests/test_elevation.py
++++ b/tests/test_elevation.py
+@@ -1,6 +1,12 @@
+ import pytest
+ 
+-from trailhead.elevation import gain_and_loss, highest_and_lowest, steepest_grade
++from trailhead.elevation import (
++    filled_elevations,
++    gain_and_loss,
++    highest_and_lowest,
++    steepest_grade,
++)
++from trailhead.track import Point, Track, TrackError
+ 
+ 
+ def test_simple_climb_and_descent():
+@@ -34,3 +40,19 @@ def test_steepest_grade_in_percent(make_track):
+     # 0.01 degrees of longitude on the equator is about 1112 m.
+     track = make_track((0, 0, 1000), (0, 0.01, 1100), (0, 0.02, 1050))
+     assert steepest_grade(track) == pytest.approx(9.0, abs=0.05)
++
++
++def test_missing_elevation_takes_the_nearest_earlier_one():
++    track = Track("t", [Point(0, 0, None), Point(0, 0, 100), Point(0, 0, None), Point(0, 0, 130)])
++    assert filled_elevations(track) == [100, 100, 100, 130]
++
++
++def test_leading_gap_takes_the_nearest_later_one():
++    track = Track("t", [Point(0, 0, None), Point(0, 0, None), Point(0, 0, 90)])
++    assert filled_elevations(track) == [90, 90, 90]
++
++
++def test_track_without_any_elevation_is_an_error():
++    track = Track("t", [Point(0, 0, None), Point(0, 0, None)])
++    with pytest.raises(TrackError):
++        filled_elevations(track)

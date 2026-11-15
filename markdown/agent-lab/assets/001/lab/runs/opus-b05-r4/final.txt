@@ -1,0 +1,9 @@
+Fixed. `pikes-peak.csv` now reports a highest point of **4302 m**, which is 14,115 ft, and the low point comes out at 2042 m (6,700 ft).
+
+**Cause:** in `src/trailhead/track.py`, `parse_track` converted each elevation as soon as it read the point, using whatever units had been seen up to that line. Because this file's `# units: ft` line comes after all the points, every point was stored with no conversion, so the feet values were treated as metres. That breaks the README's rule that settings "may appear anywhere in the file… and apply to the whole track."
+
+**Fix:** points are now stored as read, and the feet-to-metres conversion is applied to all of them once the whole file has been parsed. `_parse_point` no longer takes a scale argument.
+
+**Tests:** I added two cases to `tests/test_track.py`, one with the units line after the points and one with it between them. All 49 tests pass.
+
+If a file has more than one `# units:` line, the last one now applies to every point. Before, each point used whichever line came before it.

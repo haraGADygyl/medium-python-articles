@@ -1,0 +1,8 @@
+`mypy` now passes with no errors, and all 47 tests still pass. I didn't use `# type: ignore`, `cast`, `Any` or any config change.
+
+There were three errors, fixed with two edits:
+
+- **`src/trailhead/geo.py`**: I annotated `initial_bearing` as `(lat1: float, lon1: float, lat2: float, lon2: float) -> float`. That fixed the missing-annotation error and the untyped-call error in `report.py`, which came from the same cause.
+- **`src/trailhead/report.py`**: I changed `Summary.heading` from `str` to `str | None`. `_heading` returns `None` for loop tracks, so the old `str` type was wrong.
+
+For a loop track, `format_summary` still prints `heading   None`. I kept it that way so behaviour doesn't change. If you'd rather it print something like "loop", that's a small follow-up.

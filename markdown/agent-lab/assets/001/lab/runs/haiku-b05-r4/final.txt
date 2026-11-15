@@ -1,0 +1,9 @@
+The bug is fixed: `pikes-peak.csv` now loads with a peak of 4302.252 m (14,115 ft), and the full suite passes (48 tests).
+
+**Cause:** `parse_track` in `src/trailhead/track.py` converted each elevation to metres as it read the line. Only points after a `# units: ft` line were converted. Your file has the units line after the points, so all six points stayed in feet and the highest one reported as 14115 m. The README says settings "may appear anywhere in the file, before or after the points, and apply to the whole track," so the parser was contradicting its own documented format.
+
+**Fix:** The parser now reads all the points in the file's own units, then applies the final units value once the whole file has been read. The units check still runs on its own line, so an invalid value is still reported with its line number.
+
+**Test:** I added `test_units_after_the_points_apply_to_the_whole_track` in `tests/test_track.py`. It fails on the old code and passes now. My first draft of its expected value was wrong (I had 4302.012 instead of 4302.252); I corrected it to 14115 × 0.3048 = 4302.252.
+
+I haven't committed anything. The changes are in `src/trailhead/track.py` and `tests/test_track.py`.

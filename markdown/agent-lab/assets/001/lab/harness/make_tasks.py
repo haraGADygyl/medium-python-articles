@@ -251,20 +251,19 @@ tasks["t04_plan_tests"] = tests_task("plan", [
      [e(PL, "first, used = index, 0.0", "first, used = index + 1, 0.0")]),
 ])
 
+# Grader v2: two mutants removed after the grid ("distance rounded to 0.01" and "altitude
+# printed high-low") because neither behaviour is in the README or a docstring.
 tasks["t05_report_tests"] = tests_task("report", [
     ("loop radius 1 km", [e(RE, "LOOP_RADIUS_KM = 0.1", "LOOP_RADIUS_KM = 1.0")]),
     ("heading measured finish to start",
      [e(RE, "compass_point(initial_bearing(start.lat, start.lon, finish.lat, finish.lon))",
             "compass_point(initial_bearing(finish.lat, finish.lon, start.lat, start.lon))")]),
-    ("distance rounded to 0.01", [e(RE, "length_km=round(length, 1),", "length_km=round(length, 2),")]),
     ("time uses descent", [e(RE, "hours=naismith_hours(length, gain, fitness),",
                              "hours=naismith_hours(length, loss, fitness),")]),
     ("fitness dropped", [e(RE, "hours=naismith_hours(length, gain, fitness),",
                            "hours=naismith_hours(length, gain),")]),
     ("threshold dropped", [e(RE, "gain_and_loss([point.ele for point in track.points], threshold)",
                              "gain_and_loss([point.ele for point in track.points])")]),
-    ("altitude printed high-low", [e(RE, "{summary.lowest_m:.0f}-{summary.highest_m:.0f}",
-                                     "{summary.highest_m:.0f}-{summary.lowest_m:.0f}")]),
     ("minutes truncated", [e(RE, "divmod(round(summary.hours * 60), 60)",
                              "divmod(int(summary.hours * 60), 60)")]),
     ("steepest rounded to whole percent", [e(RE, "steepest_pct=steepest_grade(track),",

@@ -1,0 +1,45 @@
+diff --git a/src/trailhead/plan.py b/src/trailhead/plan.py
+index 3a7bb36..d5cf5b1 100644
+--- a/src/trailhead/plan.py
++++ b/src/trailhead/plan.py
+@@ -32,6 +32,6 @@ def describe_plan(days: list[tuple[int, int, int, float]]) -> list[str]:
+     """One line per day, for example ``Day 2: points 14-31, 6h 05m``."""
+     lines: list[str] = []
+     for day, first, last, hours in days:
+-        whole, minutes = divmod(int(hours * 60), 60)
++        whole, minutes = divmod(round(hours * 60), 60)
+         lines.append(f"Day {day}: points {first}-{last}, {whole}h {minutes:02d}m")
+     return lines
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 9f8ecf5..9c7e1a7 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -55,7 +55,7 @@ def summarise(
+ 
+ 
+ def format_summary(summary: Summary) -> str:
+-    whole, minutes = divmod(int(summary.hours * 60), 60)
++    whole, minutes = divmod(round(summary.hours * 60), 60)
+     return "\n".join(
+         [
+             summary.name,
+diff --git a/tests/test_report.py b/tests/test_report.py
+index 74fbed8..ef1d946 100644
+--- a/tests/test_report.py
++++ b/tests/test_report.py
+@@ -1,3 +1,5 @@
++from dataclasses import replace
++
+ import pytest
+ 
+ from trailhead.report import format_summary, summarise
+@@ -26,3 +28,9 @@ def test_format_summary(make_track):
+             "  heading   NE",
+         ]
+     )
++
++
++@pytest.mark.parametrize("minutes, expected", [(44.9, "0h 45m"), (59.6, "1h 00m")])
++def test_time_is_rounded_to_the_nearest_minute(make_track, minutes, expected):
++    summary = replace(summarise(make_track(*RIDGE)), hours=minutes / 60)
++    assert f"time      {expected}" in format_summary(summary)

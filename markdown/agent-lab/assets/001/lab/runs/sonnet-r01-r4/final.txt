@@ -1,0 +1,7 @@
+`haversine_km` is now `distance_km` in `src/trailhead/geo.py`, and the full suite passes (48 tests).
+
+- **Alias:** `haversine_km` is still importable from `trailhead.geo`. It emits a `DeprecationWarning` and returns `distance_km(...)`, so the result is identical. I set `stacklevel=2` so the warning points at the caller.
+- **Call sites:** I updated `src/trailhead/report.py`, `src/trailhead/track.py` and `tests/test_geo.py` to use the new name.
+- **New test:** I added `test_haversine_km_is_deprecated_alias` to `tests/test_geo.py`. It checks that the alias warns and gives the same result as `distance_km`.
+
+I didn't commit anything. `git status` also lists untracked dotfiles (`.bashrc`, `.claude/` and similar) that I didn't create or touch.

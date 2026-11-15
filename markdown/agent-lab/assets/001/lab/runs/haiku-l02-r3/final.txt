@@ -1,0 +1,8 @@
+`mypy` now passes on `src/` in strict mode, with no `# type: ignore`, `cast`, `Any`, or config changes. The three errors were all annotation problems:
+
+- **`src/trailhead/geo.py:18`**: `initial_bearing` had no type annotations. I added `lat1: float, lon1: float, lat2: float, lon2: float` and a `-> float` return type. This also fixed the `no-untyped-call` error in `report.py:35`.
+- **`src/trailhead/report.py:28`**: `Summary.heading` was declared `str`, but `_heading()` returns `None` for loop tracks. I changed the field to `str | None`. The runtime behavior is unchanged, because the f-string in `format_summary` already rendered `None` the same way.
+
+Verification: `mypy` reports no issues in 9 source files, all 47 tests pass, and `ruff check src` is clean.
+
+I didn't commit anything. The `heading` change is the one to look at if you'd rather loop tracks print something other than `None` in the summary; that would be a separate behavior change in `format_summary`.

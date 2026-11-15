@@ -1,0 +1,119 @@
+{
+  "run_id": "opus-h03-r1",
+  "task": "h03",
+  "tier": "two-file bug",
+  "baseline": true,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "opus",
+  "prompt": "Bug report from a user: \"`elevation.steepest_grade()` returns 0.18 for a track whose steepest stretch climbs 18 m over 100 m. The README and the docstring say it returns a percentage, so I expected 18.0.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 30.8,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 28599,
+  "duration_api_ms": 27421,
+  "api_equivalent_usd": 0.19296179999999996,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 15271,
+    "cache_read_input_tokens": 136229,
+    "output_tokens": 2175,
+    "output_tokens_details": {
+      "thinking_tokens": 480
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 15271,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 678,
+        "cache_read_input_tokens": 27157,
+        "cache_creation_input_tokens": 877,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 877
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 2175,
+      "cacheReadInputTokens": 136229,
+      "cacheCreationInputTokens": 15271,
+      "webSearchRequests": 0,
+      "costUSD": 0.19296179999999996,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 480,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 15271,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 5
+  },
+  "bash_commands": [
+    "git ls-files; cat README* 2>/dev/null | head -50; grep -rn \"steepest_grade\\|def grade\\|grade\" --include=*.py . | head -40",
+    "cat src/trailhead/elevation.py; sed -n 1,80p src/trailhead/report.py; grep -rn \"steepest\" tests src README.md",
+    "python - <<'EOF'\nimport re,pathlib\np=pathlib.Path(\"src/trailhead/elevation.py\"); s=p.read_text()\ns=s.replace(\"abs(b.ele - a.ele) / (km * 1000))\\n    return round(steepest, 3)\",\"abs(b.ele - a.ele) / (km * 1000) * 100)\\n    return round(steepest, 1)\")\np.write_text(s)\np=pathlib.Path(\"src/trailhead/report.py\"); s=p.read_text()\ns=s.replace(\"steepest_pct=round(steepest_grade(track) * 100, 1),\",\"steepest_pct=steepest_grade(track),\")\np.write_text(s)\nEOF\ngit diff --stat; sed -n 1,40p tests/test_elevation.py",
+    "cat tests/conftest.py; cat >> tests/test_elevation.py <<'EOF'\n\n\ndef test_steepest_grade_is_a_percentage(make_track):\n    # 100 m north along a meridian (sphere radius 6371.0088 km), climbing 18 m.\n    step_deg = math.degrees(0.1 / 6371.0088)\n    track = make_track((0, 0, 500), (step_deg, 0, 518))\n    assert steepest_grade(track) == 18.0\n\n\ndef test_steepest_grade_counts_descents_and_skips_repeated_points(make_track):\n    step_deg = math.degrees(0.1 / 6371.0088)\n    track = make_track(\n        (0, 0, 500), (0, 0, 520), (step_deg, 0, 475), (2 * step_deg, 0, 480)\n    )\n    assert steepest_grade(track) == 45.0\nEOF\nsed -i '1s/^/import math\\n\\n/; s/from trailhead.elevation import gain_and_loss, highest_and_lowest/from trailhead.elevation import gain_and_loss, highest_and_lowest, steepest_grade/' tests/test_elevation.py\npython -m pytest -q 2>&1 | tail -5",
+    "git diff src; git stash -q -- src && python -m pytest -q tests/test_elevation.py 2>&1 | tail -3; git stash pop -q && git status --short"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M src/trailhead/report.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 21,
+    "lines_removed": 4,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M src/trailhead/report.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 21,
+    "lines_removed": 4,
+    "own_suite_pass_as_left": true
+  }
+}

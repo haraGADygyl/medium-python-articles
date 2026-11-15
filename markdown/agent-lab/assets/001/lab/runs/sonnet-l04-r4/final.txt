@@ -1,0 +1,9 @@
+`mypy` now passes in strict mode. I didn't use `# type: ignore`, `cast` or `Any`, and I didn't touch the mypy config. `ruff` is clean and all 48 tests pass.
+
+`Point.ele` is `float | None`, but the elevation code treated it as `float`. The README already says what a missing elevation should do: take the value of the nearest earlier point that has one, or the nearest later point if there is none. The code never did that, so a track with a gap in its elevations would have crashed at runtime.
+
+I added `Track.filled_elevations()` in `src/trailhead/track.py`. It returns a plain `list[float]` with that fill rule applied. `elevation.py` (highest/lowest and steepest grade), `pace.py` and `report.py` now call it instead of reading `point.ele` directly.
+
+I picked one behaviour for a case the README doesn't cover. If no point on the track has an elevation, `filled_elevations()` raises `TrackError`. Parsing such a track still succeeds, so the error only appears when something asks for elevations.
+
+I only ran the existing tests. They don't cover tracks with missing elevations, so the new fill logic has no test yet.

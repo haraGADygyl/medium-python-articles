@@ -1,0 +1,130 @@
+{
+  "run_id": "fable-r04-r2",
+  "task": "r04",
+  "tier": "refactor/feature",
+  "baseline": false,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "`Track.leg_lengths_km()` recomputes every great-circle distance each time it is called, and summarising a track calls it more than once. Cache the leg lengths so that a summary computes each leg's distance only once, without changing any results.",
+  "harness_timeout": false,
+  "wall_s": 66.2,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 10,
+  "duration_ms": 63893,
+  "duration_api_ms": 62820,
+  "api_equivalent_usd": 0.6358064,
+  "usage": {
+    "input_tokens": 14,
+    "cache_creation_input_tokens": 22790,
+    "cache_read_input_tokens": 190272,
+    "output_tokens": 5825,
+    "output_tokens_details": {
+      "thinking_tokens": 880
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 22790,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 374,
+        "cache_read_input_tokens": 35082,
+        "cache_creation_input_tokens": 471,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 471
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 14,
+      "outputTokens": 5825,
+      "cacheReadInputTokens": 190272,
+      "cacheCreationInputTokens": 22790,
+      "webSearchRequests": 0,
+      "costUSD": 0.6358064,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 880,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 22790,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 8,
+    "Edit": 1
+  },
+  "bash_commands": [
+    "git ls-files | head -50; grep -rn \"leg_lengths_km\\|_legs\\|points\" --include=*.py . | head -60",
+    "cat src/trailhead/track.py src/trailhead/report.py src/trailhead/pace.py src/trailhead/elevation.py src/trailhead/plan.py tests/conftest.py; grep -rn \"points\\b.*=\\|\\.append\\|\\.points\\.\" src tests | grep -v \"^src/trailhead/track.py\"; python -m pytest -q 2>&1 | tail -3",
+    "grep -rn \"asdict\\|astuple\\|fields(\\|replace(\\|pickle\\|copy\" src tests README.md | head; python - <<'EOF'\nimport re,pathlib\np=pathlib.Path('src/trailhead/track.py'); s=p.read_text()\nold=s[s.index('    def leg_lengths_km'):s.index('    def length_km')]\nnew='''    # (points the lengths were computed for, the lengths); see leg_lengths_km.\n    _leg_cache: tuple[tuple[Point, ...], tuple[float, ...]] | None = field(\n        default=None, init=False, repr=False, compare=False\n    )\n\n    def leg_lengths_km(self) -> list[float]:\n        \"\"\"Length of each leg, the stretch between two consecutive points.\n\n        The lengths are computed once and reused for as long as the points stay\n        the same; changing ``points`` in any way recomputes them on the next call.\n        \"\"\"\n        points = tuple(self.points)\n        if self._leg_cache is None or self._leg_cache[0] != points:\n            lengths = tuple(haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(points))\n            self._leg_cache = (points, lengths)\n        return list(self._leg_cache[1])\n\n'''\np.write_text(s.replace(old,new))\nt=pathlib.Path('tests/test_track.py')\nt.write_text(t.read_text()+'''\n\n@pytest.fixture\ndef count_distance_calls(monkeypatch):\n    \"\"\"Count the great-circle distances computed for leg lengths.\"\"\"\n    import trailhead.track as track_module\n\n    calls = []\n    real = track_module.haversine_km\n\n    def counting(*args):\n        calls.append(args)\n        return real(*args)\n\n    monkeypatch.setattr(track_module, \"haversine_km\", counting)\n    return calls\n\n\ndef test_summary_computes_each_leg_once(make_track, count_distance_calls):\n    from trailhead.report import summarise\n\n    track = make_track((0.0, 0.0, 100), (0.0, 0.01, 150), (0.0, 0.03, 120))\n    summarise(track)\n    assert len(count_distance_calls) == 2\n\n\ndef test_leg_lengths_follow_changes_to_the_points(make_track, count_distance_calls):\n    track = make_track((0.0, 0.0, 100), (0.0, 0.01, 150), (0.0, 0.03, 120))\n    before = track.leg_lengths_km()\n    track.points.append(Point(0.0, 0.04, 130))\n    assert len(track.leg_lengths_km()) == 3\n    track.points[1] = Point(0.0, 0.02, 150)\n    assert track.leg_lengths_km() == pytest.approx([2.2239, 1.11195, 1.11195], abs=1e-3)\n    track.points = track.points[:2]\n    assert track.leg_lengths_km() == pytest.approx([2.2239], abs=1e-3)\n    assert before == pytest.approx([1.11195, 2.2239], abs=1e-3)\n\n\ndef test_leg_lengths_result_can_be_modified_safely(make_track):\n    track = make_track((0.0, 0.0, 100), (0.0, 0.01, 150), (0.0, 0.03, 120))\n    track.leg_lengths_km().clear()\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)\n''')\nEOF\nhead -12 tests/test_track.py; python -m pytest -q 2>&1 | tail -5; (ruff check . ; ruff format --check .) 2>&1 | tail -5; git stash -q; python -c \"\nimport sys;sys.path.insert(0,'src')\nfrom trailhead.track import *;from trailhead.report import summarise\nt=Track('x',[Point(42+i*.001,23+i*.002,100+i*7%40) for i in range(500)]);print(repr(summarise(t)), t.leg_lengths_km()==t.leg_lengths_km(), repr(t)[:60], t==Track('x',list(t.points)))\" > $TMPDIR/a; git stash pop -q; python -c \"\nimport sys;sys.path.insert(0,'src')\nfrom trailhead.track import *;from trailhead.report import summarise\nt=Track('x',[Point(42+i*.001,23+i*.002,100+i*7%40) for i in range(500)]);print(repr(summarise(t)), t.leg_lengths_km()==t.leg_lengths_km(), repr(t)[:60], t==Track('x',list(t.points)))\" > $TMPDIR/b; cmp $TMPDIR/a $TMPDIR/b && echo same; git status --short",
+    "git status --short; grep -rn \"asdict\\|astuple\\|fields(\\|replace(\\|pickle\\|copy\" src tests README.md | head -5; head -12 tests/test_track.py",
+    "cat > $TMPDIR/probe.py <<'EOF'\nimport sys\nsys.path.insert(0, 'src')\nfrom trailhead.track import Track, Point\nfrom trailhead.report import summarise\nfrom trailhead.plan import split_days\nt = Track('x', [Point(42 + i * .001, 23 + i * .002, 100 + i * 7 % 40) for i in range(500)])\nprint(repr(summarise(t)), t.leg_lengths_km(), split_days(t), repr(t)[:60], t == Track('x', list(t.points)))\nEOF\npython $TMPDIR/probe.py > $TMPDIR/before.txt; wc -c $TMPDIR/before.txt",
+    "cat >> tests/test_track.py <<'EOF'\n\n\n@pytest.fixture\ndef distance_calls(monkeypatch):\n    \"\"\"Record every great-circle distance computed for leg lengths.\"\"\"\n    calls = []\n    real = track_module.haversine_km\n\n    def counting(*args):\n        calls.append(args)\n        return real(*args)\n\n    monkeypatch.setattr(track_module, \"haversine_km\", counting)\n    return calls\n\n\ndef test_summary_computes_each_leg_once(make_track, distance_calls):\n    track = make_track((0.0, 0.0, 100), (0.0, 0.01, 150), (0.0, 0.03, 120))\n    summarise(track)\n    assert len(distance_calls) == 2\n\n\ndef test_leg_lengths_follow_changes_to_the_points(make_track):\n    track = make_track((0.0, 0.0, 100), (0.0, 0.01, 150), (0.0, 0.03, 120))\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)\n    track.points.append(Point(0.0, 0.04, 130))\n    assert len(track.leg_lengths_km()) == 3\n    track.points[1] = Point(0.0, 0.02, 150)\n    assert track.leg_lengths_km() == pytest.approx([2.2239, 1.11195, 1.11195], abs=1e-3)\n    track.points = track.points[:2]\n    assert track.leg_lengths_km() == pytest.approx([2.2239], abs=1e-3)\n\n\ndef test_changing_the_returned_leg_lengths_leaves_the_track_alone(make_track):\n    track = make_track((0.0, 0.0, 100), (0.0, 0.01, 150), (0.0, 0.03, 120))\n    track.leg_lengths_km().clear()\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)\nEOF\nsed -i 's/^from trailhead.track import TrackError, load_track, parse_track$/import trailhead.track as track_module\\nfrom trailhead.report import summarise\\nfrom trailhead.track import Point, TrackError, load_track, parse_track/' tests/test_track.py\npython -m pytest -q 2>&1 | tail -5; ruff check . 2>&1 | tail -5; ruff format --check . 2>&1 | tail -3",
+    "cat > /tmp/claude/probe.py <<'EOF'\nimport sys\nsys.path.insert(0, 'src')\nfrom trailhead.track import Track, Point\nfrom trailhead.report import summarise\nfrom trailhead.plan import split_days\nt = Track('x', [Point(42 + i * .001, 23 + i * .002, 100 + i * 7 % 40) for i in range(500)])\nprint(repr(summarise(t)), t.leg_lengths_km(), split_days(t), repr(t)[:60], t == Track('x', list(t.points)))\nEOF\npython /tmp/claude/probe.py > /tmp/claude/after.txt; git stash -q; python /tmp/claude/probe.py > /tmp/claude/before.txt; git stash pop -q; cmp /tmp/claude/before.txt /tmp/claude/after.txt && echo identical; wc -c /tmp/claude/after.txt; git status --short | grep -v '^??'",
+    "cat > .probe_tmp.py <<'EOF'\nimport hashlib, sys\nsys.path.insert(0, 'src')\nfrom trailhead.track import Track, Point\nfrom trailhead.report import summarise\nfrom trailhead.plan import split_days\nt = Track('x', [Point(42 + i * .001, 23 + i * .002, 100 + i * 7 % 40) for i in range(500)])\nout = repr((summarise(t), t.leg_lengths_km(), split_days(t), repr(t), t == Track('x', list(t.points))))\nprint(len(out), hashlib.md5(out.encode()).hexdigest())\nEOF\npython .probe_tmp.py; git stash -q; python .probe_tmp.py; git stash pop -q; rm .probe_tmp.py; git status --short | grep -v '^??'"
+  ],
+  "permission_denials": [
+    {
+      "command": "grep -rn \"asdict\\|astuple\\|fields(\\|replace(\\|pickle\\|copy\" src tests README.md | head; python - <<'EOF'\nimport re,pathlib\np=pathlib.Path('src/trailhead/track.py'); s=p.read_text()\nold=s[s.index('    def leg_lengths_km'):s.index('    def length_km')]\nnew='''    # (points the lengths were computed for, the lengths); see leg_lengths_km.\n    _leg_cache: tuple[tuple[Point, ...], tuple[float, ...]] | None = field(\n        default=None, init=False, repr=False, compare=False\n    )\n\n    def leg_lengths_km(self) -> list[float]:\n        \"\"\"Length of each leg, the stretch between two consecutive points.\n\n        The lengths are computed once and reused for as long as the points stay\n        the same; changing ``points`` in any way recomputes them on the next call.\n        \"\"\"\n        points = tuple(self.points)\n        if self._leg_cache is None or self._leg_cache[0] != points:\n            lengths = tuple(haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(points))\n            self._leg_cache = (points, lengths)\n        return list(self._leg_cache[1])\n\n'''\np.write_text(s.replace(old,new))\nt=pathlib.Path('tests/test_track.py')\nt.write_text(t.read_text()+'''\n\n@pytest.fixture\ndef count_distance_calls(monkeypatch):\n    \"\"\"Count the great-circle distances computed for leg lengths.\"\"\"\n    import trailhead.track as track_module\n\n    calls = []\n    real = track_module.haversine_km\n\n    def counting(*args):\n        calls.append(args)\n        return real(*args)\n\n    monkeypatch.setattr(track_module, \"haversine_km\", counting)\n    return calls\n\n\ndef test_summary_computes_each_leg_once(make_track, count_distance_calls):\n    from trailhead.report import summarise\n\n    track = make_track((0.0, 0.0, 100), (0.0, 0.01, 150), (0.0, 0.03, 120))\n    summarise(track)\n    assert len(count_distance_calls) == 2\n\n\ndef test_leg_lengths_follow_changes_to_the_points(make_track, count_distance_calls):\n    track = make_track((0.0, 0.0, 100), (0.0, 0.01, 150), (0.0, 0.03, 120))\n    before = track.leg_lengths_km()\n    track.points.append(Point(0.0, 0.04, 130))\n    assert len(track.leg_lengths_km()) == 3\n    track.points[1] = Point(0.0, 0.02, 150)\n    assert track.leg_lengths_km() == pytest.approx([2.2239, 1.11195, 1.11195], abs=1e-3)\n    track.points = track.points[:2]\n    assert track.leg_lengths_km() == pytest.approx([2.2239], abs=1e-3)\n    assert before == pytest.approx([1.11195, 2.2239], abs=1e-3)\n\n\ndef test_leg_lengths_result_can_be_modified_safely(make_track):\n    track = make_track((0.0, 0.0, 100), (0.0, 0.01, 150), (0.0, 0.03, 120))\n    track.leg_lengths_km().clear()\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)\n''')\nEOF\nhead -12 tests/test_track.py; python -m pytest -q 2>&1 | tail -5; (ruff check . ; ruff format --check .) 2>&1 | tail -5; git stash -q; python -c \"\nimport sys;sys.path.insert(0,'src')\nfrom trailhead.track import *;from trailhead.report import summarise\nt=Track('x',[Point(42+i*.001,23+i*.002,100+i*7%40) for i in range(500)]);print(repr(summarise(t)), t.leg_lengths_km()==t.leg_lengths_km(), repr(t)[:60], t==Track('x',list(t.points)))\" > $TMPDIR/a; git stash pop -q; python -c \"\nimport sys;sys.path.insert(0,'src')\nfrom trailhead.track import *;from trailhead.report import summarise\nt=Track('x',[Point(42+i*.001,23+i*.002,100+i*7%40) for i in range(500)]);print(repr(summarise(t)), t.leg_lengths_km()==t.leg_lengths_km(), repr(t)[:60], t==Track('x',list(t.points)))\" > $TMPDIR/b; cmp $TMPDIR/a $TMPDIR/b && echo same; git status --short",
+      "description": "Add cache and tests, run tests and lint, compare output before and after"
+    },
+    {
+      "command": "cat > $TMPDIR/probe.py <<'EOF'\nimport sys\nsys.path.insert(0, 'src')\nfrom trailhead.track import Track, Point\nfrom trailhead.report import summarise\nfrom trailhead.plan import split_days\nt = Track('x', [Point(42 + i * .001, 23 + i * .002, 100 + i * 7 % 40) for i in range(500)])\nprint(repr(summarise(t)), t.leg_lengths_km(), split_days(t), repr(t)[:60], t == Track('x', list(t.points)))\nEOF\npython $TMPDIR/probe.py > $TMPDIR/before.txt; wc -c $TMPDIR/before.txt",
+      "description": "Record results from the unmodified code"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "......................................................                   [100%]\n54 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 55,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "......................................................                   [100%]\n54 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 55,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  }
+}

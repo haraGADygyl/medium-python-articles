@@ -1,0 +1,7 @@
+`haversine_km` is now `distance_km` in `src/trailhead/geo.py`, and the callers in `report.py`, `track.py` and `tests/test_geo.py` use the new name. The full suite passes (48 tests, run with warnings treated as errors).
+
+`haversine_km` remains importable from `trailhead.geo` as a thin wrapper that emits a `DeprecationWarning` (pointing at the caller's line) and returns `distance_km`'s result. I added one test covering that the alias warns and matches `distance_km`.
+
+`naismith_hours` in `pace.py` already has a parameter called `distance_km`. It doesn't import from `geo`, so nothing collides.
+
+Nothing is committed.

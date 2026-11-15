@@ -1,0 +1,29 @@
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index e147dce..8a80fd8 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -25,10 +25,23 @@ class Point:
+ class Track:
+     name: str
+     points: list[Point] = field(default_factory=list)
++    # Distances memoised by leg endpoints. Keying on the coordinates rather than on the
++    # list means appending, replacing or editing points can never yield a stale length.
++    _leg_cache: dict[tuple[float, float, float, float], float] = field(
++        default_factory=dict, init=False, repr=False, compare=False
++    )
+ 
+     def leg_lengths_km(self) -> list[float]:
+         """Length of each leg, the stretch between two consecutive points."""
+-        return [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]
++        cache = self._leg_cache
++        lengths = []
++        for a, b in pairwise(self.points):
++            key = (a.lat, a.lon, b.lat, b.lon)
++            km = cache.get(key)
++            if km is None:
++                km = cache[key] = haversine_km(*key)
++            lengths.append(km)
++        return lengths
+ 
+     def length_km(self) -> float:
+         return sum(self.leg_lengths_km())

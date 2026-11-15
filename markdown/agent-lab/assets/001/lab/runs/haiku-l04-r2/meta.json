@@ -1,0 +1,130 @@
+{
+  "run_id": "haiku-l04-r2",
+  "task": "l04",
+  "tier": "lint",
+  "baseline": false,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "harness_timeout": false,
+  "wall_s": 46.1,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 17,
+  "duration_ms": 43214,
+  "duration_api_ms": 40157,
+  "api_equivalent_usd": 0.011877200000000001,
+  "usage": {
+    "input_tokens": 22,
+    "cache_creation_input_tokens": 25253,
+    "cache_read_input_tokens": 317140,
+    "output_tokens": 7306,
+    "output_tokens_details": {
+      "thinking_tokens": 1784
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 25253,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 587,
+        "cache_read_input_tokens": 37440,
+        "cache_creation_input_tokens": 576,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 576
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 22,
+      "outputTokens": 7306,
+      "cacheReadInputTokens": 317140,
+      "cacheCreationInputTokens": 25253,
+      "webSearchRequests": 0,
+      "costUSD": 0.011877200000000001,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 1784,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 25253,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 9,
+    "Edit": 7
+  },
+  "bash_commands": [
+    "cat pyproject.toml && (mypy src/ 2>&1 | tail -80)",
+    "cat -n src/trailhead/elevation.py && echo ---- && cat -n src/trailhead/pace.py && echo ---- && cat -n src/trailhead/report.py",
+    "cat -n src/trailhead/track.py && echo ---- && ls src/trailhead tests && grep -rn \"ele\" src/trailhead --include=*.py | grep -v \"^src/trailhead/elevation.py\\|track.py\" | head -40 && git status --short && git log --oneline | head -3",
+    "grep -rn -i \"none\\|missing\\|lost\\|,,\\|ele.*empty\\|blank\" tests README* docs 2>/dev/null | head -40; echo ----; python -m pytest -q 2>&1 | tail -5",
+    "sed -n 20,45p README.md",
+    "sed -n 1,25p tests/test_elevation.py && grep -n \"^def \" tests/test_elevation.py && cat tests/conftest.py | head -30",
+    "python - <<'EOF'\nfrom pathlib import Path\np = Path(\"tests/test_elevation.py\")\np.write_text(p.read_text(encoding=\"utf-8\").replace(\n    \"from trailhead.elevation import gain_and_loss, highest_and_lowest, steepest_grade\\n\",\n    \"from trailhead.elevation import (\\n    filled_elevations,\\n    gain_and_loss,\\n    highest_and_lowest,\\n    steepest_grade,\\n)\\nfrom trailhead.track import Point, Track, TrackError\\n\", 1), encoding=\"utf-8\")\np.write_text(p.read_text(encoding=\"utf-8\") + '''\n\ndef test_missing_elevation_takes_the_nearest_earlier_one():\n    track = Track(\"t\", [Point(0, 0, None), Point(0, 0, 100), Point(0, 0, None), Point(0, 0, 130)])\n    assert filled_elevations(track) == [100, 100, 100, 130]\n\n\ndef test_leading_gap_takes_the_nearest_later_one():\n    track = Track(\"t\", [Point(0, 0, None), Point(0, 0, None), Point(0, 0, 90)])\n    assert filled_elevations(track) == [90, 90, 90]\n\n\ndef test_track_without_any_elevation_is_an_error():\n    track = Track(\"t\", [Point(0, 0, None), Point(0, 0, None)])\n    with pytest.raises(TrackError):\n        filled_elevations(track)\n''', encoding=\"utf-8\")\nEOF\nmypy src/ 2>&1 | tail -3; python -m pytest -q 2>&1 | tail -3; ruff check src tests 2>&1 | tail -3; ruff format --check src tests 2>&1 | tail -3",
+    "ruff format --diff tests/test_elevation.py 2>&1 | head -30; git stash -q && ruff format --check src tests 2>&1 | tail -1; git stash pop -q && git status --short | grep -v '^??'",
+    "git diff --stat && mypy src/ 2>&1 | tail -1 && python -m pytest -q 2>&1 | tail -1 && ruff check src tests | tail -1"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/report.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 51,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.09s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/report.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 51,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  }
+}

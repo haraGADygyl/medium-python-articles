@@ -1,0 +1,15 @@
+`mypy` now passes on `src/` with no `# type: ignore`, `cast`, `Any`, or config changes. The full test suite (50 tests, including two new ones) and `ruff check` also pass.
+
+**Root cause:** `Point.ele` is `float | None`, since the CSV format allows an empty elevation where the GPS lost it. Five functions used those values as plain floats.
+
+**Fix:** I added `Track.elevations()` in `src/trailhead/track.py`. It returns one float per point, filling each gap as the README specifies: the nearest earlier known elevation, or the nearest later one if there is none. The four callers now use it:
+- `elevation.highest_and_lowest`
+- `elevation.steepest_grade`
+- `report.summarise`
+- `pace.leg_hours`
+
+**Behaviour change to be aware of:** a track with no elevations at all now raises `ValueError` from `elevations()`. Before, it crashed with a `TypeError` inside `max`/`min` or subtraction. The README doesn't say what should happen in that case, so I picked a clear error. Tell me if you'd rather it be a `TrackError`.
+
+**Tests:** I added two tests to `tests/test_track.py` covering gap filling and the all-missing case.
+
+**Not touched:** `git status` shows untracked dotfiles at the repo root (`.bashrc`, `.zshrc`, `.claude/`, `.idea/`, etc.). I didn't create them and left them alone.

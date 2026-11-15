@@ -1,0 +1,14 @@
+Fixed. A flat 3.74 km walk now shows `0h 45m`.
+
+**Cause:** the code turned hours into minutes with `int(hours * 60)`. `int()` cuts off the fraction instead of rounding, so 44.88 minutes became 44. The README says durations are rounded to the nearest minute. The same truncation was in two places:
+- `src/trailhead/report.py:58`: the `time` line in `trailhead summary`
+- `src/trailhead/plan.py:35`: the per-day times in the plan output, which had the same bug
+
+**Fix:**
+- I added `format_duration(hours)` in `src/trailhead/pace.py`. It rounds to the nearest minute, then splits the result into hours and minutes. Rounding before the split means 59.94 minutes shows as `1h 00m`, not `0h 60m`.
+- The summary and the plan output both use it now, so they can't drift apart again.
+- An exact half minute rounds up. The README doesn't say which way halves should go; I chose up because Python's built-in `round()` sends some halves down (it rounds half to even), which looks odd to users.
+
+**Tests:** I added a parametrised test in `tests/test_pace.py`. It covers the reported case, the README examples (`5h 07m`, `0h 45m`, `12h 00m`), carrying into the next hour, the half-minute case and zero. All 54 tests pass. I also checked the reported case directly: `naismith_hours(3.74, 0)` is 44.88 minutes and now formats as `0h 45m`.
+
+Nothing is committed yet.

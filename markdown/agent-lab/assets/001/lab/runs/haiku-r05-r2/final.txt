@@ -1,0 +1,18 @@
+Tobler's rule is now available as a `pace` option alongside Naismith. Naismith stays the default and its output is unchanged. All 59 tests pass (47 existing, 12 new), and ruff and mypy are clean. I did not commit anything.
+
+**What changed**
+- **`pace.py`**: `leg_hours` takes `*, pace="naismith"`. Under Tobler, each leg takes `length / tobler_kmh(grade) / fitness` hours, where grade is the raw elevation change over the leg's horizontal length. Zero-length legs take 0. A new `check_pace` raises `ValueError` for anything other than `"naismith"` or `"tobler"`.
+- **`plan.py`**: `split_days` takes `*, pace="naismith"` and passes it to `leg_hours`.
+- **`report.py`**: `summarise` takes `*, pace="naismith"`. The Naismith path still calls `naismith_hours` exactly as before, so its output can't drift. The Tobler path uses the sum of the leg times.
+- **`cli.py`**: `summary` and `plan` both take `--pace {naismith,tobler}`, defaulting to `naismith`.
+- **`README.md`**: the walking-time and day-plan bullets now describe both rules, and there is a `--pace` usage line.
+
+**Choices I made**
+- `pace` is keyword-only in all three functions, so passing it positionally raises `TypeError`. The spec said "keyword argument", so I read that as keyword-only.
+- Under Tobler, the grade uses the raw start-to-end elevation difference of each leg, not the threshold-filtered ascent that Naismith uses. The spec said "the leg's elevation change", so I took it literally.
+- Under Tobler, `fitness <= 0` raises `ValueError`, matching Naismith.
+
+**Verification**
+- A 6 km leg descending at exactly 5% takes 1.0 h under Tobler and 1.2 h under Naismith. The tests check both.
+- The CLI smoke test gives `time 1h 00m` with `--pace tobler` and `1h 12m` with the default.
+- An invalid `--pace` value exits with code 2 and lists the valid choices.

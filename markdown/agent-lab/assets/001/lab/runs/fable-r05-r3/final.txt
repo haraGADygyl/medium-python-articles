@@ -1,0 +1,11 @@
+`--pace {naismith,tobler}` now works on both commands, and `pace.leg_hours`, `plan.split_days` and `report.summarise` take `pace="naismith"` (default) or `"tobler"`, with anything else raising `ValueError`. The test suite (57 tests, including new ones for Tobler), `ruff check` and `mypy` all pass; the existing tests pass untouched apart from added imports. I did not run the CLI as a subprocess — the sandbox blocked that command — so the option is exercised only through `main()` in the tests.
+
+Behaviour worth knowing:
+
+- **Grade uses the raw elevation change.** A Tobler leg uses the plain difference between its two points, not the jitter-filtered ascent Naismith uses. So `--threshold` changes the summary's ascent and descent figures but not its Tobler time.
+- **Fitness validation.** Zero or negative fitness is a `ValueError` under Tobler, as it is under Naismith.
+- **Naismith summary is computed as before**, from total length and ascent rather than by summing legs, so existing output is identical.
+
+The README has the new option in the usage example and a rewritten walking-time section covering both models.
+
+The dotfiles and directories `git status` shows as untracked (`.bashrc`, `.gitconfig`, `.idea`, …) were not created by this change; I left them alone. Nothing is committed.

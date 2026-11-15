@@ -1,0 +1,6 @@
+`mypy` now passes on `src/`, with `ruff check` clean and all 47 tests passing. One of the three errors was a real bug, so that fix changes behaviour.
+
+- **`src/trailhead/geo.py`**: `initial_bearing` had no annotations; it now takes four `float`s and returns `float`. This also cleared the "untyped call" error in `report.py`.
+- **`src/trailhead/report.py`**: `_heading` returned `None` for a loop track, which `Summary.heading: str` rejects. The summary would have printed `heading   None`. The README says the heading is `loop` when the finish is within 0.1 km of the start, so `_heading` now returns `"loop"` and is typed `-> str`.
+
+No test covers the loop case; I did not add one.

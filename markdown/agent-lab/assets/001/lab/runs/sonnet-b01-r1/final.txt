@@ -1,0 +1,5 @@
+The cause was in `counted_changes` in `src/trailhead/elevation.py`. A stray `reference = elevation` ran after every point, so the baseline moved up with each point. With a point every metre, no step ever got to the 3 m threshold, so the whole climb counted as 0. Tracks with bigger gaps between points did reach the threshold in a single step, which is why they looked fine.
+
+I removed that line. The reference now only moves when a change is counted, which is what the README and docstring describe.
+
+I added a regression test for a 300-point, 1 m-step climb and the matching descent. They now give 300 m of ascent and 300 m of descent. The full suite passes (47 tests).

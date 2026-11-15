@@ -1,0 +1,147 @@
+{
+  "run_id": "haiku-t05-r4",
+  "task": "t05",
+  "tier": "tests",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "`src/trailhead/report.py` has no tests. Write `tests/test_report.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 52.8,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 49258,
+  "duration_api_ms": 48121,
+  "api_equivalent_usd": 0.012062769999999999,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 26614,
+    "cache_read_input_tokens": 168477,
+    "output_tokens": 10108,
+    "output_tokens_details": {
+      "thinking_tokens": 5975
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 26614,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 492,
+        "cache_read_input_tokens": 39032,
+        "cache_creation_input_tokens": 345,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 345
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 10108,
+      "cacheReadInputTokens": 168477,
+      "cacheCreationInputTokens": 26614,
+      "webSearchRequests": 0,
+      "costUSD": 0.012062769999999999,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 5975,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 26614,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git status --short && find . -path ./.git -prune -o -type f -print | head -100 && cat README* 2>/dev/null; echo ---; cat src/trailhead/report.py",
+    "cat src/trailhead/track.py src/trailhead/elevation.py src/trailhead/geo.py src/trailhead/pace.py; echo ---CONFTEST; cat tests/conftest.py; echo ---TEST_PACE; head -60 tests/test_pace.py; echo ---PYPROJECT; cat pyproject.toml",
+    "python -m pytest tests/test_report.py -q 2>&1 | tail -30; (ruff check tests/test_report.py 2>&1 | tail -5) ; git status --short src tests",
+    "python -m pytest -q 2>&1 | tail -3"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "fail",
+    "reasons": [
+      "killed 5 of 7 mutants"
+    ],
+    "test_files": [
+      "tests/test_report.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "...............................                                          [100%]\n31 passed in 0.05s\n",
+    "src_changed": [],
+    "killed": [
+      "loop radius 1 km",
+      "heading measured finish to start",
+      "fitness dropped",
+      "threshold dropped",
+      "minutes truncated"
+    ],
+    "survived": [
+      "time uses descent",
+      "steepest rounded to whole percent"
+    ],
+    "kills": 5,
+    "mutants": 7,
+    "changed": [
+      "A tests/test_report.py"
+    ],
+    "lines_added": 192,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "fail",
+    "reasons": [
+      "killed 7 of 9 mutants"
+    ],
+    "test_files": [
+      "tests/test_report.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "...............................                                          [100%]\n31 passed in 0.04s\n",
+    "src_changed": [],
+    "killed": [
+      "loop radius 1 km",
+      "heading measured finish to start",
+      "distance rounded to 0.01",
+      "fitness dropped",
+      "threshold dropped",
+      "altitude printed high-low",
+      "minutes truncated"
+    ],
+    "survived": [
+      "time uses descent",
+      "steepest rounded to whole percent"
+    ],
+    "kills": 7,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_report.py"
+    ],
+    "lines_added": 192,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

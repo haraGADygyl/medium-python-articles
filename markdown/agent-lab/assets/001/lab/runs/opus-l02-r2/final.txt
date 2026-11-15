@@ -1,0 +1,8 @@
+`mypy` now passes in strict mode, with no `# type: ignore`, `cast`, `Any` or config changes. There were three errors, fixed with two small edits:
+
+1. **`src/trailhead/geo.py`:** `initial_bearing` had no type annotations. I typed it as `(lat1: float, lon1: float, lat2: float, lon2: float) -> float`, which fixes both the missing-annotation error and the "untyped call" error in `report.py`.
+2. **`src/trailhead/report.py`:** `_heading()` deliberately returns `None` when a track is a loop, but the `Summary.heading` field was declared as plain `str`. I changed the field to `str | None` (`None` means the track is a loop).
+
+The second error was hiding a real bug. The README says a loop's heading should be shown as `loop`, but `format_summary` would have printed `heading   None`. It now prints `loop` in that case. I also added `test_a_loop_has_no_heading` to `tests/test_report.py` to cover it.
+
+`mypy`, `ruff check`, `ruff format --check` and the test suite (48 tests) all pass.

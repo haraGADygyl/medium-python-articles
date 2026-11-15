@@ -1,0 +1,126 @@
+{
+  "run_id": "haiku-h04-r3",
+  "task": "h04",
+  "tier": "two-file bug",
+  "baseline": false,
+  "repeat": 3,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"`trailhead summary` shows `time 0h 44m` for a flat 3.74 km walk. By Naismith's rule that is 44.9 minutes, and the README says times are rounded to the nearest minute.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 39.2,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 14,
+  "duration_ms": 36924,
+  "duration_api_ms": 34431,
+  "api_equivalent_usd": 0.009911030000000001,
+  "usage": {
+    "input_tokens": 18,
+    "cache_creation_input_tokens": 22553,
+    "cache_read_input_tokens": 242863,
+    "output_tokens": 5940,
+    "output_tokens_details": {
+      "thinking_tokens": 1491
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 22553,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 501,
+        "cache_read_input_tokens": 34603,
+        "cache_creation_input_tokens": 713,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 713
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 18,
+      "outputTokens": 5940,
+      "cacheReadInputTokens": 242863,
+      "cacheCreationInputTokens": 22553,
+      "webSearchRequests": 0,
+      "costUSD": 0.009911030000000001,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 1491,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 22553,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 7,
+    "Edit": 6
+  },
+  "bash_commands": [
+    "git ls-files && cat README.md && grep -rn -i \"naismith\\|round\" --include=*.py . | grep -v test",
+    "cat src/trailhead/report.py && cat src/trailhead/pace.py && grep -rn \"duration\\|format_\\|fmt\" src/ | head -30",
+    "grep -rn \"time\\|format_summary\\|h \\|min\" tests/test_report.py tests/test_cli.py | head -40; grep -rn \"divmod\\|:02d\" src/; python -m pytest -q 2>&1 | tail -3",
+    "sed -n 1,40p src/trailhead/plan.py; sed -n 1,30p tests/test_pace.py",
+    "cat tests/test_plan.py; cat tests/conftest.py | head -30",
+    "cat >> tests/test_pace.py <<'EOF'\n\n\n@pytest.mark.parametrize(\n    (\"hours\", \"text\"),\n    [\n        (3.74 / 5, \"0h 45m\"),  # 3.74 km flat: 44.9 minutes, shown as 45\n        (44.4 / 60, \"0h 44m\"),\n        (0.0, \"0h 00m\"),\n        (59.6 / 60, \"1h 00m\"),\n        (6.07, \"6h 04m\"),\n    ],\n)\ndef test_format_duration_rounds_to_nearest_minute(hours, text):\n    assert format_duration(hours) == text\nEOF\nsed -i 's/^from trailhead.pace import leg_hours, naismith_hours, tobler_kmh$/from trailhead.pace import format_duration, leg_hours, naismith_hours, tobler_kmh/' tests/test_pace.py\ncat >> tests/test_report.py <<'EOF'\n\n\ndef test_summary_time_rounds_to_nearest_minute(make_track):\n    # 3.74 km flat: 44.9 minutes by Naismith's rule, so the time reads 0h 45m.\n    step = 3.74 / 111.19508\n    track = make_track((0, 0, 0), (0, step, 0))\n    assert \"  time      0h 45m\" in format_summary(summarise(track))\nEOF\npython -m pytest -q 2>&1 | tail -15; ruff check 2>&1 | tail -3; mypy 2>&1 | tail -2",
+    "git diff --stat && git stash -q && PYTHONPATH=src python -c \"\nfrom trailhead.pace import naismith_hours; print('before fix would be', int(naismith_hours(3.74,0)*60)%60)\" ; git stash pop -q && PYTHONPATH=src python -c \"\nfrom trailhead.pace import format_duration, naismith_hours; print(format_duration(naismith_hours(3.74,0)))\""
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_pace.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 36,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_pace.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 36,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  }
+}

@@ -1,0 +1,134 @@
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index d2fe23c..ae99eab 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -22,6 +22,16 @@ def naismith_hours(distance_km: float, ascent_m: float, fitness: float = 1.0) ->
+     return (distance_km / FLAT_SPEED_KMH + ascent_m / CLIMB_M_PER_HOUR) / fitness
+ 
+ 
++def format_duration(hours: float) -> str:
++    """Display a duration as ``<hours>h <minutes>m``, rounded to the nearest minute.
++
++    Rounds the total minutes first, so 44.9 minutes is ``0h 45m`` and 59.6 minutes
++    is ``1h 00m``.
++    """
++    whole, minutes = divmod(round(hours * 60), 60)
++    return f"{whole}h {minutes:02d}m"
++
++
+ def tobler_kmh(grade: float) -> float:
+     """Tobler's hiking function: walking speed in km/h on a slope.
+ 
+diff --git a/src/trailhead/plan.py b/src/trailhead/plan.py
+index 3a7bb36..e095c53 100644
+--- a/src/trailhead/plan.py
++++ b/src/trailhead/plan.py
+@@ -1,6 +1,6 @@
+ """Splitting a track into days of walking."""
+ 
+-from trailhead.pace import leg_hours
++from trailhead.pace import format_duration, leg_hours
+ from trailhead.track import Track
+ 
+ DEFAULT_MAX_HOURS = 7.0
+@@ -32,6 +32,5 @@ def describe_plan(days: list[tuple[int, int, int, float]]) -> list[str]:
+     """One line per day, for example ``Day 2: points 14-31, 6h 05m``."""
+     lines: list[str] = []
+     for day, first, last, hours in days:
+-        whole, minutes = divmod(int(hours * 60), 60)
+-        lines.append(f"Day {day}: points {first}-{last}, {whole}h {minutes:02d}m")
++        lines.append(f"Day {day}: points {first}-{last}, {format_duration(hours)}")
+     return lines
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 9f8ecf5..74e9005 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -9,7 +9,7 @@ from trailhead.elevation import (
+     steepest_grade,
+ )
+ from trailhead.geo import compass_point, haversine_km, initial_bearing
+-from trailhead.pace import naismith_hours
++from trailhead.pace import format_duration, naismith_hours
+ from trailhead.track import Track
+ 
+ LOOP_RADIUS_KM = 0.1
+@@ -55,7 +55,6 @@ def summarise(
+ 
+ 
+ def format_summary(summary: Summary) -> str:
+-    whole, minutes = divmod(int(summary.hours * 60), 60)
+     return "\n".join(
+         [
+             summary.name,
+@@ -63,7 +62,7 @@ def format_summary(summary: Summary) -> str:
+             f"  ascent    +{summary.gain_m:.0f} m / -{summary.loss_m:.0f} m",
+             f"  altitude  {summary.lowest_m:.0f}-{summary.highest_m:.0f} m",
+             f"  steepest  {summary.steepest_pct:.1f}%",
+-            f"  time      {whole}h {minutes:02d}m",
++            f"  time      {format_duration(summary.hours)}",
+             f"  heading   {summary.heading}",
+         ]
+     )
+diff --git a/tests/test_pace.py b/tests/test_pace.py
+index 6aec825..2cef167 100644
+--- a/tests/test_pace.py
++++ b/tests/test_pace.py
+@@ -1,6 +1,6 @@
+ import pytest
+ 
+-from trailhead.pace import leg_hours, naismith_hours, tobler_kmh
++from trailhead.pace import format_duration, leg_hours, naismith_hours, tobler_kmh
+ 
+ 
+ def test_naismith_on_the_flat_and_uphill():
+@@ -28,3 +28,17 @@ def test_leg_hours(make_track):
+     climb, descent = leg_hours(track)
+     assert climb == pytest.approx(1.11195 / 5 + 0.5, abs=1e-4)
+     assert descent == pytest.approx(1.11195 / 5, abs=1e-4)
++
++
++@pytest.mark.parametrize(
++    ("hours", "text"),
++    [
++        (44.9 / 60, "0h 45m"),
++        (44.4 / 60, "0h 44m"),
++        (59.6 / 60, "1h 00m"),
++        (5 + 7.2 / 60, "5h 07m"),
++        (12.0, "12h 00m"),
++    ],
++)
++def test_format_duration_rounds_to_nearest_minute(hours, text):
++    assert format_duration(hours) == text
+diff --git a/tests/test_plan.py b/tests/test_plan.py
+index 03b3f5d..64aef09 100644
+--- a/tests/test_plan.py
++++ b/tests/test_plan.py
+@@ -38,3 +38,10 @@ def test_describe_plan():
+         "Day 1: points 0-14, 6h 04m",
+         "Day 2: points 14-31, 0h 45m",
+     ]
++
++
++def test_describe_plan_rounds_to_nearest_minute():
++    assert describe_plan([(1, 0, 3, 44.9 / 60), (2, 3, 5, 59.6 / 60)]) == [
++        "Day 1: points 0-3, 0h 45m",
++        "Day 2: points 3-5, 1h 00m",
++    ]
+diff --git a/tests/test_report.py b/tests/test_report.py
+index 74fbed8..800dfde 100644
+--- a/tests/test_report.py
++++ b/tests/test_report.py
+@@ -26,3 +26,13 @@ def test_format_summary(make_track):
+             "  heading   NE",
+         ]
+     )
++
++
++def test_flat_walk_time_is_rounded_not_truncated(make_track):
++    # 3.74 km on the flat is 44.88 minutes by Naismith's rule: shown as 45m.
++    # One degree of longitude on the equator is about 111.195 km.
++    track = make_track((0, 0, 100), (0, 3.74 / 111.19508, 100), name="Flat")
++    summary = summarise(track)
++    assert summary.length_km == 3.7
++    assert summary.hours * 60 == pytest.approx(44.88, abs=0.02)
++    assert "  time      0h 45m" in format_summary(summary).splitlines()

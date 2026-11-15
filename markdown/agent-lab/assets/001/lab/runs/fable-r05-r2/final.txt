@@ -1,0 +1,9 @@
+Tobler pacing is in: `leg_hours`, `split_days` and `summarise` take `pace="naismith"` (default) or `"tobler"`, any other value raises `ValueError`, and both CLI commands accept `--pace {naismith,tobler}`. Tests, `ruff check` and `mypy` pass, the existing tests are untouched, and the README is updated. Nothing is committed.
+
+Things you might not expect:
+
+- **Threshold has no effect on Tobler time.** Tobler uses each leg's raw elevation change, as specified, so `--threshold` still changes the ascent/descent totals in the summary but not the time. I noted this in the README.
+- **Noisy tracks inflate Tobler times.** Because there is no smoothing, a 1 m leg with 3 m of elevation jitter is a grade of 3 and costs about 7 hours.
+- **Extreme grades crash.** Above a grade of roughly 213 (e.g. 0.1 m horizontal, 22 m vertical), `tobler_kmh` underflows to 0 and the leg raises `ZeroDivisionError`. I left this as is, since the spec defines the time as length divided by `tobler_kmh(grade)`; clamping the grade or raising a clear error would be a small addition if you want it.
+- **`pace` can also be passed positionally.** I made it the last ordinary parameter rather than keyword-only.
+- **Zero or negative fitness is a `ValueError` under Tobler too**, matching Naismith.

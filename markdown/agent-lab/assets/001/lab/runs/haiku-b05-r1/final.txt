@@ -1,0 +1,15 @@
+The cause was in the parser, and it's fixed. `trailhead` now reads `pikes-peak.csv` as 4302 m, not 14115 m.
+
+**Cause:** `parse_track` in `src/trailhead/track.py` applied the units scale to each point as its row was read. A `# units: ft` line placed after the points was seen too late, so those points were stored unscaled as feet and treated as metres. The README says settings "may appear anywhere in the file, before or after the points, and apply to the whole track," so the parser was not doing what the spec says.
+
+**Fix:** the parser now validates each row as before and collects them. Units are applied once, after the loop, to every point. Error messages and line numbers are unchanged.
+
+**Test:** I added `test_units_after_the_points_apply_to_all_points` in `tests/test_track.py`. It covers a `# units: ft` line after the data. It failed before the fix and passes now.
+
+**Verification:**
+- `pytest`: 48 passed.
+- `ruff check src tests`: passed.
+- `mypy`: no issues in 9 source files.
+- `python -m trailhead summary pikes-peak.csv` now reports `altitude 2042-4302 m`.
+
+Nothing is committed. The changes are in the working tree for you to review.

@@ -1,0 +1,52 @@
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index e36d18e..7a2aff2 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -1,8 +1,8 @@
+ """Walking-time estimates."""
+ 
+-from itertools import pairwise
+ from math import exp
+ 
++from trailhead.elevation import DEFAULT_THRESHOLD_M, counted_changes
+ from trailhead.track import Track
+ 
+ FLAT_SPEED_KMH = 5.0
+@@ -31,9 +31,17 @@ def tobler_kmh(grade: float) -> float:
+     return 6.0 * exp(-3.5 * abs(grade + 0.05))
+ 
+ 
+-def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:
+-    """Naismith time for every leg, counting the leg's own climb."""
++def leg_hours(
++    track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M
++) -> list[float]:
++    """Naismith time for every leg.
++
++    A leg's climb is the ascent that the summary's thresholded rule credits to it
++    (see ``counted_changes``), so GPS jitter is ignored and the legs add up to the
++    summary time.
++    """
++    changes = counted_changes([point.ele for point in track.points], threshold)
+     return [
+-        naismith_hours(km, max(b.ele - a.ele, 0.0), fitness)
+-        for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True)
++        naismith_hours(km, max(change, 0.0), fitness)
++        for change, km in zip(changes, track.leg_lengths_km(), strict=True)
+     ]
+diff --git a/tests/test_pace.py b/tests/test_pace.py
+index 6aec825..0f4c939 100644
+--- a/tests/test_pace.py
++++ b/tests/test_pace.py
+@@ -28,3 +28,11 @@ def test_leg_hours(make_track):
+     climb, descent = leg_hours(track)
+     assert climb == pytest.approx(1.11195 / 5 + 0.5, abs=1e-4)
+     assert descent == pytest.approx(1.11195 / 5, abs=1e-4)
++
++
++def test_leg_hours_ignore_jitter_and_match_summary(make_track):
++    from trailhead.report import summarise
++
++    eles = [1000, 1002, 1000, 1002, 1000, 1002, 1000, 1005, 1010]
++    track = make_track(*[(0, 0.01 * i, e) for i, e in enumerate(eles)])
++    assert sum(leg_hours(track)) == pytest.approx(summarise(track).hours)

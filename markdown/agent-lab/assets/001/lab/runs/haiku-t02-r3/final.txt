@@ -1,0 +1,9 @@
+I wrote `tests/test_pace.py` with 28 pytest tests covering `naismith_hours`, `tobler_kmh` and `leg_hours`. All 28 pass, `ruff check` is clean on the file, and nothing under `src/` changed.
+
+The tests check the behaviour the README and docstrings describe:
+
+- **`naismith_hours`:** 5 km/h on the flat, one hour per 600 m of ascent, and descent adds nothing. Fitness divides the time (1.25 is 25% faster). Negative distance or ascent and non-positive fitness raise `ValueError`.
+- **`tobler_kmh`:** the `6 * exp(-3.5 * |grade + 0.05|)` formula at several grades. The peak of 6 km/h is at a 5% descent, and the curve is symmetric around that point.
+- **`leg_hours`:** one value per leg, flat legs at distance over 5 km/h, climbs credited to their own leg, descents adding nothing, and 1 m jitter ignored. Small steps still add up to a 300 m climb. The legs sum to the summary time from `naismith_hours` over the track's total length and rounded gain, which is the property the README promises for day plans. Fitness applies to every leg.
+
+The tests were written from the docs and passed on the first run, so they confirm the current code matches the documentation. I did not deliberately break the code to check that they fail, so that is still unverified.

@@ -1,0 +1,12 @@
+I wrote `tests/test_pace.py`. The whole suite passes (69 tests) and `ruff check` is clean on the new file. Nothing under `src/` was changed.
+
+The tests cover:
+
+- **`naismith_hours`**: walking on the flat is 5 km/h, each 600 m of ascent adds an hour, and fitness divides the time (the default is 1.0). Times aren't rounded. Zero or negative fitness raises `ValueError`, and so does negative distance or ascent.
+- **`tobler_kmh`**: speed matches `6·exp(-3.5·|grade+0.05|)`. The top speed is 6 km/h on a 5% descent, and the curve is symmetric around that grade. Speed drops as the slope gets steeper, and grade is rise over run, not percent.
+- **`leg_hours`**: each leg gets its own time, and climbs earn time while descents add nothing. Elevation jitter under the 3 m threshold is ignored. A climb in small steps is credited to the leg where it crosses the threshold. A repeated point gives a zero-length leg, and fitness divides every leg.
+- **Legs add up to the summary**: as the README promises, the legs' times add up to `summarise(...).hours` for the same track and fitness, checked at three fitness values. The two can differ very slightly because the summary rounds ascent to 0.1 m, so that test allows a tolerance of 1e-4 hours (well under a second).
+
+None of the tests found a mismatch between the code and the docs.
+
+`git status` also lists some untracked files I didn't create (`.bashrc`, `.gitconfig`, `.idea`, `.claude/` and others). They look like leftovers from the sandbox environment rather than the project, so I haven't touched them.

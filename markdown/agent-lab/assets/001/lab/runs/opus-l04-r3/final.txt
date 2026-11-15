@@ -1,0 +1,11 @@
+mypy strict now passes with no `# type: ignore`, `cast`, `Any` or config changes. ruff is clean and all 48 tests pass.
+
+**These were real bugs, not just type noise.** `Point.ele` is `float | None` because the format allows an empty elevation where the GPS lost signal. Four places used elevations as plain numbers, so a track with a gap would crash in `steepest_grade` (subtracting `None`) and in `highest_and_lowest` (comparing `None`). `summarise` and `leg_hours` passed the `None` values straight into the ascent calculation and would crash there too.
+
+**The fix:** the README already says what a missing elevation should be: "the elevation of the nearest earlier point that has one or, if there is none, of the nearest later point." I added one method that does this, `Track.elevations() -> list[float]` in `src/trailhead/track.py`. I then pointed all four call sites at it, in `elevation.py` (twice), `pace.py` and `report.py`. `Point.ele` stays `None` after parsing, as the README and `test_missing_elevation_is_none` expect.
+
+I checked it by hand: elevations `[_, 100, _, 130]` fill to `[100, 100, 100, 130]`, and the summary and per-leg times compute without errors.
+
+**Decision for you:** the README doesn't cover a track where *every* elevation is empty. I made `elevations()` raise `TrackError("the track has no elevations")`, which the CLI already reports as a normal error. The alternative would be to report distance only and skip the elevation figures; tell me if you'd prefer that.
+
+There are no new tests for the gap-filling or the all-missing case yet. I can add them if you want, and I haven't committed anything.

@@ -1,0 +1,5 @@
+The bug was in `parse_track` in `src/trailhead/track.py`. The parser converted each elevation to metres as it read the point, using whatever `# units:` value it had seen so far. When `# units: ft` came after the points, every point had already been read with the default scale of 1.0. Pikes Peak's 14115 was therefore kept as 14115 m. The README says settings can appear anywhere in the file, so this was a parser bug and not a problem with your file.
+
+The fix is that `_parse_point` no longer scales. `parse_track` now applies the unit scale to all points once the whole file has been read. Per-line error messages and line numbers are unchanged.
+
+I added a regression test with `# units: ft` after the points. The full suite passes (48 tests). I didn't run the CLI on `pikes-peak.csv` itself, so I haven't confirmed the 4302 m figure on your attached file. The regression test checks the conversion on a small track instead.

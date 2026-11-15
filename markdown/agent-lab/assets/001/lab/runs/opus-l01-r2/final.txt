@@ -1,0 +1,12 @@
+`ruff check` now passes and all 47 tests pass. I didn't change the ruff config or add any `noqa` comments.
+
+One of the warnings was hiding a real bug:
+
+- **Unused variable in `src/trailhead/pace.py:22`**: `naismith_hours` worked out the time scaled by `fitness` and stored it in `hours`, then returned the unscaled time. So `fitness` was ignored, and the CLI's `--fitness` option had no effect on `summary` or `plan`. Ruff suggested deleting the variable, which would have kept the bug. I made the function return `hours` instead, which matches the docstring ("`fitness` scales the result"). This changes behaviour: any `--fitness` value other than 1.0 now changes the walking times and day plans. I added `test_fitness_scales_the_time` in `tests/test_pace.py` to cover it.
+
+The other fixes in `src/trailhead/track.py` don't change behaviour:
+
+- **Unused import**: removed `import os`, which also cleared the unsorted-imports warning.
+- **Bare `except` and the missing `from err` in `_parse_point`**: it now catches only `ValueError` (what `float()` raises on bad input) and raises `TrackError(...) from err`, so the original error stays attached.
+
+I haven't committed anything.

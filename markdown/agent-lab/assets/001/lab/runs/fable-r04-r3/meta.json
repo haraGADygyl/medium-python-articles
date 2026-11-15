@@ -1,0 +1,124 @@
+{
+  "run_id": "fable-r04-r3",
+  "task": "r04",
+  "tier": "refactor/feature",
+  "baseline": false,
+  "repeat": 3,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "`Track.leg_lengths_km()` recomputes every great-circle distance each time it is called, and summarising a track calls it more than once. Cache the leg lengths so that a summary computes each leg's distance only once, without changing any results.",
+  "harness_timeout": false,
+  "wall_s": 57.3,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 8,
+  "duration_ms": 54910,
+  "duration_api_ms": 52820,
+  "api_equivalent_usd": 0.5837972,
+  "usage": {
+    "input_tokens": 14,
+    "cache_creation_input_tokens": 22782,
+    "cache_read_input_tokens": 188466,
+    "output_tokens": 4537,
+    "output_tokens_details": {
+      "thinking_tokens": 415
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 22782,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 385,
+        "cache_read_input_tokens": 34720,
+        "cache_creation_input_tokens": 825,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 825
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 14,
+      "outputTokens": 4537,
+      "cacheReadInputTokens": 188466,
+      "cacheCreationInputTokens": 22782,
+      "webSearchRequests": 0,
+      "costUSD": 0.5837972,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 415,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 22782,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 6,
+    "Edit": 1
+  },
+  "bash_commands": [
+    "git ls-files; grep -rn \"leg_lengths_km\\|_legs\\|points\" --include=*.py . | head -60",
+    "cat src/trailhead/track.py src/trailhead/report.py src/trailhead/pace.py src/trailhead/elevation.py src/trailhead/plan.py tests/conftest.py; grep -rn \"points\\b.*=\\|\\.append\\|\\.sort\\|\\.reverse\\|\\.pop\\|\\.insert\\|\\.extend\\|replace(\" src tests | grep -v \"^src/trailhead/track.py\"; python -m pytest -q 2>&1 | tail -3",
+    "python - <<'EOF'\nimport re,pathlib\np=pathlib.Path('src/trailhead/track.py'); s=p.read_text()\nold='''    points: list[Point] = field(default_factory=list)\n\n    def leg_lengths_km(self) -> list[float]:\n        \"\"\"Length of each leg, the stretch between two consecutive points.\"\"\"\n        return [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]\n'''\nnew='''    points: list[Point] = field(default_factory=list)\n    # Leg lengths and the points they were computed from. `points` is a public,\n    # mutable list, so the cache is checked against a snapshot of it, not trusted.\n    _legs_for: tuple[Point, ...] | None = field(\n        default=None, init=False, repr=False, compare=False\n    )\n    _legs: tuple[float, ...] = field(default=(), init=False, repr=False, compare=False)\n\n    def leg_lengths_km(self) -> list[float]:\n        \"\"\"Length of each leg, the stretch between two consecutive points.\n\n        The distances are computed once and reused until the points change.\n        Each call returns a new list.\n        \"\"\"\n        points = tuple(self.points)\n        if self._legs_for != points:\n            self._legs = tuple(\n                haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(points)\n            )\n            self._legs_for = points\n        return list(self._legs)\n'''\nassert old in s; p.write_text(s.replace(old,new))\nEOF\ncat >> tests/test_track.py <<'EOF'\n\n\n@pytest.fixture\ndef haversine_calls(monkeypatch):\n    \"\"\"Count the great-circle distances computed by tracks.\"\"\"\n    from trailhead import track as track_module\n\n    calls = []\n    real = track_module.haversine_km\n\n    def counting(*args):\n        calls.append(args)\n        return real(*args)\n\n    monkeypatch.setattr(track_module, \"haversine_km\", counting)\n    return calls\n\n\ndef test_summary_computes_each_leg_once(make_track, haversine_calls):\n    from trailhead.report import summarise\n\n    track = make_track((0.0, 0.0, 100), (0.01, 0.0, 150), (0.03, 0.0, 120), (0.03, 0.02, 180))\n    summarise(track)\n    assert len(haversine_calls) == 3\n\n\ndef test_leg_lengths_follow_changes_to_the_points(make_track):\n    track = make_track((0.0, 0.0, 0), (0.01, 0.0, 0), (0.03, 0.0, 0))\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)\n    track.points[2] = Point(0.02, 0.0, 0)\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 1.11195], abs=1e-3)\n    track.points.append(Point(0.02, 0.0, 0))\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 1.11195, 0.0], abs=1e-3)\n    track.points = track.points[:2]\n    assert track.leg_lengths_km() == pytest.approx([1.11195], abs=1e-3)\n\n\ndef test_leg_lengths_result_can_be_changed_without_affecting_the_track(make_track):\n    track = make_track((0.0, 0.0, 0), (0.01, 0.0, 0), (0.03, 0.0, 0))\n    track.leg_lengths_km().clear()\n    assert len(track.leg_lengths_km()) == 2\n\n\ndef test_cache_does_not_affect_equality_or_repr(make_track):\n    one = make_track((0.0, 0.0, 0), (0.01, 0.0, 0))\n    two = make_track((0.0, 0.0, 0), (0.01, 0.0, 0))\n    before = repr(one)\n    one.leg_lengths_km()\n    assert one == two\n    assert repr(one) == before\nEOF\npython -m pytest -q 2>&1 | tail -3; (ruff check . ; ruff format --check .) 2>&1 | tail -5; git status --short",
+    "python -m pytest -q 2>&1 | tail -3; git status --short; ruff check . 2>&1 | tail -5; ruff format --check . 2>&1 | tail -5",
+    "cat >> tests/test_track.py <<'EOF'\n\n\n@pytest.fixture\ndef haversine_calls(monkeypatch):\n    \"\"\"Count the great-circle distances computed by tracks.\"\"\"\n    from trailhead import track as track_module\n\n    calls = []\n    real = track_module.haversine_km\n\n    def counting(*args):\n        calls.append(args)\n        return real(*args)\n\n    monkeypatch.setattr(track_module, \"haversine_km\", counting)\n    return calls\n\n\ndef test_summary_computes_each_leg_once(make_track, haversine_calls):\n    from trailhead.report import summarise\n\n    track = make_track((0.0, 0.0, 100), (0.01, 0.0, 150), (0.03, 0.0, 120), (0.03, 0.02, 180))\n    summarise(track)\n    assert len(haversine_calls) == 3\n\n\ndef test_leg_lengths_follow_changes_to_the_points(make_track):\n    track = make_track((0.0, 0.0, 0), (0.01, 0.0, 0), (0.03, 0.0, 0))\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)\n    track.points[2] = Point(0.02, 0.0, 0)\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 1.11195], abs=1e-3)\n    track.points.append(Point(0.02, 0.0, 0))\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 1.11195, 0.0], abs=1e-3)\n    track.points = track.points[:2]\n    assert track.leg_lengths_km() == pytest.approx([1.11195], abs=1e-3)\n\n\ndef test_changing_a_returned_list_does_not_affect_the_track(make_track):\n    track = make_track((0.0, 0.0, 0), (0.01, 0.0, 0), (0.03, 0.0, 0))\n    track.leg_lengths_km().clear()\n    assert len(track.leg_lengths_km()) == 2\n\n\ndef test_cache_does_not_affect_equality_or_repr(make_track):\n    one = make_track((0.0, 0.0, 0), (0.01, 0.0, 0))\n    two = make_track((0.0, 0.0, 0), (0.01, 0.0, 0))\n    before = repr(one)\n    one.leg_lengths_km()\n    assert one == two\n    assert repr(one) == before\nEOF\nsed -i 's/^from trailhead.track import \\(.*\\)$/from trailhead.track import \\1/' tests/test_track.py; grep -n \"^from\\|^import\" tests/test_track.py; python -m pytest -q 2>&1 | tail -15; ruff check src tests; ruff format --check src tests; git stash -q; python - <<'EOF'\nEOF\ngit stash pop -q; git status --short src tests",
+    "sed -i 's/^from trailhead.track import TrackError, load_track, parse_track$/from trailhead.track import Point, TrackError, load_track, parse_track/' tests/test_track.py && ruff format src tests && ruff check src tests && python -m pytest -q 2>&1 | tail -3 && git diff src"
+  ],
+  "permission_denials": [
+    {
+      "command": "python - <<'EOF'\nimport re,pathlib\np=pathlib.Path('src/trailhead/track.py'); s=p.read_text()\nold='''    points: list[Point] = field(default_factory=list)\n\n    def leg_lengths_km(self) -> list[float]:\n        \"\"\"Length of each leg, the stretch between two consecutive points.\"\"\"\n        return [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]\n'''\nnew='''    points: list[Point] = field(default_factory=list)\n    # Leg lengths and the points they were computed from. `points` is a public,\n    # mutable list, so the cache is checked against a snapshot of it, not trusted.\n    _legs_for: tuple[Point, ...] | None = field(\n        default=None, init=False, repr=False, compare=False\n    )\n    _legs: tuple[float, ...] = field(default=(), init=False, repr=False, compare=False)\n\n    def leg_lengths_km(self) -> list[float]:\n        \"\"\"Length of each leg, the stretch between two consecutive points.\n\n        The distances are computed once and reused until the points change.\n        Each call returns a new list.\n        \"\"\"\n        points = tuple(self.points)\n        if self._legs_for != points:\n            self._legs = tuple(\n                haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(points)\n            )\n            self._legs_for = points\n        return list(self._legs)\n'''\nassert old in s; p.write_text(s.replace(old,new))\nEOF\ncat >> tests/test_track.py <<'EOF'\n\n\n@pytest.fixture\ndef haversine_calls(monkeypatch):\n    \"\"\"Count the great-circle distances computed by tracks.\"\"\"\n    from trailhead import track as track_module\n\n    calls = []\n    real = track_module.haversine_km\n\n    def counting(*args):\n        calls.append(args)\n        return real(*args)\n\n    monkeypatch.setattr(track_module, \"haversine_km\", counting)\n    return calls\n\n\ndef test_summary_computes_each_leg_once(make_track, haversine_calls):\n    from trailhead.report import summarise\n\n    track = make_track((0.0, 0.0, 100), (0.01, 0.0, 150), (0.03, 0.0, 120), (0.03, 0.02, 180))\n    summarise(track)\n    assert len(haversine_calls) == 3\n\n\ndef test_leg_lengths_follow_changes_to_the_points(make_track):\n    track = make_track((0.0, 0.0, 0), (0.01, 0.0, 0), (0.03, 0.0, 0))\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)\n    track.points[2] = Point(0.02, 0.0, 0)\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 1.11195], abs=1e-3)\n    track.points.append(Point(0.02, 0.0, 0))\n    assert track.leg_lengths_km() == pytest.approx([1.11195, 1.11195, 0.0], abs=1e-3)\n    track.points = track.points[:2]\n    assert track.leg_lengths_km() == pytest.approx([1.11195], abs=1e-3)\n\n\ndef test_leg_lengths_result_can_be_changed_without_affecting_the_track(make_track):\n    track = make_track((0.0, 0.0, 0), (0.01, 0.0, 0), (0.03, 0.0, 0))\n    track.leg_lengths_km().clear()\n    assert len(track.leg_lengths_km()) == 2\n\n\ndef test_cache_does_not_affect_equality_or_repr(make_track):\n    one = make_track((0.0, 0.0, 0), (0.01, 0.0, 0))\n    two = make_track((0.0, 0.0, 0), (0.01, 0.0, 0))\n    before = repr(one)\n    one.leg_lengths_km()\n    assert one == two\n    assert repr(one) == before\nEOF\npython -m pytest -q 2>&1 | tail -3; (ruff check . ; ruff format --check .) 2>&1 | tail -5; git status --short",
+      "description": "Add the cache, add tests, run tests and lint"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "......................................................                   [100%]\n54 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 67,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "......................................................                   [100%]\n54 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 67,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  }
+}

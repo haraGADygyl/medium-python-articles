@@ -1,0 +1,11 @@
+The 44-minute reading is fixed. The full suite passes (49 tests), including the new regression tests. I haven't committed anything.
+
+**Cause:** `format_summary` in `src/trailhead/report.py` converted hours to minutes with `int(summary.hours * 60)`, which truncates. 44.9 minutes became 44 instead of rounding to 45.
+
+`describe_plan` in `src/trailhead/plan.py` had the same bug, so multi-day plan lines like `Day 2: … 6h 05m` were also coming out up to a minute short. I fixed both.
+
+**Fix:** both now use `round(hours * 60)` before the `divmod` into hours and minutes. Rounding the total first means 59.6 minutes shows as `1h 00m` and not `0h 60m`.
+
+I added a parametrized test in `tests/test_report.py` covering 44.9 → `0h 45m` and 59.6 → `1h 00m`. I didn't add a separate test for `describe_plan`.
+
+Existing summary output can shift by a minute. The `0h 47m` in `test_format_summary` still passed, but other tracks may now show one minute more than before.

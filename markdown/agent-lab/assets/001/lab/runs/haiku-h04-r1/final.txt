@@ -1,0 +1,11 @@
+The bug is fixed: the flat 3.74 km walk now shows `time 0h 45m`.
+
+**Cause:** the duration was formatted with `int(hours * 60)`, which truncates instead of rounding. 3.74 km flat is 44.88 minutes, so the minutes were cut to 44. The README says durations round to the nearest minute.
+
+**Fix:** I added one helper, `format_duration` in `src/trailhead/pace.py`. It rounds the total minutes and then splits them into hours and minutes. `report.py` (the summary) now uses it.
+
+**Also fixed:** `plan.py` had the same truncation in `describe_plan`, so the `plan` command's day times were affected too. It now uses the same helper.
+
+**Tests:** I added regression tests for the helper's rounding, the flat 3.74 km summary, and day-plan rounding. The full suite passes (54 tests), and ruff and mypy are clean. I ran the CLI on a generated flat 3.74 km track and it printed `0h 45m`.
+
+I haven't committed anything. The changes are in the working tree under `src/trailhead/` and `tests/`.

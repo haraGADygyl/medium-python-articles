@@ -1,0 +1,12 @@
+`ruff check` now passes and the 46 existing tests still pass. I didn't touch the ruff config or add any `noqa` comments.
+
+One of the fixes changes behaviour, and you should know about it:
+
+- **`src/trailhead/pace.py`, unused `hours` (F841):** this was a real bug, not leftover code. `naismith_hours` worked out the time divided by `fitness` and then returned the time without it, so the CLI's `--fitness` flag did nothing in `summary` or `plan`. The docstring and the README both say `fitness` divides the time, so I made the function return `hours` instead of deleting the variable. Running with `--fitness 1.2` will now give shorter times and may split a hike into fewer days. No test passes a fitness other than 1.0, which is why the existing tests didn't catch this. A test that does would be worth adding.
+
+The other fixes are in `src/trailhead/track.py` and don't change behaviour:
+
+- **Unused `import os` (F401):** removed. That also fixed the import-order error (I001), since `os` was the import out of place.
+- **Bare `except:` (E722, B904):** it now catches only `ValueError`, which is what `float()` raises on bad text. It re-raises with `raise TrackError(...) from err` so the original error is kept.
+
+I haven't committed anything.

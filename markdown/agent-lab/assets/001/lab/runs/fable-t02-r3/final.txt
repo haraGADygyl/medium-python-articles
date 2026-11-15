@@ -1,0 +1,9 @@
+I added `tests/test_pace.py` with 34 tests covering all three functions in `pace.py`; the full suite (79 tests) passes and `ruff check` is clean on the new file. Nothing under `src/` was touched, and nothing is committed.
+
+The tests found no discrepancy between `pace.py` and the README or docstrings.
+
+- **`naismith_hours`**: 5 km/h on the flat, one hour per 600 m of ascent, fitness dividing the time, no rounding, and `ValueError` for zero or negative fitness and for negative distance or ascent.
+- **`tobler_kmh`**: the documented formula at several grades, the 6 km/h peak at a 5% descent, grade as rise over run rather than percent, and slower speeds as the slope steepens either way.
+- **`leg_hours`**: one value per leg, descent adding nothing, jitter under 3 m ignored, a slow climb credited to the leg that reaches the threshold, fitness applied to every leg, and the legs summing to the summary time for the same track and fitness.
+
+The untracked dotfiles that `git status` now shows in the repo root (`.bashrc`, `.gitconfig`, `.idea` and similar) are placeholder device nodes from the sandbox, not files I created.

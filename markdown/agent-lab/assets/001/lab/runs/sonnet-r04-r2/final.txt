@@ -1,0 +1,9 @@
+`Track.leg_lengths_km()` now caches its results, so a summary computes each leg's distance once. All 48 tests pass, including a new one for the caching.
+
+- **Change:** the edit is in `src/trailhead/track.py`. The cache keeps a snapshot of the points it was built from. It is reused only while `track.points` still matches that snapshot.
+- **Why the snapshot:** the README promises that a `Track` is mutable and that its lengths always reflect the current points. A plain cached value would go stale after an append or an edit. Any change to the points triggers a recompute, so results are unchanged. Appending a point recomputes every leg, not just the new one.
+- **Cost:** each call now does a cheap point-by-point comparison. That is far less work than recomputing the haversine distances.
+- **Behaviour kept the same:** each call still returns a fresh list, so callers can modify it without touching the cache. The new cache fields are excluded from `repr` and `==`.
+- **Test:** the new test in `tests/test_track.py` checks that repeated calls compute each leg once. It also checks that appending a point or replacing one produces updated lengths.
+
+I did not measure the speed-up. I also did not directly check that `summarise` computes each leg once. The new test only covers repeated calls on one track.

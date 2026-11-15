@@ -1,0 +1,9 @@
+I found and fixed the bug. A steady 300 m climb with a point every metre now shows +300 m instead of +0 m, and the whole test suite passes (47 tests).
+
+**Cause:** In `counted_changes` (`src/trailhead/elevation.py`), the ascent and descent count ignores any change smaller than a 3 m threshold, to filter out GPS jitter. Each point is supposed to be compared with the last elevation that was counted. But a stray `reference = elevation` at the end of the loop ran on every point, so each point was compared only with the one just before it. With 1 m steps, no single change ever reached 3 m, so nothing was counted. Tracks with bigger gaps between points looked fine because each step was already at least 3 m.
+
+**Fix:** I deleted that stray line. The comparison point now only moves forward when a change is counted, so small steps add up until they pass the threshold, which is what the function's docstring already says it does. Jitter is still ignored; the existing jitter test still passes.
+
+**Test:** I added `test_long_climb_in_small_steps_is_counted` in `tests/test_elevation.py`. It runs a 1 m-per-point climb of 300 m each way and expects 300 m of ascent going up and 300 m of descent coming down.
+
+The pace estimate in `pace.py` uses the same function, so it was also under-counting climbing on tracks like this. This fix corrects it too.

@@ -1,0 +1,16 @@
+Fixed. `steepest_grade()` now returns 18.0 for the user's track, as the README and docstring say it should.
+
+**Cause:** in `src/trailhead/elevation.py:66`, the function worked out rise over run as a ratio (0.18) and returned it rounded to 3 decimal places, never converting to percent. The bug didn't show in the CLI because `report.py` multiplied the result by 100 itself, which covered for the wrong units.
+
+**Fix:**
+- `src/trailhead/elevation.py`: now returns `round(steepest * 100, 1)`, a percentage rounded to 0.1, as documented.
+- `src/trailhead/report.py:51`: removed its own `* 100`. Without this, the report would have shown 600% instead of 6%. Report output is unchanged.
+- `tests/test_elevation.py`: `steepest_grade` had no tests before. I added two:
+  - an 18 m climb over about 100 m gives about 18.0
+  - downhill legs count, and repeated points are skipped
+
+All 48 tests pass, and I confirmed the two new tests fail on the old code.
+
+**For your release notes:** this changes the return value of a public function. Anyone who has been calling `steepest_grade()` directly and multiplying by 100 to work around the bug will now get numbers 100× too large.
+
+`git status` also lists some untracked dotfiles and folders I didn't create (`.bashrc`, `.gitconfig`, `.claude/`, `.idea`, and others). They're probably left over from the environment, and I haven't touched them.

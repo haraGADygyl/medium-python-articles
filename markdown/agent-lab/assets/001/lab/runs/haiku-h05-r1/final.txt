@@ -1,0 +1,13 @@
+The plan and summary now agree on the noisy track: `summary` gives 12h 38m and the day plan sums to 12h 37m, the difference being per-day rounding.
+
+**Cause:** `pace.leg_hours` credited each leg with its raw rise, `max(b.ele - a.ele, 0)`. The summary credits only the ascent that passes the 3 m threshold (`elevation.counted_changes`). Every small upward wobble counted in the plan but was ignored in the summary, so the plan came out longer.
+
+**Fix:**
+- `src/trailhead/pace.py`: `leg_hours` now takes the climb for each leg from `counted_changes`, the same rule the summary uses, so the legs sum to the summary's time.
+- `src/trailhead/plan.py`: `split_days` takes a `threshold` argument (default 3 m) and passes it through.
+- `src/trailhead/cli.py`: `plan` gets a `--threshold` option, matching `summary`. The default is unchanged.
+- `tests/test_plan.py`: new regression test with a ±1 m wobble on a flat line. The day totals must equal the flat-ground time, and the old code's raw-rise sum would exceed it.
+
+**Verification:** `pytest` passes (48 tests), and `ruff check` and `mypy` are clean. On a synthetic track with random ±1.5 m noise, the old plan total was about 13h 44m against the summary's 12h 38m; it now matches. I did not get a clean run of the new test against the old code: the swap I tried failed with a signature mismatch rather than the assertion. By hand, the old code would add about 38 m of spurious climb to that test's track, which would fail it.
+
+I did not commit anything. The `.repro` scratch files are removed, and `git diff --stat` shows only the four files above.

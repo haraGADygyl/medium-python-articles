@@ -1,0 +1,9 @@
+I renamed `haversine_km` to `distance_km` and kept `haversine_km` as a deprecated alias. The full test suite passes: 48 tests.
+
+- **`src/trailhead/geo.py`**: `distance_km` now holds the implementation. `haversine_km` emits a `DeprecationWarning` (with `stacklevel=2`, so the warning points at the caller) and returns `distance_km(...)`.
+- **`src/trailhead/track.py`** and **`src/trailhead/report.py`**: imports and call sites now use `distance_km`.
+- **`tests/test_geo.py`**: existing tests use `distance_km`. I added one test that checks `haversine_km` raises a `DeprecationWarning` and returns the same value as `distance_km`.
+
+The only remaining `haversine_km` references in `src/` and `tests/` are the alias definition and its test. I didn't touch anything outside those two directories. My initial search of the whole working directory found no other uses.
+
+I ran the tests with `PYTHONPATH=src python -m pytest -q`. I did not commit anything.

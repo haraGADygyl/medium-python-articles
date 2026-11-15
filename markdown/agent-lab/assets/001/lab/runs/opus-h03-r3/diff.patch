@@ -1,0 +1,55 @@
+diff --git a/src/trailhead/elevation.py b/src/trailhead/elevation.py
+index 441cce3..77a35f5 100644
+--- a/src/trailhead/elevation.py
++++ b/src/trailhead/elevation.py
+@@ -63,4 +63,4 @@ def steepest_grade(track: Track) -> float:
+         if km == 0:
+             continue
+         steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000))
+-    return round(steepest, 3)
++    return round(steepest * 100, 1)
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 0525756..9c7e1a7 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -48,7 +48,7 @@ def summarise(
+         loss_m=loss,
+         highest_m=highest,
+         lowest_m=lowest,
+-        steepest_pct=round(steepest_grade(track) * 100, 1),
++        steepest_pct=steepest_grade(track),
+         hours=naismith_hours(length, gain, fitness),
+         heading=_heading(track),
+     )
+diff --git a/tests/test_elevation.py b/tests/test_elevation.py
+index 3e1fb58..37a12f4 100644
+--- a/tests/test_elevation.py
++++ b/tests/test_elevation.py
+@@ -1,6 +1,11 @@
+ import pytest
+ 
+-from trailhead.elevation import gain_and_loss, highest_and_lowest
++from math import degrees
++
++from trailhead.elevation import gain_and_loss, highest_and_lowest, steepest_grade
++
++# Latitude step, in degrees, for 100 m of great-circle distance.
++LAT_100_M = degrees(0.1 / 6371.0088)
+ 
+ 
+ def test_simple_climb_and_descent():
+@@ -28,3 +33,14 @@ def test_negative_threshold_is_rejected():
+ def test_highest_and_lowest(make_track):
+     track = make_track((0, 0, 900), (0, 0.01, 1450), (0, 0.02, 700))
+     assert highest_and_lowest(track) == (1450, 700)
++
++
++def test_steepest_grade_is_a_percentage(make_track):
++    # 18 m up over 100 m, then a gentler 5 m over 100 m.
++    track = make_track((0, 0, 100), (LAT_100_M, 0, 118), (2 * LAT_100_M, 0, 123))
++    assert steepest_grade(track) == 18.0
++
++
++def test_steepest_grade_counts_descents_and_skips_repeated_points(make_track):
++    track = make_track((0, 0, 500), (0, 0, 520), (LAT_100_M, 0, 475))
++    assert steepest_grade(track) == 45.0

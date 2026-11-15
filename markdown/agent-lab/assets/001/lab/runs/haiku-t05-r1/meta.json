@@ -1,0 +1,143 @@
+{
+  "run_id": "haiku-t05-r1",
+  "task": "t05",
+  "tier": "tests",
+  "baseline": false,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "`src/trailhead/report.py` has no tests. Write `tests/test_report.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 73.0,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 69437,
+  "duration_api_ms": 68392,
+  "api_equivalent_usd": 0.01541812,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 32257,
+    "cache_read_input_tokens": 138222,
+    "output_tokens": 15167,
+    "output_tokens_details": {
+      "thinking_tokens": 10808
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 32257,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 807,
+        "cache_read_input_tokens": 44660,
+        "cache_creation_input_tokens": 360,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 360
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 10,
+      "outputTokens": 15167,
+      "cacheReadInputTokens": 138222,
+      "cacheCreationInputTokens": 32257,
+      "webSearchRequests": 0,
+      "costUSD": 0.01541812,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 10808,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 32257,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git status --short && ls -la && find . -path ./.git -prune -o -type f -print | head -100 && cat src/trailhead/report.py",
+    "cat README* 2>/dev/null; echo ---; cat pyproject.toml setup.cfg setup.py pytest.ini tox.ini 2>/dev/null; echo ---; ls tests 2>/dev/null; cat tests/conftest.py 2>/dev/null; echo ---; cat src/trailhead/__init__.py 2>/dev/null",
+    "cat src/trailhead/elevation.py; echo ----GEO; cat src/trailhead/geo.py; echo ----PACE; cat src/trailhead/pace.py; echo ----TRACK; cat src/trailhead/track.py; echo ----TESTPACE; cat tests/test_pace.py | head -60",
+    "python -m pytest tests/test_report.py -q 2>&1 | tail -40; echo ---; python -m pytest -q 2>&1 | tail -3; echo ---; (ruff check tests/test_report.py 2>&1 || python -m ruff check tests/test_report.py 2>&1) | tail -20"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_report.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".............................                                            [100%]\n29 passed in 0.05s\n",
+    "src_changed": [],
+    "killed": [
+      "loop radius 1 km",
+      "heading measured finish to start",
+      "time uses descent",
+      "fitness dropped",
+      "threshold dropped",
+      "minutes truncated"
+    ],
+    "survived": [
+      "steepest rounded to whole percent"
+    ],
+    "kills": 6,
+    "mutants": 7,
+    "changed": [
+      "A tests/test_report.py"
+    ],
+    "lines_added": 176,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_report.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".............................                                            [100%]\n29 passed in 0.04s\n",
+    "src_changed": [],
+    "killed": [
+      "loop radius 1 km",
+      "heading measured finish to start",
+      "distance rounded to 0.01",
+      "time uses descent",
+      "fitness dropped",
+      "threshold dropped",
+      "altitude printed high-low",
+      "minutes truncated"
+    ],
+    "survived": [
+      "steepest rounded to whole percent"
+    ],
+    "kills": 8,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_report.py"
+    ],
+    "lines_added": 176,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

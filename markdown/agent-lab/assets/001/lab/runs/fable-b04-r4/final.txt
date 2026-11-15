@@ -1,0 +1,7 @@
+The Garmin export starts with a UTF-8 byte order mark (bytes `EF BB BF`), which editors hide. The parser saw the first column as `\ufefflat` instead of `lat`, so the header check failed.
+
+The fix is in `parse_track` in `src/trailhead/track.py`: it now drops a leading byte order mark before parsing. `trailhead summary garmin-export.csv` now prints the summary where it previously gave the reported error, and the test suite passes.
+
+The file also uses Windows line endings (CRLF), but those were already handled and were not part of the problem.
+
+I added two tests in `tests/test_track.py`: one for a file with a byte order mark and CRLF line endings, and one for a byte order mark in front of a `# name:` comment line. Nothing is committed.

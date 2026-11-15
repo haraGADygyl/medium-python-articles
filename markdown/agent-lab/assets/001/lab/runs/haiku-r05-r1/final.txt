@@ -1,0 +1,13 @@
+Tobler's hiking function is now available as `pace="tobler"` alongside Naismith, and both CLI commands take `--pace {naismith,tobler}`. The suite passes (62 tests, 14 of them new), and ruff and mypy are clean. I did not commit.
+
+- **`pace.py`**: `leg_hours` takes `pace`. Under Tobler each leg is its length divided by `tobler_kmh` of its grade, where grade is the raw elevation change over the horizontal length. Zero-length legs take no time, and fitness divides the result. A shared `check_pace` raises `ValueError` for any other value.
+- **`plan.py`**: `split_days` passes `pace` through to `leg_hours`.
+- **`report.py`**: `summarise` takes `pace`. Under Tobler the summary time is the sum of the leg times. Under Naismith it is computed exactly as before.
+- **`cli.py`**: both subcommands get `--pace`, with `choices` so an unknown value exits with argparse's usage error (code 2).
+- **README**: the walking-time, Tobler and day-plan bullets are updated, and there is a `--pace tobler` example.
+
+Naismith output is unchanged. I compared `summary` and `plan` output against the committed HEAD sources on a sample track, and the bytes match.
+
+Choices I made:
+- The Tobler grade uses the raw point-to-point elevation change, not the 3 m-threshold counted change. The spec said "the leg's elevation change", so I read it literally.
+- The Tobler summary time is a plain sum of leg times, so it can differ slightly from the Naismith summary for the same track.

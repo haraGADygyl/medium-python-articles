@@ -1,0 +1,115 @@
+{
+  "run_id": "fable-b01-r3",
+  "task": "b01",
+  "tier": "bug",
+  "baseline": true,
+  "repeat": 3,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "Bug report from a user: \"I recorded a long, steady climb with a point for every metre of height, about 300 m up in total. `trailhead summary` shows the ascent as +0 m. Tracks with bigger gaps between points look fine.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 21.7,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 4,
+  "duration_ms": 19632,
+  "duration_api_ms": 18880,
+  "api_equivalent_usd": 0.3048844,
+  "usage": {
+    "input_tokens": 8,
+    "cache_creation_input_tokens": 15314,
+    "cache_read_input_tokens": 88182,
+    "output_tokens": 1054,
+    "output_tokens_details": {
+      "thinking_tokens": 154
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 15314,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 359,
+        "cache_read_input_tokens": 27202,
+        "cache_creation_input_tokens": 875,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 875
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 8,
+      "outputTokens": 1054,
+      "cacheReadInputTokens": 88182,
+      "cacheCreationInputTokens": 15314,
+      "webSearchRequests": 0,
+      "costUSD": 0.3048844,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 154,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 15314,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 3
+  },
+  "bash_commands": [
+    "git ls-files | head -100; grep -rn -i \"ascent\\|threshold\\|gain\" --include=*.py . | head -50",
+    "cat src/trailhead/elevation.py src/trailhead/pace.py; grep -rn \"counted_changes\\|elevation\\.\" src tests README.md",
+    "python - <<'E'\nimport re\np='src/trailhead/elevation.py'\ns=open(p).read()\ns2=s.replace(\"            changes.append(0.0)\\n        reference = elevation\\n\",\"            changes.append(0.0)\\n\")\nassert s!=s2\nopen(p,'w').write(s2)\nE\ncat >> tests/test_elevation.py <<'E'\n\n\ndef test_a_steady_climb_in_steps_below_the_threshold_is_counted():\n    assert gain_and_loss([1000 + step for step in range(301)]) == (300.0, 0.0)\nE\nsed -n 36,50p README.md; grep -n \"gain\\|ascent\\|leg_hours\" src/trailhead/plan.py; python -m pytest -q 2>&1 | tail -15"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 4,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 4,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  }
+}

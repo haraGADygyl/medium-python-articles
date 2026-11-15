@@ -1,0 +1,350 @@
+diff --git a/README.md b/README.md
+index 05c6be9..16a8fa3 100644
+--- a/README.md
++++ b/README.md
+@@ -6,6 +6,7 @@ walk into days. Pure Python 3.12, no dependencies.
+ ```bash
+ python -m trailhead summary rila.csv
+ python -m trailhead plan rila.csv --max-hours 6 --fitness 1.2
++python -m trailhead summary rila.csv --pace tobler
+ ```
+ 
+ ## Track format
+@@ -47,18 +48,26 @@ lat,lon,ele
+   (the stretch between two consecutive points) in **percent**, uphill or downhill,
+   rounded to 0.1: a leg climbing 18 m over 100 m is `18.0`. Repeated points
+   (zero-length legs) are skipped.
+-- **Walking time** uses Naismith's rule: 5 km/h on the flat plus one hour for every
+-  600 m of ascent; descent adds nothing. `fitness` divides the time: 1.25 is 25%
+-  faster than average. Zero or negative fitness, and negative distance or ascent, are
+-  a `ValueError`. Times are not rounded until they are displayed.
+-- **Tobler's hiking function** (`pace.tobler_kmh`) gives speed on a slope as
+-  `6 * exp(-3.5 * |grade + 0.05|)` km/h, with grade as rise over run.
++- **Walking time** has two rules, chosen with `pace` (`--pace naismith` or
++  `--pace tobler` on the command line; `naismith` is the default). Anything else is a
++  `ValueError`.
++  - **Naismith** (default): 5 km/h on the flat plus one hour for every 600 m of
++    ascent; descent adds nothing.
++  - **Tobler** (`pace.tobler_kmh`): a leg takes its length divided by the speed on its
++    grade, where the speed is `6 * exp(-3.5 * |grade + 0.05|)` km/h and grade is the
++    leg's elevation change over its horizontal length (rise over run, so descents
++    count too). A zero-length leg takes no time. The summary time is the sum of the
++    leg times.
++  - `fitness` divides the time under either rule: 1.25 is 25% faster than average.
++    Zero or negative fitness, and negative distance or ascent, are a `ValueError`.
++    Times are not rounded until they are displayed.
+ - **Day plans** (`plan.split_days`) group consecutive legs into days, timing each leg
+-  by Naismith's rule. A leg's climb is the ascent the summary's rule (with the
+-  default 3 m threshold) credits to it, so the days of a plan add up to the summary
+-  time for the same track and fitness. The default limit is 7 hours a day. A day never goes over the limit unless a single leg on its own does, in which
+-  case that leg is a day by itself. `fitness` applies to the plan exactly as it does
+-  to the summary.
++  with the same `pace` rule as the summary. Under Naismith, a leg's climb is the ascent
++  the summary's rule (with the default 3 m threshold) credits to it, so the days of a
++  plan add up to the summary time for the same track and fitness. The default limit is
++  7 hours a day. A day never goes over the limit unless a single leg on its own does,
++  in which case that leg is a day by itself. `fitness` applies to the plan exactly as
++  it does to the summary.
+ - **Heading** in the summary is the compass point (N, NE, E, SE, S, SW, W, NW) from the
+   start to the finish, or `loop` when the finish is within 0.1 km of the start.
+ - **Durations** are displayed as `<hours>h <minutes>m` with two-digit minutes, rounded
+diff --git a/src/trailhead/cli.py b/src/trailhead/cli.py
+index 0312f0a..ba653ef 100644
+--- a/src/trailhead/cli.py
++++ b/src/trailhead/cli.py
+@@ -5,6 +5,7 @@ import sys
+ from collections.abc import Sequence
+ 
+ from trailhead.elevation import DEFAULT_THRESHOLD_M
++from trailhead.pace import PACES
+ from trailhead.plan import DEFAULT_MAX_HOURS, describe_plan, split_days
+ from trailhead.report import format_summary, summarise
+ from trailhead.track import TrackError, load_track
+@@ -18,11 +19,13 @@ def build_parser() -> argparse.ArgumentParser:
+     summary.add_argument("file")
+     summary.add_argument("--fitness", type=float, default=1.0)
+     summary.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD_M)
++    summary.add_argument("--pace", choices=PACES, default="naismith")
+ 
+     plan = commands.add_parser("plan", help="split a track into days of walking")
+     plan.add_argument("file")
+     plan.add_argument("--max-hours", type=float, default=DEFAULT_MAX_HOURS)
+     plan.add_argument("--fitness", type=float, default=1.0)
++    plan.add_argument("--pace", choices=PACES, default="naismith")
+     return parser
+ 
+ 
+@@ -34,8 +37,9 @@ def main(argv: Sequence[str] | None = None) -> int:
+         print(f"trailhead: {exc}", file=sys.stderr)
+         return 1
+     if args.command == "summary":
+-        print(format_summary(summarise(track, args.fitness, args.threshold)))
++        print(format_summary(summarise(track, args.fitness, args.threshold, args.pace)))
+     else:
+-        for line in describe_plan(split_days(track, args.max_hours, args.fitness)):
++        days = split_days(track, args.max_hours, args.fitness, args.pace)
++        for line in describe_plan(days):
+             print(line)
+     return 0
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index d2fe23c..95891f5 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -1,5 +1,6 @@
+ """Walking-time estimates."""
+ 
++from itertools import pairwise
+ from math import exp
+ 
+ from trailhead.elevation import counted_changes
+@@ -7,6 +8,13 @@ from trailhead.track import Track
+ 
+ FLAT_SPEED_KMH = 5.0
+ CLIMB_M_PER_HOUR = 600.0
++PACES = ("naismith", "tobler")
++
++
++def check_pace(pace: str) -> None:
++    """Raise ``ValueError`` unless ``pace`` names a supported walking-time rule."""
++    if pace not in PACES:
++        raise ValueError(f"pace must be 'naismith' or 'tobler', not {pace!r}")
+ 
+ 
+ def naismith_hours(distance_km: float, ascent_m: float, fitness: float = 1.0) -> float:
+@@ -31,15 +39,33 @@ def tobler_kmh(grade: float) -> float:
+     return 6.0 * exp(-3.5 * abs(grade + 0.05))
+ 
+ 
+-def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:
+-    """Naismith time for every leg.
++def leg_hours(track: Track, fitness: float = 1.0, pace: str = "naismith") -> list[float]:
++    """Walking time for every leg, by Naismith's rule or Tobler's function.
+ 
+-    A leg's climb is the ascent the summary's rule credits to it
++    Under Naismith, a leg's climb is the ascent the summary's rule credits to it
+     (`elevation.counted_changes` with the default threshold), so the legs of a
+-    track add up to its summary time.
++    track add up to its summary time. Under Tobler, a leg takes its length divided
++    by `tobler_kmh` of its grade (raw elevation change over horizontal length); a
++    zero-length leg takes no time. Either way ``fitness`` divides the time.
+     """
++    check_pace(pace)
++    if pace == "tobler":
++        return _tobler_leg_hours(track, fitness)
+     climbs = [max(change, 0.0) for change in counted_changes([p.ele for p in track.points])]
+     return [
+         naismith_hours(km, climb, fitness)
+         for km, climb in zip(track.leg_lengths_km(), climbs, strict=True)
+     ]
++
++
++def _tobler_leg_hours(track: Track, fitness: float) -> list[float]:
++    if fitness <= 0:
++        raise ValueError("fitness must be positive")
++    hours: list[float] = []
++    for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):
++        if km == 0:
++            hours.append(0.0)
++            continue
++        grade = (b.ele - a.ele) / (km * 1000)
++        hours.append(km / tobler_kmh(grade) / fitness)
++    return hours
+diff --git a/src/trailhead/plan.py b/src/trailhead/plan.py
+index d5cf5b1..6ff7535 100644
+--- a/src/trailhead/plan.py
++++ b/src/trailhead/plan.py
+@@ -7,7 +7,10 @@ DEFAULT_MAX_HOURS = 7.0
+ 
+ 
+ def split_days(
+-    track: Track, max_hours_per_day: float = DEFAULT_MAX_HOURS, fitness: float = 1.0
++    track: Track,
++    max_hours_per_day: float = DEFAULT_MAX_HOURS,
++    fitness: float = 1.0,
++    pace: str = "naismith",
+ ) -> list[tuple[int, int, int, float]]:
+     """Group consecutive legs into days of walking.
+ 
+@@ -19,7 +22,7 @@ def split_days(
+         raise ValueError("max_hours_per_day must be positive")
+     days: list[tuple[int, int, int, float]] = []
+     first, used = 0, 0.0
+-    for index, hours in enumerate(leg_hours(track, fitness)):
++    for index, hours in enumerate(leg_hours(track, fitness, pace)):
+         if used > 0 and used + hours > max_hours_per_day:
+             days.append((len(days) + 1, first, index, round(used, 2)))
+             first, used = index, 0.0
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 9c7e1a7..ac764aa 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -9,7 +9,7 @@ from trailhead.elevation import (
+     steepest_grade,
+ )
+ from trailhead.geo import compass_point, haversine_km, initial_bearing
+-from trailhead.pace import naismith_hours
++from trailhead.pace import check_pace, leg_hours, naismith_hours
+ from trailhead.track import Track
+ 
+ LOOP_RADIUS_KM = 0.1
+@@ -36,11 +36,19 @@ def _heading(track: Track) -> str:
+ 
+ 
+ def summarise(
+-    track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M
++    track: Track,
++    fitness: float = 1.0,
++    threshold: float = DEFAULT_THRESHOLD_M,
++    pace: str = "naismith",
+ ) -> Summary:
++    check_pace(pace)
+     gain, loss = gain_and_loss([point.ele for point in track.points], threshold)
+     highest, lowest = highest_and_lowest(track)
+     length = track.length_km()
++    if pace == "tobler":
++        hours = sum(leg_hours(track, fitness, pace))
++    else:
++        hours = naismith_hours(length, gain, fitness)
+     return Summary(
+         name=track.name,
+         length_km=round(length, 1),
+@@ -49,7 +57,7 @@ def summarise(
+         highest_m=highest,
+         lowest_m=lowest,
+         steepest_pct=steepest_grade(track),
+-        hours=naismith_hours(length, gain, fitness),
++        hours=hours,
+         heading=_heading(track),
+     )
+ 
+diff --git a/tests/test_cli.py b/tests/test_cli.py
+index a4bd93f..d050c59 100644
+--- a/tests/test_cli.py
++++ b/tests/test_cli.py
+@@ -1,3 +1,5 @@
++import pytest
++
+ from trailhead.cli import main
+ 
+ TRACK = "# name: Ridge\nlat,lon,ele\n0,0,1000\n0,0.01,1090\n0,0.02,1050\n"
+@@ -18,3 +20,19 @@ def test_plan_command(write_track, capsys):
+ def test_missing_file_is_an_error(tmp_path, capsys):
+     assert main(["summary", str(tmp_path / "nope.csv")]) == 1
+     assert capsys.readouterr().err.startswith("trailhead: ")
++
++
++def test_summary_with_tobler(write_track, capsys):
++    assert main(["summary", str(write_track(TRACK)), "--pace", "tobler"]) == 0
++    assert "  time      " in capsys.readouterr().out
++
++
++def test_plan_with_tobler(write_track, capsys):
++    assert main(["plan", str(write_track(TRACK)), "--pace", "tobler"]) == 0
++    assert capsys.readouterr().out.startswith("Day 1: points 0-2, ")
++
++
++def test_unknown_pace_is_a_usage_error(write_track, capsys):
++    with pytest.raises(SystemExit) as exc:
++        main(["summary", str(write_track(TRACK)), "--pace", "minetti"])
++    assert exc.value.code == 2
+diff --git a/tests/test_pace.py b/tests/test_pace.py
+index 6aec825..9ff3e77 100644
+--- a/tests/test_pace.py
++++ b/tests/test_pace.py
+@@ -28,3 +28,38 @@ def test_leg_hours(make_track):
+     climb, descent = leg_hours(track)
+     assert climb == pytest.approx(1.11195 / 5 + 0.5, abs=1e-4)
+     assert descent == pytest.approx(1.11195 / 5, abs=1e-4)
++
++
++def test_tobler_leg_uses_its_grade(make_track):
++    # Leg one climbs 300 m over 1.11195 km; leg two drops 300 m over the same distance.
++    track = make_track((0, 0, 1000), (0, 0.01, 1300), (0, 0.02, 1000))
++    up, down = leg_hours(track, pace="tobler")
++    assert up == pytest.approx(1.11195 / tobler_kmh(300 / 1111.95), abs=1e-4)
++    assert down == pytest.approx(1.11195 / tobler_kmh(-300 / 1111.95), abs=1e-4)
++    assert down < up
++
++
++def test_tobler_zero_length_leg_takes_no_time(make_track):
++    track = make_track((0, 0, 0), (0, 0, 0), (0, 0.01, 0))
++    first, second = leg_hours(track, pace="tobler")
++    assert first == 0.0
++    assert second > 0
++
++
++def test_tobler_fitness_divides_time(make_track):
++    track = make_track((0, 0, 0), (0, 0.01, 50))
++    assert leg_hours(track, fitness=2.0, pace="tobler")[0] == pytest.approx(
++        leg_hours(track, pace="tobler")[0] / 2
++    )
++
++
++def test_naismith_is_the_default(make_track):
++    track = make_track((0, 0, 1000), (0, 0.01, 1300))
++    assert leg_hours(track) == leg_hours(track, pace="naismith")
++
++
++@pytest.mark.parametrize("pace", ["Tobler", "", "minetti"])
++def test_unknown_pace_is_an_error(make_track, pace):
++    track = make_track((0, 0, 0), (0, 0.01, 0))
++    with pytest.raises(ValueError):
++        leg_hours(track, pace=pace)
+diff --git a/tests/test_plan.py b/tests/test_plan.py
+index 03b3f5d..25dafb3 100644
+--- a/tests/test_plan.py
++++ b/tests/test_plan.py
+@@ -1,5 +1,6 @@
+ import pytest
+ 
++from trailhead.pace import leg_hours
+ from trailhead.plan import describe_plan, split_days
+ 
+ 
+@@ -38,3 +39,14 @@ def test_describe_plan():
+         "Day 1: points 0-14, 6h 04m",
+         "Day 2: points 14-31, 0h 45m",
+     ]
++
++
++def test_tobler_days_add_up_to_the_leg_times(make_track):
++    track = make_track((0, 0, 1000), (0, 0.01, 1300), (0, 0.02, 1000))
++    days = split_days(track, max_hours_per_day=100, pace="tobler")
++    assert days[0][3] == pytest.approx(sum(leg_hours(track, pace="tobler")), abs=0.01)
++
++
++def test_unknown_pace_in_plan(five_flat_hours):
++    with pytest.raises(ValueError):
++        split_days(five_flat_hours, pace="minetti")
+diff --git a/tests/test_report.py b/tests/test_report.py
+index 74fbed8..873a0e3 100644
+--- a/tests/test_report.py
++++ b/tests/test_report.py
+@@ -1,5 +1,6 @@
+ import pytest
+ 
++from trailhead.pace import leg_hours
+ from trailhead.report import format_summary, summarise
+ 
+ RIDGE = ((0, 0, 1000), (0.01, 0.01, 1095), (0.02, 0.02, 1050))
+@@ -26,3 +27,20 @@ def test_format_summary(make_track):
+             "  heading   NE",
+         ]
+     )
++
++
++def test_tobler_summary_time_is_the_sum_of_leg_times(make_track):
++    track = make_track(*RIDGE)
++    summary = summarise(track, pace="tobler")
++    assert summary.hours == pytest.approx(sum(leg_hours(track, pace="tobler")))
++    assert summary.gain_m == 95.0
++
++
++def test_naismith_summary_is_unchanged_by_the_pace_argument(make_track):
++    track = make_track(*RIDGE)
++    assert summarise(track, pace="naismith").hours == summarise(track).hours
++
++
++def test_unknown_pace_in_summary(make_track):
++    with pytest.raises(ValueError):
++        summarise(make_track(*RIDGE), pace="minetti")

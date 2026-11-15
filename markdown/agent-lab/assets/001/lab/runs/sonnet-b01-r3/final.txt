@@ -1,0 +1,9 @@
+I fixed it. A steady climb with a point every metre now counts its full ascent, and all 47 tests pass, including a new one for this case.
+
+**Cause:** in `counted_changes` (`src/trailhead/elevation.py`), the line `reference = elevation` ran on every leg. The docstring says a change counts once it reaches the threshold from the last counted elevation. Because the reference reset on every point, each 1 m step was compared with the point just before it, never reached the 3 m threshold, and was dropped. That is why ascent showed +0 m. Tracks with bigger gaps between points cleared the threshold in a single step, so they looked fine.
+
+**Fix:** I removed that line. The reference now moves only when a change is counted, and the two counted branches already set it.
+
+**Test:** `test_long_climb_in_small_steps_is_counted` climbs 0 to 300 m in 1 m steps and expects `(300.0, 0.0)`. I haven't committed anything.
+
+`pace.py` also calls `counted_changes`, so the per-leg climb it uses for walking time now follows the corrected rule.

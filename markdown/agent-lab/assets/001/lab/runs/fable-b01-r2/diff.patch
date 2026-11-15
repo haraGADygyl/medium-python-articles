@@ -1,0 +1,28 @@
+diff --git a/src/trailhead/elevation.py b/src/trailhead/elevation.py
+index fea4839..38ee915 100644
+--- a/src/trailhead/elevation.py
++++ b/src/trailhead/elevation.py
+@@ -33,7 +33,6 @@ def counted_changes(
+             reference = elevation
+         else:
+             changes.append(0.0)
+-        reference = elevation
+     return changes
+ 
+ 
+diff --git a/tests/test_elevation.py b/tests/test_elevation.py
+index 2e5f019..0ff89f1 100644
+--- a/tests/test_elevation.py
++++ b/tests/test_elevation.py
+@@ -16,6 +16,11 @@ def test_empty_and_single_elevation():
+     assert gain_and_loss([812]) == (0.0, 0.0)
+ 
+ 
++def test_long_climb_in_small_steps_is_counted():
++    assert gain_and_loss([1000 + step for step in range(301)]) == (300.0, 0.0)
++    assert gain_and_loss([1300 - step for step in range(301)]) == (0.0, 300.0)
++
++
+ def test_negative_threshold_is_rejected():
+     with pytest.raises(ValueError):
+         gain_and_loss([1, 2], threshold=-1)

@@ -1,0 +1,9 @@
+I fixed it: the attached `garmin-export.csv` now loads. `trailhead summary garmin-export.csv` prints a 0.6 km, +141 m track, and all 48 tests pass.
+
+**Cause:** the Garmin export begins with a hidden UTF-8 byte-order mark (BOM), the bytes `EF BB BF`, right before `lat,lon,ele`. Editors don't show it, which is why the first line looked correct to the user. `load_track` read the file as plain `utf-8`, which keeps the BOM as a `\ufeff` character. `str.strip()` doesn't remove that character, so the first column came out as `"\ufefflat"` instead of `"lat"` and the header check failed on line 1. The file also uses Windows line endings (CRLF), but the parser already handled those, so they weren't the problem.
+
+**Fix:**
+- **`src/trailhead/track.py:87`**: `load_track` now reads files with `encoding="utf-8-sig"`. This drops a leading BOM if there is one and changes nothing for files without one.
+- **`tests/test_track.py`**: added `test_file_with_byte_order_mark_and_crlf`, which loads a file with a BOM and CRLF line endings.
+
+`parse_track` still rejects a BOM if text is passed to it directly rather than read from a file. Nothing in the codebase does that today, since `load_track` is its only caller.

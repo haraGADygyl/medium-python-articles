@@ -1,0 +1,28 @@
+I added `tests/test_plan.py` with 18 tests covering `split_days` and `describe_plan`. All 18 pass, the full suite passes (60 tests), and ruff is clean on the new file. Nothing under `src/` changed, and I didn't commit.
+
+The tests are based on the README and docstrings:
+
+- **`split_days`**
+  - Days are split when the next leg would exceed the limit, and a day may exactly reach it.
+  - A leg longer than the limit becomes a day by itself.
+  - The default limit is 7 hours.
+  - Fitness scales leg times.
+  - Hours are rounded to 0.01.
+  - A zero or negative limit, or zero fitness, raises `ValueError`.
+  - Days cover the whole track and their total matches `summarise(...).hours` within rounding.
+- **`describe_plan`**
+  - One line per day in the documented format.
+  - Durations round to the nearest minute, including a carry into the next hour (`1.999` → `2h 00m`).
+  - An empty plan gives an empty list.
+
+To get exact expected values, most tests use tracks with no horizontal distance, where a leg's Naismith time is exactly `climb / 600` hours.
+
+Two behaviours the tests pin down that the docs don't state explicitly:
+
+- Consecutive days share a boundary point: the last point of one day is the first point of the next.
+- The last day ends at `len(points) - 1`.
+
+Two things I noticed but did not test:
+
+- The limit is compared against unrounded hours, but the reported hours are rounded to 0.01. With a limit like 6.996, a day of 6.996 h is reported as 7.0, which is slightly over the limit.
+- `split_days` on a `Track` with fewer than two points doesn't raise. `parse_track` prevents this, but a directly built `Track` can hit it.

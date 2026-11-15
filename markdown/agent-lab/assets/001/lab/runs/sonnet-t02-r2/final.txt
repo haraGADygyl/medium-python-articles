@@ -1,0 +1,25 @@
+I wrote `tests/test_pace.py` with 32 tests, and they all pass. I didn't touch anything under `src/`. I didn't run `ruff check` on the new file.
+
+The tests cover the behaviour in the README and docstrings:
+
+- **`naismith_hours`:**
+  - Flat speed is 5 km/h, plus one hour per 600 m of ascent.
+  - `fitness` divides the time, and the default is 1.0.
+  - The result isn't rounded.
+  - Zero or negative fitness raises `ValueError`.
+  - Negative distance or ascent raises `ValueError`.
+- **`tobler_kmh`:**
+  - It peaks at 6 km/h on a 5% descent.
+  - It matches the formula on flat ground, at a 10% climb and at a 10% descent.
+  - It is symmetric around the peak and never goes above 6.
+  - Grade is a fraction, not a percent.
+- **`leg_hours`:**
+  - It returns one value per leg.
+  - Climb is credited to the leg where it counts under the 3 m threshold.
+  - Jitter adds nothing, and small steps are credited once they reach the threshold.
+  - Descent adds nothing.
+  - `fitness` is applied, and invalid fitness raises `ValueError`.
+  - Zero-length legs take no time.
+  - The legs add up to the summary time (`naismith_hours` of total length and `gain_and_loss` ascent) at several fitness values.
+
+`git status` also lists some untracked dotfiles in the working directory (`.bashrc`, `.claude/` and others). I didn't create them and left them alone.

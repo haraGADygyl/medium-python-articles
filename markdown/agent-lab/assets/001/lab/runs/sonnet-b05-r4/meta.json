@@ -1,0 +1,118 @@
+{
+  "run_id": "sonnet-b05-r4",
+  "task": "b05",
+  "tier": "bug",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "sonnet",
+  "prompt": "Bug report from a user: \"My GPS app writes the `# units: ft` line at the end of the file, after the points. trailhead then reports a highest point of 14115 m for a hike that tops out at 14,115 ft (about 4302 m). The file is attached as `pikes-peak.csv`.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 24.4,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 12,
+  "duration_ms": 22233,
+  "duration_api_ms": 21515,
+  "api_equivalent_usd": 0.1034609,
+  "usage": {
+    "input_tokens": 11,
+    "cache_creation_input_tokens": 16630,
+    "cache_read_input_tokens": 142489,
+    "output_tokens": 2267,
+    "output_tokens_details": {
+      "thinking_tokens": 172
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 16630,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 313,
+        "cache_read_input_tokens": 29237,
+        "cache_creation_input_tokens": 156,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 156
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 11,
+      "outputTokens": 2267,
+      "cacheReadInputTokens": 142489,
+      "cacheCreationInputTokens": 16630,
+      "webSearchRequests": 0,
+      "costUSD": 0.1034609,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 172,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 16630,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 1,
+    "Glob": 1,
+    "Read": 4,
+    "Edit": 3,
+    "Bash": 2
+  },
+  "bash_commands": [
+    "python -m pytest -q 2>&1 | tail -5; python -m trailhead summary pikes-peak.csv",
+    "PYTHONPATH=src python -m trailhead summary pikes-peak.csv"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".....................................................                    [100%]\n53 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 11,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".....................................................                    [100%]\n53 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 11,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  }
+}

@@ -1,0 +1,9 @@
+The Garmin files start with a hidden UTF-8 byte-order mark (BOM, the bytes `EF BB BF`). Your editor hides it, which is why the first line looks like exactly `lat,lon,ele`. The parser didn't hide it, so the header check failed. I've fixed it.
+
+**Cause:** `load_track` in `src/trailhead/track.py` read files with `encoding="utf-8"`, which keeps the BOM as an invisible character at the start of the text. The line clean-up (`.strip()`) doesn't remove that character, so the first column came out as `'\ufefflat'` instead of `lat`. The file also uses Windows line endings, but those were already handled.
+
+**Fix:** `load_track` now reads files with `encoding="utf-8-sig"` (`src/trailhead/track.py:87`). That drops a leading BOM if there is one and changes nothing for files without one.
+
+**Test:** I added `test_byte_order_mark_and_crlf_are_accepted` in `tests/test_track.py`, which writes a file with a BOM and Windows line endings and checks that it loads. All 48 tests pass. I also ran `trailhead summary garmin-export.csv`: it now prints a normal summary (0.6 km, +141 m), and without the fix it gives the reported error.
+
+`git status` also lists some untracked files I didn't create, such as `.bashrc`, `.gitconfig`, `.claude/` and `.vscode`. They look like leftovers from the sandbox, so I left them alone and didn't commit anything.

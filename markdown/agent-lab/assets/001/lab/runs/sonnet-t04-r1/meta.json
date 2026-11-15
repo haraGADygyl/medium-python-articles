@@ -1,0 +1,144 @@
+{
+  "run_id": "sonnet-t04-r1",
+  "task": "t04",
+  "tier": "tests",
+  "baseline": false,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "sonnet",
+  "prompt": "`src/trailhead/plan.py` has no tests. Write `tests/test_plan.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 44.5,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 7,
+  "duration_ms": 39709,
+  "duration_api_ms": 37574,
+  "api_equivalent_usd": 0.1525859,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 21123,
+    "cache_read_input_tokens": 118739,
+    "output_tokens": 5620,
+    "output_tokens_details": {
+      "thinking_tokens": 501
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 21123,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 573,
+        "cache_read_input_tokens": 32591,
+        "cache_creation_input_tokens": 1295,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1295
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 10,
+      "outputTokens": 5620,
+      "cacheReadInputTokens": 118739,
+      "cacheCreationInputTokens": 21123,
+      "webSearchRequests": 0,
+      "costUSD": 0.1525859,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 501,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 21123,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Read": 1,
+    "Bash": 4,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git ls-files && cat README*",
+    "cat src/trailhead/pace.py src/trailhead/track.py tests/conftest.py tests/test_pace.py; cat src/trailhead/elevation.py | head -60",
+    "python -m pytest tests/test_plan.py -q 2>&1 | tail -40; ruff check tests/test_plan.py",
+    "python - <<'E'\np='tests/test_plan.py'\ns=open(p).read()\ns=s.replace('''    # Two legs take exactly 2 * LEG_H; a limit equal to that keeps them together.\n    track = flat_track(make_track, 2)\n    days = split_days(track, max_hours_per_day=2 * LEG_H)\n    assert len(days) == 1''','''    # A limit equal to the exact time of the whole track keeps it in one day.\n    track = flat_track(make_track, 2)\n    (total,) = (sum(leg_hours(track)),)\n    assert len(split_days(track, max_hours_per_day=total)) == 1\n    assert len(split_days(track, max_hours_per_day=total * 0.999)) == 2''')\ns=s.replace(\"from trailhead.pace import naismith_hours\",\"from trailhead.pace import leg_hours, naismith_hours\")\ns=s.replace(\"fitness=2.0)\\n    assert len(faster) == 1\",\"fitness=3.0)\\n    assert len(faster) == 1\")\ns=s.replace(\"10 * LEG_H / 2, 2)\",\"10 * LEG_H / 3, 2)\")\ns=s.replace(\"0h 27m\",\"0h 26m\")\ns=s.replace(\"zip(days, days[1:])\",\"zip(days, days[1:], strict=False)\")\nopen(p,'w').write(s)\nE\npython -m pytest -q 2>&1 | tail -5; ruff check tests/test_plan.py; ruff format --check tests/test_plan.py; git status --short"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_plan.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "..................................                                       [100%]\n34 passed in 0.05s\n",
+    "src_changed": [],
+    "killed": [
+      "a day that exactly fills the limit is closed early",
+      "days numbered from 0",
+      "last day stops one point short",
+      "hours rounded to 0.1",
+      "zero limit allowed",
+      "fitness dropped",
+      "minutes not zero-padded",
+      "minutes truncated",
+      "next day starts one point late"
+    ],
+    "survived": [],
+    "kills": 9,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_plan.py"
+    ],
+    "lines_added": 195,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_plan.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "..................................                                       [100%]\n34 passed in 0.08s\n",
+    "src_changed": [],
+    "killed": [
+      "a day that exactly fills the limit is closed early",
+      "days numbered from 0",
+      "last day stops one point short",
+      "hours rounded to 0.1",
+      "zero limit allowed",
+      "fitness dropped",
+      "minutes not zero-padded",
+      "minutes truncated",
+      "next day starts one point late"
+    ],
+    "survived": [],
+    "kills": 9,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_plan.py"
+    ],
+    "lines_added": 195,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

@@ -1,0 +1,15 @@
+Fixed. The time display was cutting minutes off instead of rounding them.
+
+**Cause:** the formatter computed minutes with `int(summary.hours * 60)` (`src/trailhead/report.py:58`). `int()` drops the fractional part, so 44.88 minutes showed as `44m` instead of `45m`. The README says durations are rounded to the nearest minute. The day-plan output (`src/trailhead/plan.py:35`) had the same line, so `trailhead plan` was also showing times up to a minute short.
+
+**Fix:**
+- I added one shared `format_duration(hours)` in `src/trailhead/pace.py`. It rounds to the nearest minute, with exact halves going up (44.5 → `0h 45m`). I used this instead of Python's `round()`, which rounds halves to the nearest even number.
+- 59.7 minutes now shows as `1h 00m`, not `0h 60m`.
+- `format_summary` and `describe_plan` both use the helper, so the two outputs can't drift apart again.
+
+**Tests:**
+- I added a set of cases for `format_duration` in `tests/test_pace.py`, including the user's flat 3.74 km walk → `0h 45m` and the README examples.
+- I added a regression test for the plan output in `tests/test_plan.py`; it fails on the old code.
+- All 55 tests pass, and `ruff check` and `mypy` are clean. None of the existing expected outputs changed.
+
+Nothing is committed. `git status` also lists some untracked dotfiles (`.bashrc`, `.gitconfig`, `.claude/`, etc.). I didn't create them: they're placeholders left by the sandbox, so don't commit them.

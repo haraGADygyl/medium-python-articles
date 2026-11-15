@@ -1,0 +1,7 @@
+Fixed: `pikes-peak.csv` now reports a highest point of 4302 m (altitude 2042–4302 m, ascent +2260 m), and the tests, `ruff check` and `mypy` pass.
+
+**Cause:** `parse_track` in `src/trailhead/track.py` converted each elevation as it read the point, using whatever units it had seen so far. A `# units: ft` line after the points therefore changed nothing, and the feet were treated as metres. The README says settings may appear anywhere and apply to the whole track, so this was a parser bug, not a problem with the user's file.
+
+**Fix:** points are now read as raw values and the unit conversion is applied once, after the whole file has been read. A `# units:` line between points has the same effect as one at the top or bottom.
+
+I added two regression tests in `tests/test_track.py`: units line at the end, and units line between points. Nothing is committed.

@@ -1,0 +1,21 @@
+I added `tests/test_pace.py` with 37 tests. The full suite passes (77 tests, up from 40), `ruff check` is clean, and nothing under `src/` changed. The tests found no disagreements between `pace.py` and the README or docstrings.
+
+**`naismith_hours`**
+- Walking speed on the flat is 5 km/h, and every 600 m of climbing adds an hour. Distance and climb times add together.
+- `fitness` divides the time, so 1.25 gives 1/1.25 of the time and 0.8 gives 1/0.8. The default is 1.0.
+- Times aren't rounded.
+- A fitness of zero or less, or a negative distance or climb, raises `ValueError`.
+
+**`tobler_kmh`**
+- The top speed is 6 km/h, on a 5% descent (grade -0.05).
+- Results match `6 * exp(-3.5 * |grade + 0.05|)` across a range of grades.
+- The function takes grade as rise over run (0.1 for a 10% climb), not as a percent.
+- Speed is the same at equal distances either side of -0.05, and drops the steeper the slope gets, up or down.
+
+**`leg_hours`**
+- It returns one time per leg. Flat legs are timed by distance alone, climbs add time and descents add nothing.
+- It counts climb the same way as the summary: rises under 3 m add nothing, and when a track climbs in small steps, the climb goes to the leg where it reaches 3 m.
+- `fitness` applies to every leg, and an invalid fitness raises `ValueError`.
+- On a realistic track, the leg times add up to `summarise(track, fitness).hours` for fitness 1.0, 1.2 and 0.8. That comparison allows for tiny differences, because the summary rounds total climb to 0.1 m and the leg times don't.
+
+`git status` also shows some untracked files in the repo root that I didn't create: `.bashrc`, `.zshrc`, `.profile`, `.gitconfig`, `.claude/`, `.idea`, `.vscode` and others. They may be left over from the environment. I didn't touch them.

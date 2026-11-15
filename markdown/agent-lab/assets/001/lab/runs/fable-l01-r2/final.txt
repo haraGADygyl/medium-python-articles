@@ -1,0 +1,7 @@
+`ruff check` now passes and the 46 tests still pass. One of the fixes changes behaviour.
+
+- **`pace.py` (unused `hours`)**: the unused variable was a real bug, not dead code. `naismith_hours` computed the fitness-scaled time and then returned the unscaled one, so `--fitness` had no effect on summaries or plans. It now returns `hours`, matching the docstring and README. No existing test covers a non-default fitness, and I did not add one.
+- **`track.py` (bare `except`)**: now `except ValueError as err:` with `raise TrackError(...) from err`. Only a failed `float()` conversion is reported as "not a number".
+- **`track.py` (imports)**: removed the unused `import os`, which also cleared the import-order complaint.
+
+Nothing is committed.

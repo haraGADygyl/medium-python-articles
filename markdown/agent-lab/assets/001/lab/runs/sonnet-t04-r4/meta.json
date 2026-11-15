@@ -1,0 +1,145 @@
+{
+  "run_id": "sonnet-t04-r4",
+  "task": "t04",
+  "tier": "tests",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "sonnet",
+  "prompt": "`src/trailhead/plan.py` has no tests. Write `tests/test_plan.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 47.2,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 8,
+  "duration_ms": 43513,
+  "duration_api_ms": 42088,
+  "api_equivalent_usd": 0.1615699,
+  "usage": {
+    "input_tokens": 14,
+    "cache_creation_input_tokens": 20960,
+    "cache_read_input_tokens": 185219,
+    "output_tokens": 5918,
+    "output_tokens_details": {
+      "thinking_tokens": 507
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 20960,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 581,
+        "cache_read_input_tokens": 33455,
+        "cache_creation_input_tokens": 268,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 268
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 14,
+      "outputTokens": 5918,
+      "cacheReadInputTokens": 185219,
+      "cacheCreationInputTokens": 20960,
+      "webSearchRequests": 0,
+      "costUSD": 0.1615699,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 507,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 20960,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Read": 1,
+    "Bash": 5,
+    "bash": 1
+  },
+  "bash_commands": [
+    "git ls-files && cat README.md",
+    "cat src/trailhead/pace.py src/trailhead/track.py tests/conftest.py tests/test_pace.py; cat src/trailhead/report.py | head -60; sed -n 1,60p src/trailhead/elevation.py",
+    "cat > tests/test_plan.py <<'EOF'\nimport pytest\n\nfrom trailhead.elevation import gain_and_loss\nfrom trailhead.pace import leg_hours, naismith_hours\nfrom trailhead.plan import DEFAULT_MAX_HOURS, describe_plan, split_days\nfrom trailhead.report import summarise\n\n# One leg of 0.045 degrees of longitude on the equator is about 5 km: one hour flat.\nSTEP = 0.045\n\n\ndef flat_track(make_track, legs: int, step: float = STEP):\n    return make_track(*[(0, i * step, 100) for i in range(legs + 1)])\n\n\ndef test_default_limit_is_seven_hours():\n    assert DEFAULT_MAX_HOURS == 7.0\n\n\ndef test_short_track_is_a_single_day(make_track):\n    track = flat_track(make_track, 3)\n    [(day, first, last, hours)] = split_days(track)\n    assert (day, first, last) == (1, 0, 3)\n    assert hours == pytest.approx(3.0, abs=0.01)\n\n\ndef test_days_are_numbered_from_one_and_share_boundary_points(make_track):\n    track = flat_track(make_track, 6)\n    days = split_days(track, max_hours_per_day=2.5)\n    assert [d[0] for d in days] == [1, 2, 3]\n    assert [(d[1], d[2]) for d in days] == [(0, 2), (2, 4), (4, 6)]\n\n\ndef test_days_cover_the_whole_track(make_track):\n    track = flat_track(make_track, 11)\n    days = split_days(track, max_hours_per_day=3.5)\n    assert days[0][1] == 0\n    assert days[-1][2] == len(track.points) - 1\n    for previous, following in zip(days, days[1:]):\n        assert previous[2] == following[1]\n\n\ndef test_no_day_exceeds_the_limit(make_track):\n    track = make_track(\n        (0, 0, 0), (0, 0.03, 300), (0, 0.07, 500), (0, 0.09, 500), (0, 0.15, 900),\n        (0, 0.16, 900), (0, 0.2, 1000), (0, 0.23, 1000),\n    )\n    limit = 2.0\n    for _, _, _, hours in split_days(track, limit):\n        assert hours <= limit\n\n\ndef test_day_can_fill_the_limit_exactly(make_track):\n    # Legs of exactly one hour each; two fit in a 2 hour day.\n    track = make_track((0, 0, 0), (0, 0.045, 0), (0, 0.09, 0))\n    hours_each = leg_hours(track)\n    limit = sum(hours_each)\n    days = split_days(track, max_hours_per_day=limit)\n    assert len(days) == 1\n\n\ndef test_oversized_leg_is_a_day_by_itself(make_track):\n    # Legs: short, huge (about 4.4 h), short.\n    track = make_track((0, 0, 0), (0, 0.045, 0), (0, 0.045 + 0.2, 0), (0, 0.045 + 0.2 + 0.045, 0))\n    days = split_days(track, max_hours_per_day=2.0)\n    assert [(d[1], d[2]) for d in days] == [(0, 1), (1, 2), (2, 3)]\n    assert days[1][3] > 2.0\n\n\ndef test_oversized_first_leg_does_not_create_an_empty_day(make_track):\n    track = make_track((0, 0, 0), (0, 0.3, 0), (0, 0.345, 0))\n    days = split_days(track, max_hours_per_day=1.0)\n    assert [(d[1], d[2]) for d in days] == [(0, 1), (1, 2)]\n\n\ndef test_hours_are_rounded_to_hundredths(make_track):\n    track = flat_track(make_track, 1, step=0.0123)\n    [(_, _, _, hours)] = split_days(track)\n    assert hours == round(hours, 2)\n    assert hours == pytest.approx(0.2737 * 0.2 * 1.0 * 1.0, abs=0.01) or hours > 0\n\n\ndef test_fitness_speeds_up_the_plan(make_track):\n    track = flat_track(make_track, 4)\n    slow = split_days(track, max_hours_per_day=100, fitness=1.0)\n    fast = split_days(track, max_hours_per_day=100, fitness=2.0)\n    assert fast[0][3] == pytest.approx(slow[0][3] / 2, abs=0.01)\n\n\ndef test_fitness_changes_how_days_are_split(make_track):\n    track = flat_track(make_track, 6)\n    assert len(split_days(track, max_hours_per_day=3.5, fitness=1.0)) == 2\n    assert len(split_days(track, max_hours_per_day=3.5, fitness=2.0)) == 1\n\n\n@pytest.mark.parametrize(\"limit\", [0, -1, -0.5])\ndef test_non_positive_limit_is_an_error(make_track, limit):\n    with pytest.raises(ValueError):\n        split_days(flat_track(make_track, 2), max_hours_per_day=limit)\n\n\n@pytest.mark.parametrize(\"fitness\", [0, -1])\ndef test_non_positive_fitness_is_an_error(make_track, fitness):\n    with pytest.raises(ValueError):\n        split_days(flat_track(make_track, 2), fitness=fitness)\n\n\ndef test_climbing_counts_towards_day_time(make_track):\n    # Two legs of 1 km, each climbing 600 m: 0.2 h + 1 h each.\n    track = make_track((0, 0, 0), (0, 0.009, 600), (0, 0.018, 1200))\n    assert len(split_days(track, max_hours_per_day=2.0)) == 2\n    assert len(split_days(track, max_hours_per_day=2.5)) == 1\n\n\ndef test_descent_adds_no_time(make_track):\n    up = make_track((0, 0, 1000), (0, 0.045, 1000))\n    down = make_track((0, 0, 1000), (0, 0.045, 400))\n    assert split_days(up)[0][3] == pytest.approx(split_days(down)[0][3], abs=0.01)\n\n\ndef test_days_add_up_to_summary_time(make_track):\n    track = make_track(\n        (0, 0, 0), (0, 0.03, 10), (0, 0.06, 11), (0, 0.09, 12), (0, 0.12, 300),\n        (0, 0.15, 301), (0, 0.18, 200), (0, 0.21, 205), (0, 0.24, 400),\n    )\n    for fitness in (1.0, 1.25, 0.8):\n        days = split_days(track, max_hours_per_day=1.0, fitness=fitness)\n        total = sum(d[3] for d in days)\n        assert total == pytest.approx(summarise(track, fitness).hours, abs=0.005 * len(days))\n\n\ndef test_small_climbs_below_threshold_are_not_charged_per_leg(make_track):\n    # 1 m wiggles: summary credits no ascent, so neither may the plan.\n    track = make_track((0, 0, 100), (0, 0.045, 101), (0, 0.09, 100), (0, 0.135, 101))\n    [(_, _, _, hours)] = split_days(track)\n    expected = naismith_hours(track.length_km(), gain_and_loss([100, 101, 100, 101])[0])\n    assert hours == pytest.approx(expected, abs=0.01)\n\n\ndef test_slow_climb_in_small_steps_is_charged(make_track):\n    track = make_track(*[(0, i * 0.009, i * 1.0) for i in range(61)])  # 60 m in 1 m steps\n    [(_, _, _, hours)] = split_days(track, max_hours_per_day=100)\n    expected = naismith_hours(track.length_km(), 60.0)\n    assert hours == pytest.approx(expected, abs=0.01)\n\n\ndef test_describe_plan_format():\n    assert describe_plan([(2, 14, 31, 6 + 5 / 60)]) == [\"Day 2: points 14-31, 6h 05m\"]\n\n\ndef test_describe_plan_one_line_per_day_in_order():\n    lines = describe_plan([(1, 0, 4, 5.0), (2, 4, 9, 0.75), (3, 9, 12, 12.0)])\n    assert lines == [\n        \"Day 1: points 0-4, 5h 00m\",\n        \"Day 2: points 4-9, 0h 45m\",\n        \"Day 3: points 9-12, 12h 00m\",\n    ]\n\n\ndef test_describe_plan_rounds_to_nearest_minute():\n    assert describe_plan([(1, 0, 1, 5 + 7.4 / 60)]) == [\"Day 1: points 0-1, 5h 07m\"]\n    assert describe_plan([(1, 0, 1, 5 + 7.6 / 60)]) == [\"Day 1: points 0-1, 5h 08m\"]\n\n\ndef test_describe_plan_minutes_roll_over_into_hours():\n    assert describe_plan([(1, 0, 1, 1.999)]) == [\"Day 1: points 0-1, 2h 00m\"]\n\n\ndef test_describe_plan_empty():\n    assert describe_plan([]) == []\n\n\ndef test_describe_matches_split(make_track):\n    track = flat_track(make_track, 4)\n    lines = describe_plan(split_days(track, max_hours_per_day=2.5))\n    assert lines == [\"Day 1: points 0-2, 2h 00m\", \"Day 2: points 2-4, 2h 00m\"]\nEOF\npython -m pytest tests/test_plan.py -q 2>&1 | tail -30",
+    "python - <<'EOF'\np='tests/test_plan.py'\ns=open(p).read()\ns=s.replace(\"\"\"    assert hours == round(hours, 2)\n    assert hours == pytest.approx(0.2737 * 0.2 * 1.0 * 1.0, abs=0.01) or hours > 0\n\"\"\",\"\"\"    assert hours == round(hours, 2)\n    assert hours != leg_hours(track)[0]  # the raw time is not already a round number\n\"\"\")\nopen(p,'w').write(s)\nEOF\npython -m pytest tests/test_plan.py -q 2>&1 | tail -3; ruff check tests/test_plan.py 2>&1 | tail -15; git status --short",
+    "sed -i 's/zip(days, days\\[1:\\])/zip(days, days[1:], strict=False)/' tests/test_plan.py && ruff check tests/test_plan.py && python -m pytest -q 2>&1 | tail -3"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_plan.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "...........................                                              [100%]\n27 passed in 0.04s\n",
+    "src_changed": [],
+    "killed": [
+      "a day that exactly fills the limit is closed early",
+      "days numbered from 0",
+      "last day stops one point short",
+      "hours rounded to 0.1",
+      "zero limit allowed",
+      "fitness dropped",
+      "minutes not zero-padded",
+      "minutes truncated",
+      "next day starts one point late"
+    ],
+    "survived": [],
+    "kills": 9,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_plan.py"
+    ],
+    "lines_added": 176,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_plan.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "...........................                                              [100%]\n27 passed in 0.05s\n",
+    "src_changed": [],
+    "killed": [
+      "a day that exactly fills the limit is closed early",
+      "days numbered from 0",
+      "last day stops one point short",
+      "hours rounded to 0.1",
+      "zero limit allowed",
+      "fitness dropped",
+      "minutes not zero-padded",
+      "minutes truncated",
+      "next day starts one point late"
+    ],
+    "survived": [],
+    "kills": 9,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_plan.py"
+    ],
+    "lines_added": 176,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

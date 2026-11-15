@@ -1,0 +1,12 @@
+Tobler pace is in: `pace.leg_hours`, `plan.split_days` and `report.summarise` take `pace="naismith"` (default) or `"tobler"`, and both CLI commands take `--pace {naismith,tobler}`. All 56 tests pass (47 existing unchanged, 9 new), and `ruff check` and `mypy` are clean. Nothing is committed.
+
+Behaviour worth knowing:
+
+- **Grade uses the raw elevation change.** Under Tobler each leg's grade comes from the recorded elevations of its two points, not the 3 m thresholded ascent Naismith uses. So `--threshold` has no effect on the Tobler summary time.
+- **`pace` is keyword-only** in all three functions. Any other value, including different casing like `"Tobler"`, raises `ValueError`; on the CLI it is an argparse usage error.
+- **Displayed plan total can differ from the summary by a minute.** For the three-point track in the CLI tests, the Tobler summary shows `0h 29m` while the plan's two days show `0h 17m` + `0h 11m`. That comes from the existing rounding of each day to 0.01 h before display, which I left alone.
+- **Extremely steep legs give infinite time.** If a leg's grade is so extreme that Tobler's speed underflows to zero (roughly 200:1, e.g. a 25 m jump over 10 cm), the leg time is `inf` rather than a `ZeroDivisionError`. The CLI would then crash when formatting the duration; I did not add handling for that.
+
+I also added a small public helper `pace.tobler_hours` and a `PACES` tuple, and the README has a new "Choosing the rule" bullet plus a CLI example.
+
+The untracked dotfiles in `git status` (`.bashrc`, `.idea`, `.mcp.json` and so on) are not from my changes; I left them alone.

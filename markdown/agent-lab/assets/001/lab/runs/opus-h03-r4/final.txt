@@ -1,0 +1,16 @@
+I've fixed it. `steepest_grade()` now returns 18.0 for an 18 m climb over 100 m, which matches the README and docstring. All 48 tests pass.
+
+**Cause:** in `src/trailhead/elevation.py:66`, `steepest_grade()` returned the gradient as a plain ratio (`round(steepest, 3)`, giving 0.18) even though its docstring and the README say it's a percentage rounded to 0.1. The terminal summary didn't show the bug because `report.summarise()` multiplied by 100 itself.
+
+**Fix:**
+- **`elevation.py`:** the function now returns `round(steepest * 100, 1)`.
+- **`report.py`:** removed the extra `* 100`. Without this, the summary would have shown 1800%. The summary output is unchanged, and the existing report test still passes.
+- **`tests/test_elevation.py`:** added two tests for `steepest_grade`, which had no direct tests before:
+  - the bug report's case, an 18 m climb over 100 m, giving `18.0`, with a repeated point mixed in to check that zero-length legs are skipped;
+  - a steep descent giving `24.5`, to check that downhill counts.
+
+  I confirmed both fail on the old code and pass now.
+
+**Note:** this changes what a public function returns. Anyone who called `steepest_grade()` directly and relied on the ratio (0.18) will now get 18.0. The new value is what the documentation always promised, but it may deserve a changelog entry. Nothing else in the package used the function; `pace.tobler_kmh` takes its own rise-over-run grade and doesn't call it.
+
+I haven't committed anything.

@@ -1,0 +1,30 @@
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index e147dce..f72f493 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -40,6 +40,9 @@ def parse_track(text: str, default_name: str | None = None) -> Track:
+     scale = 1.0
+     points: list[Point] = []
+     header_seen = False
++    # Some exporters (e.g. Garmin, Excel) start the file with a UTF-8 byte-order
++    # mark; it is invisible in editors but not whitespace, so strip() keeps it.
++    text = text.removeprefix("﻿")
+     for number, raw in enumerate(text.splitlines(), start=1):
+         line = raw.strip()
+         if not line:
+diff --git a/tests/test_track.py b/tests/test_track.py
+index ba1bbad..7665ddf 100644
+--- a/tests/test_track.py
++++ b/tests/test_track.py
+@@ -30,6 +30,11 @@ def test_default_name_comes_from_the_file(write_track):
+     assert load_track(path).name == "vihren"
+ 
+ 
++def test_byte_order_mark_and_crlf_are_accepted(write_track):
++    path = write_track("﻿lat,lon,ele\r\n0,0,0\r\n0,0.01,0\r\n", filename="garmin.csv")
++    assert [point.lon for point in load_track(path).points] == [0, 0.01]
++
++
+ def test_bad_header():
+     with pytest.raises(TrackError, match="line 1:"):
+         parse_track("latitude,longitude,elevation\n0,0,0\n0,1,0\n")

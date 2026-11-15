@@ -1,0 +1,14 @@
+`steepest_grade()` was returning a ratio (rise over run) instead of the percentage its docstring and the README promise. For your track, 18 m over 100 m came back as `0.18`, not `18.0`. It's fixed now and all 49 tests pass.
+
+**Cause:** `src/trailhead/elevation.py` computed `abs(rise) / run` and never multiplied by 100. `report.py` multiplied by 100 to compensate, so the CLI summary was correct and only the public function was wrong.
+
+**Fix:**
+- `src/trailhead/elevation.py`: `steepest_grade` now returns percent, rounded to 0.1 (the old code rounded the ratio to 3 decimals, which is the same precision).
+- `src/trailhead/report.py`: removed the `* 100` so it doesn't double-scale.
+- `tests/test_elevation.py`: added three tests. One checks the 100 m / 18 m case returns `18.0`. One checks the steepest downhill leg is picked (30%). One checks zero-length legs are skipped.
+
+**Verification:** `pytest` passes (49 tests, including the 3 new ones and the existing `report` test that expects `6.0%`). `ruff` and `mypy --strict` are clean.
+
+**Behaviour change:** anyone who called `steepest_grade()` directly and multiplied by 100 themselves, or treated `0.18` as a ratio, will now get a value 100× larger. The CLI output is unchanged.
+
+I didn't commit anything. The repo has a lot of untracked dotfiles, so you may want to review the three-file diff before committing.

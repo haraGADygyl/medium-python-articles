@@ -1,0 +1,58 @@
+diff --git a/src/trailhead/elevation.py b/src/trailhead/elevation.py
+index 441cce3..38ee915 100644
+--- a/src/trailhead/elevation.py
++++ b/src/trailhead/elevation.py
+@@ -62,5 +62,5 @@ def steepest_grade(track: Track) -> float:
+     for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):
+         if km == 0:
+             continue
+-        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000))
+-    return round(steepest, 3)
++        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000) * 100)
++    return round(steepest, 1)
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 0525756..9c7e1a7 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -48,7 +48,7 @@ def summarise(
+         loss_m=loss,
+         highest_m=highest,
+         lowest_m=lowest,
+-        steepest_pct=round(steepest_grade(track) * 100, 1),
++        steepest_pct=steepest_grade(track),
+         hours=naismith_hours(length, gain, fitness),
+         heading=_heading(track),
+     )
+diff --git a/tests/test_elevation.py b/tests/test_elevation.py
+index 3e1fb58..49a4fa1 100644
+--- a/tests/test_elevation.py
++++ b/tests/test_elevation.py
+@@ -1,6 +1,6 @@
+ import pytest
+ 
+-from trailhead.elevation import gain_and_loss, highest_and_lowest
++from trailhead.elevation import gain_and_loss, highest_and_lowest, steepest_grade
+ 
+ 
+ def test_simple_climb_and_descent():
+@@ -28,3 +28,20 @@ def test_negative_threshold_is_rejected():
+ def test_highest_and_lowest(make_track):
+     track = make_track((0, 0, 900), (0, 0.01, 1450), (0, 0.02, 700))
+     assert highest_and_lowest(track) == (1450, 700)
++
++
++def test_steepest_grade_is_percent(make_track):
++    # A leg of about 100 m (0.0009 degrees of longitude at the equator) climbing 18 m.
++    track = make_track((0, 0, 100), (0, 0.0009, 118), (0, 0.0018, 118))
++    assert steepest_grade(track) == 18.0
++
++
++def test_steepest_grade_takes_the_larger_downhill_leg(make_track):
++    track = make_track((0, 0, 100), (0, 0.0009, 118), (0, 0.0018, 90))
++    assert steepest_grade(track) == pytest.approx(28.0, abs=0.1)
++
++
++def test_steepest_grade_skips_zero_length_legs(make_track):
++    # The 50 m jump over zero distance is skipped; the flat 100 m leg is the steepest.
++    track = make_track((0, 0, 100), (0, 0, 150), (0, 0.0009, 150))
++    assert steepest_grade(track) == 0.0

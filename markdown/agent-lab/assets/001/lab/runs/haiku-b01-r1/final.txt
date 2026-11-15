@@ -1,0 +1,11 @@
+The ascent bug is fixed. A 300 m climb recorded at one point per metre now reports +300 m instead of +0 m, and the full suite passes (47 tests, including a new regression test).
+
+**Cause:** In `counted_changes` (`src/trailhead/elevation.py`), the reference elevation was reset at the end of every loop iteration, even when the change was below the threshold. The 3 m threshold was therefore only compared against a single 1 m step, so no step ever counted. Tracks with bigger gaps between points were unaffected, because each step alone was above the threshold.
+
+**Fix:** The reference now moves only when a change is counted. The loop body is simpler as a result: one `abs(change) >= threshold and change != 0` check, appending the change and resetting the reference, otherwise appending 0.0.
+
+**Tests:** I added `test_long_climb_in_small_steps_is_counted` to `tests/test_elevation.py`. It covers a 300-point climb in 1 m steps (expects `(300.0, 0.0)`) and the same climb followed by a 300 m descent in 1 m steps (expects `(300.0, 300.0)`). Before the fix, the climb case returned `(0.0, 0.0)`.
+
+`pace.py` uses `counted_changes` too, so the Naismith time estimate for these tracks is also corrected.
+
+I haven't committed. The repo has many untracked dotfiles, so I left staging to you. Changes are in `src/trailhead/elevation.py` and `tests/test_elevation.py`.

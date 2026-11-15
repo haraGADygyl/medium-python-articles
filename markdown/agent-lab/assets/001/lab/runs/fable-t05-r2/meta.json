@@ -1,0 +1,143 @@
+{
+  "run_id": "fable-t05-r2",
+  "task": "t05",
+  "tier": "tests",
+  "baseline": false,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "`src/trailhead/report.py` has no tests. Write `tests/test_report.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 85.5,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 8,
+  "duration_ms": 81715,
+  "duration_api_ms": 80133,
+  "api_equivalent_usd": 0.805096,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 27983,
+    "cache_read_input_tokens": 170960,
+    "output_tokens": 8077,
+    "output_tokens_details": {
+      "thinking_tokens": 1257
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 27983,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 735,
+        "cache_read_input_tokens": 39973,
+        "cache_creation_input_tokens": 773,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 773
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 12,
+      "outputTokens": 8077,
+      "cacheReadInputTokens": 170960,
+      "cacheCreationInputTokens": 27983,
+      "webSearchRequests": 0,
+      "costUSD": 0.805096,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 1257,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 27983,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 5,
+    "Write": 1,
+    "Edit": 1
+  },
+  "bash_commands": [
+    "git ls-files; cat README.md; cat src/trailhead/report.py; cat pyproject.toml 2>/dev/null",
+    "cd src/trailhead; cat elevation.py geo.py pace.py track.py cli.py; cat ../../tests/conftest.py ../../tests/test_elevation.py ../../tests/test_cli.py; cd ../..; python -m pytest -q 2>&1 | tail -5",
+    "python -m pytest -q 2>&1 | tail -40; ruff check 2>&1 | tail -15; git status --short",
+    "cat src/trailhead/plan.py; ls -la .bashrc .gitconfig .mcp.json .claude 2>&1 | head -20",
+    "python -m pytest -q 2>&1 | tail -30; ruff check 2>&1 | tail -5"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_report.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".............................................                            [100%]\n45 passed in 0.08s\n",
+    "src_changed": [],
+    "killed": [
+      "loop radius 1 km",
+      "heading measured finish to start",
+      "time uses descent",
+      "fitness dropped",
+      "threshold dropped",
+      "minutes truncated",
+      "steepest rounded to whole percent"
+    ],
+    "survived": [],
+    "kills": 7,
+    "mutants": 7,
+    "changed": [
+      "A tests/test_report.py"
+    ],
+    "lines_added": 303,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_report.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".............................................                            [100%]\n45 passed in 0.07s\n",
+    "src_changed": [],
+    "killed": [
+      "loop radius 1 km",
+      "heading measured finish to start",
+      "distance rounded to 0.01",
+      "time uses descent",
+      "fitness dropped",
+      "threshold dropped",
+      "altitude printed high-low",
+      "minutes truncated",
+      "steepest rounded to whole percent"
+    ],
+    "survived": [],
+    "kills": 9,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_report.py"
+    ],
+    "lines_added": 303,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

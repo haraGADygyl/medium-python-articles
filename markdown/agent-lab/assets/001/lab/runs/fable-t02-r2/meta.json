@@ -1,0 +1,141 @@
+{
+  "run_id": "fable-t02-r2",
+  "task": "t02",
+  "tier": "tests",
+  "baseline": true,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "`src/trailhead/pace.py` has no tests. Write `tests/test_pace.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 58.7,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 55151,
+  "duration_api_ms": 54020,
+  "api_equivalent_usd": 0.6091911999999999,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 23165,
+    "cache_read_input_tokens": 122356,
+    "output_tokens": 5350,
+    "output_tokens_details": {
+      "thinking_tokens": 683
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 23165,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 451,
+        "cache_read_input_tokens": 31491,
+        "cache_creation_input_tokens": 4437,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 4437
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 10,
+      "outputTokens": 5350,
+      "cacheReadInputTokens": 122356,
+      "cacheCreationInputTokens": 23165,
+      "webSearchRequests": 0,
+      "costUSD": 0.6091911999999999,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 683,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 23165,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git ls-files; cat README.md src/trailhead/pace.py; cat pyproject.toml 2>/dev/null",
+    "cat src/trailhead/elevation.py src/trailhead/track.py src/trailhead/geo.py tests/conftest.py; sed -n 1,40p tests/test_plan.py; grep -n \"naismith\\|leg_hours\\|tobler\" -r src tests",
+    "cat src/trailhead/report.py src/trailhead/plan.py; python -m pytest -q 2>&1 | tail -3",
+    "python -m pytest -q 2>&1 | tail -15; ruff check 2>&1 | tail -5; python - <<'E'\nimport sys; sys.path.insert(0,'src')\nfrom trailhead.track import Track, Point\nfrom trailhead.pace import leg_hours\nfrom trailhead.report import summarise\nt=Track('x',[Point(0,0,0),Point(0,.01,10.04),Point(0,.02,20.08),Point(0,.03,30.12)])\nprint(sum(leg_hours(t)), summarise(t).hours)\nE\ngit status --short"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_pace.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "........................................                                 [100%]\n40 passed in 0.06s\n",
+    "src_changed": [],
+    "killed": [
+      "flat speed 4 km/h",
+      "500 m per hour climb",
+      "fitness multiplies",
+      "zero fitness allowed",
+      "negative ascent allowed",
+      "tobler peak on the wrong side",
+      "leg descent counted",
+      "leg fitness dropped"
+    ],
+    "survived": [],
+    "kills": 8,
+    "mutants": 8,
+    "changed": [
+      "A tests/test_pace.py"
+    ],
+    "lines_added": 203,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_pace.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": "........................................                                 [100%]\n40 passed in 0.06s\n",
+    "src_changed": [],
+    "killed": [
+      "flat speed 4 km/h",
+      "500 m per hour climb",
+      "fitness multiplies",
+      "zero fitness allowed",
+      "negative ascent allowed",
+      "tobler peak on the wrong side",
+      "leg descent counted",
+      "leg fitness dropped"
+    ],
+    "survived": [],
+    "kills": 8,
+    "mutants": 8,
+    "changed": [
+      "A tests/test_pace.py"
+    ],
+    "lines_added": 203,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

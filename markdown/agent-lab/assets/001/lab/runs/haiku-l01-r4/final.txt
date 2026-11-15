@@ -1,0 +1,17 @@
+`ruff check` now passes. I fixed the five reported problems in `src/` without touching the ruff configuration or adding any `noqa` comments.
+
+**`src/trailhead/pace.py`**
+- **F841 (`hours` unused):** This was a real bug, not dead code. `naismith_hours` computed `hours` with `fitness` applied, then returned the unscaled value, so `fitness` had no effect. I changed the return to `hours`. This matches the docstring and the README, which both say `fitness` scales the time. **Behaviour change:** any `fitness` other than 1.0 now changes the result. The CLI's `--fitness` flag and the planner were already passing it through, so they now get the scaled times. Ruff's suggested unsafe fix would have deleted the line and kept the bug.
+
+**`src/trailhead/track.py`**
+- **F401 (`import os` unused):** Removed it.
+- **I001 (import order):** Resolved by removing `os`. The remaining imports were already in order.
+- **E722 (bare `except`):** Changed to `except ValueError:`, since `float()` raises that for bad input.
+- **B904 (re-raise without chaining):** Added `from None` to the `TrackError` raise, so the original `ValueError` isn't shown as context.
+
+**Verification**
+- `ruff check`: All checks passed.
+- `ruff format --check src`: 9 files already formatted.
+- `pytest`: 46 passed, the same count as before my changes. None of the existing tests cover a `fitness` value other than 1.0, so the pace change is not exercised by the suite.
+
+I haven't committed anything.

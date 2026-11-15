@@ -1,0 +1,15 @@
+`Track.leg_lengths_km()` now caches its results, so summarising a track computes each leg's great-circle distance once instead of twice. All 49 tests pass. The new counting test fails on the old code, which confirms the duplicate work is gone.
+
+**The change** (`src/trailhead/track.py`):
+- `Track` keeps a snapshot of its points and the leg lengths computed from them. These are internal fields that don't appear as constructor arguments, in the printed form, or in equality checks.
+- On each call, the method compares the current points to the snapshot and only recomputes if they differ. This matters because `points` is an ordinary list that callers can add to or replace after the track is built. Caching only the first result could give wrong answers later.
+- The comparison is cheap because Python matches unchanged entries by identity before comparing their values.
+- The method returns a fresh list each time, so a caller that edits the returned list can't corrupt the cache.
+
+Results are identical because the computation itself is unchanged; only when it runs is different. `pace.py`, `elevation.py` and `length_km()` all benefit without any edits.
+
+**New tests** in `tests/test_track.py`:
+- `test_leg_lengths_are_computed_once_per_summary` counts distance calculations during `summarise()` and expects exactly one per leg.
+- `test_leg_lengths_follow_changes_to_points` checks that the results stay correct after editing the returned list, appending a point, and replacing `points`.
+
+Separately, `git status` now shows untracked files in the repo root that I didn't create: `.bashrc`, `.zshrc`, `.gitconfig`, `.idea`, `.vscode`, `.claude/` and others. They look like environment or sandbox artifacts, so I've left them alone. I haven't committed anything.

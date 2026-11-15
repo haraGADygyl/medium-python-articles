@@ -1,0 +1,9 @@
+`mypy` now passes with no errors, and `ruff check` and all 48 tests pass too. I didn't use `# type: ignore`, `cast` or `Any`, and the mypy config is unchanged.
+
+**The errors were a real bug, not just typing.** `Point.ele` is `float | None` because a track file can leave an elevation blank. The ascent/descent, highest/lowest, steepest-grade and walking-time code all read `point.ele` directly. So any track with a missing elevation would crash, when it should use the README rule: take the elevation of the nearest earlier point that has one, or the nearest later point if there is none.
+
+**The fix:** I added `Track.elevations()` in `src/trailhead/track.py`, which returns one `float` per point with the gaps filled using that rule. Everything that reads elevations now uses it: `elevation.py` (highest/lowest and steepest grade), `pace.py` (`leg_hours`) and `report.py` (`summarise`). A quick check with blanks at the start and in the middle (`[None, 100, None, 130]` → `[100, 100, 100, 130]`) gave the correct summary.
+
+**Decision for you:** the README doesn't say what to do if *no* point has an elevation. I made `Track.elevations()` raise `TrackError("no point has an elevation")`. The CLI only catches `TrackError` around `load_track`, so a track like that would end in a traceback rather than a clean error message. The fix would be either to check this in `parse_track` or to widen the CLI's `try` block. I left both alone because they go beyond fixing types.
+
+No tests currently cover missing elevations in the calculations. A short test for gap-filling would be worth adding.

@@ -1,0 +1,118 @@
+{
+  "run_id": "haiku-b05-r4",
+  "task": "b05",
+  "tier": "bug",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"My GPS app writes the `# units: ft` line at the end of the file, after the points. trailhead then reports a highest point of 14115 m for a hike that tops out at 14,115 ft (about 4302 m). The file is attached as `pikes-peak.csv`.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 23.4,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 13,
+  "duration_ms": 21223,
+  "duration_api_ms": 20041,
+  "api_equivalent_usd": 0.00688022,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 18041,
+    "cache_read_input_tokens": 142432,
+    "output_tokens": 3693,
+    "output_tokens_details": {
+      "thinking_tokens": 416
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 18041,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 441,
+        "cache_read_input_tokens": 30007,
+        "cache_creation_input_tokens": 797,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 797
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 3693,
+      "cacheReadInputTokens": 142432,
+      "cacheCreationInputTokens": 18041,
+      "webSearchRequests": 0,
+      "costUSD": 0.00688022,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 416,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 18041,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4,
+    "Read": 3,
+    "Edit": 5
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && echo --- && find . -name '*.csv' -not -path './.git/*' && echo --- && grep -ril 'units' --exclude-dir=.git . | head -50",
+    "head -5 pikes-peak.csv && echo ... && tail -5 pikes-peak.csv && wc -l pikes-peak.csv && grep -n -i unit README.md",
+    "PYTHONPATH=src python -m pytest -q 2>&1 | tail -15; PYTHONPATH=src python -c \"\nfrom trailhead.track import load_track\nt=load_track('pikes-peak.csv'); print(max(p.ele for p in t.points))\"",
+    "PYTHONPATH=src python -m pytest -q 2>&1 | tail -3; PYTHONPATH=src python -c \"\nfrom trailhead.track import load_track\nt=load_track('pikes-peak.csv'); print(max(p.ele for p in t.points))\""
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".....................................................                    [100%]\n53 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 11,
+    "lines_removed": 5,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": ".....................................................                    [100%]\n53 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 11,
+    "lines_removed": 5,
+    "own_suite_pass_as_left": true
+  }
+}

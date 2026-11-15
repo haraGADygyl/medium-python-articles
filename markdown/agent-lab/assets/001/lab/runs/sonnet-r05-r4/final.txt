@@ -1,0 +1,10 @@
+Tobler's hiking function is now available as `pace="tobler"` on `pace.leg_hours`, `plan.split_days` and `report.summarise`, and as `--pace {naismith,tobler}` on both CLI commands. The 50 tests pass (47 existing plus 3 new), and `ruff` and `mypy` are clean. I also ran both CLI commands with `--pace tobler` on a small two-point track.
+
+- **Default and errors:** Naismith stays the default, and its code path is untouched, so existing output doesn't change. Any other pace value raises a `ValueError`.
+- **Leg time:** Under Tobler a leg takes its length divided by `tobler_kmh(grade)`. A zero-length leg takes no time. Fitness divides the time, and a fitness of zero or less is a `ValueError`.
+- **Summary time:** Under Tobler it is the sum of the leg times. Ascent, descent and steepest grade in the summary don't depend on the pace.
+- **Grade:** I used each leg's raw elevation change over its horizontal length. Naismith credits ascent through the 3 m jitter threshold, but I didn't apply that threshold here, because you described grade as the leg's elevation change. The README says so.
+- **Keyword argument:** `pace` is keyword-only on `summarise` and `split_days`, so existing positional calls still work.
+- **Files:** I put a small `check_pace` helper in `src/trailhead/pace.py` and updated the README. The new tests are in `tests/test_pace.py`.
+
+The new tests cover the leg-time formula, the invalid pace value, and the summary time equalling the sum of the legs. They don't cover the CLI option.

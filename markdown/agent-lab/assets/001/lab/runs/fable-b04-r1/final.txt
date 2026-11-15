@@ -1,0 +1,5 @@
+The cause is a UTF-8 byte order mark: the Garmin export starts with the invisible bytes `EF BB BF` before `lat,lon,ele`. Editors hide it, but the parser saw the first column as `\ufefflat`, so the header check failed.
+
+The fix is in `parse_track` in `src/trailhead/track.py`, which now drops a leading BOM before parsing. `trailhead summary garmin-export.csv` now prints a normal summary, and the test suite passes, including a new regression test for a BOM-prefixed file.
+
+The changes are uncommitted in the working tree.

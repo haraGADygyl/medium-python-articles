@@ -1,0 +1,17 @@
+I wrote `tests/test_plan.py` with 20 pytest tests covering `split_days` and `describe_plan`. They all pass, the full suite passes (62 tests), and `ruff check` is clean on the new file. Nothing under `src/` was changed, and I did not commit.
+
+What the tests check, taken from the README and docstrings:
+
+- **Default limit:** `DEFAULT_MAX_HOURS` is 7.0.
+- **Splitting:** a short walk is one day. Days split at the limit, with a day tuple's hours rounded to 0.01.
+- **Numbering and coverage:** days count from 1, point indexes start at 0, and consecutive days share a boundary point. The days cover every leg from the first point to the last.
+- **Limit rule:** no multi-leg day goes over the limit. A single leg longer than the limit becomes a day by itself.
+- **Timing:** climbs are timed by Naismith's rule, descents add no time, and `fitness` divides the time.
+- **Summary consistency:** for a hilly track with jitter, the days add up to `report.summarise(...).hours` at fitness 1.0 and 1.25, within rounding tolerance.
+- **Validation:** a zero or negative limit raises `ValueError`.
+- **`describe_plan`:** the docstring example `Day 2: points 14-31, 6h 05m` is reproduced exactly, along with other durations, minute rounding up to the next hour, and an empty plan.
+
+Two choices to be aware of:
+
+- The tests use a flat equator track where one 0.01° longitude step is about 1.112 km, so the expected hours are hard-coded approximations rather than values taken from the code under test.
+- I avoided asserting exact `.5`-minute rounding in `describe_plan`, because the README says "nearest minute" without saying how ties go.

@@ -1,0 +1,26 @@
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index e147dce..63359da 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -36,6 +36,7 @@ class Track:
+ 
+ def parse_track(text: str, default_name: str | None = None) -> Track:
+     """Parse a track; see the README for the format."""
++    text = text.removeprefix("\N{ZERO WIDTH NO-BREAK SPACE}")  # UTF-8 BOM, written by e.g. Garmin
+     name = default_name or "unnamed"
+     scale = 1.0
+     points: list[Point] = []
+diff --git a/tests/test_track.py b/tests/test_track.py
+index ba1bbad..d83c807 100644
+--- a/tests/test_track.py
++++ b/tests/test_track.py
+@@ -59,3 +59,9 @@ def test_track_length_is_the_sum_of_legs(make_track):
+     track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0))
+     assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)
+     assert track.length_km() == pytest.approx(3.33585, abs=1e-3)
++
++
++def test_parse_track_ignores_utf8_byte_order_mark():
++    bom = "\N{ZERO WIDTH NO-BREAK SPACE}"
++    track = parse_track(bom + "lat,lon,ele\r\n42.0,23.0,100\r\n42.1,23.1,110\r\n")
++    assert len(track.points) == 2

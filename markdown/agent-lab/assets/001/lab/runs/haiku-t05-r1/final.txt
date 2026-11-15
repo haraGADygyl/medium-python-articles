@@ -1,0 +1,13 @@
+I added `tests/test_report.py` with 29 tests covering `src/trailhead/report.py` against the README and docstrings. All 29 pass, the full suite passes (74 tests), and `ruff check` is clean on the new file. Nothing under `src/` was touched.
+
+The tests cover:
+- **Summary fields** for a hand-computed hill track: distance, ascent and descent, altitude range, steepest grade, time and heading.
+- **`format_summary` output** as an exact string, and the duration format (`5h 07m`, `0h 45m`, `12h 00m`, and a minute carry to `1h 00m`).
+- **Walking time:** descent adds nothing, `fitness` divides the time, and zero or negative fitness raises `ValueError`.
+- **Threshold:** jitter adds no ascent or time, a climb in 1 m steps counts in full, a custom threshold changes the totals, and a negative threshold raises `ValueError`.
+- **Steepest grade:** percent for a climb, a steeper descent wins, and repeated points are skipped.
+- **Heading:** all eight compass points, `loop` within 0.1 km, and a compass point just beyond 0.1 km.
+
+The tests use hand-computed expected values, and `pytest.approx` where the README gives a rounded figure. They are not a copy of the implementation's output.
+
+One thing I noticed but did not test: `format_summary` rounds minutes with Python's `round()`, which rounds exact halves to the even number (30.5 becomes 30). The README only says "rounded to the nearest minute", so I left ties alone rather than write a test that encodes a choice the spec doesn't make. If you want half-up rounding, that is a small change in `src/`.

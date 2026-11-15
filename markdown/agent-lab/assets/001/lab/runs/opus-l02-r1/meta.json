@@ -1,0 +1,120 @@
+{
+  "run_id": "opus-l02-r1",
+  "task": "l02",
+  "tier": "lint",
+  "baseline": false,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "opus",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "harness_timeout": false,
+  "wall_s": 24.6,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 5,
+  "duration_ms": 21548,
+  "duration_api_ms": 19609,
+  "api_equivalent_usd": 0.2499168,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 25606,
+    "cache_read_input_tokens": 93144,
+    "output_tokens": 1320,
+    "output_tokens_details": {
+      "thinking_tokens": 217
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 25606,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 351,
+        "cache_read_input_tokens": 24993,
+        "cache_creation_input_tokens": 613,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 613
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 10,
+      "outputTokens": 1320,
+      "cacheReadInputTokens": 93144,
+      "cacheCreationInputTokens": 25606,
+      "webSearchRequests": 0,
+      "costUSD": 0.2499168,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 217,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 25606,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4
+  },
+  "bash_commands": [
+    "cat pyproject.toml; find src -name '*.py' | xargs wc -l; mypy 2>&1 | tail -40",
+    "cat src/trailhead/geo.py src/trailhead/report.py; grep -rn \"heading\\|initial_bearing\" src tests",
+    "cat tests/test_report.py; ls; grep -rn -i \"loop\\|heading\" README* docs 2>/dev/null",
+    "python - <<'EOF'\nimport re,pathlib\np=pathlib.Path(\"src/trailhead/geo.py\"); s=p.read_text()\ns=s.replace(\"def initial_bearing(lat1, lon1, lat2, lon2):\",\"def initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:\")\np.write_text(s)\np=pathlib.Path(\"src/trailhead/report.py\"); s=p.read_text()\ns=s.replace(\"def _heading(track: Track) -> str | None:\",\"def _heading(track: Track) -> str:\")\ns=s.replace(\"        return None\\n\",\"        return \\\"loop\\\"\\n\")\np.write_text(s)\nEOF\ngit diff --stat; mypy; python -m pytest -q 2>&1 | tail -3; ruff check src 2>&1 | tail -2"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py",
+      "M src/trailhead/report.py"
+    ],
+    "lines_added": 3,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py",
+      "M src/trailhead/report.py"
+    ],
+    "lines_added": 3,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  }
+}

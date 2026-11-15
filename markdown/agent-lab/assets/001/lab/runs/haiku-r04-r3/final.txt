@@ -1,0 +1,12 @@
+`Track.leg_lengths_km()` now caches its result, so a summary computes each leg's great-circle distance once. The full suite passes (50 tests, including 3 new ones), and ruff and mypy are clean.
+
+**The change** is in `src/trailhead/track.py`. `Track` gets a private cache field, excluded from `repr` and `==`, holding a snapshot of `points` and the computed lengths. `leg_lengths_km()` recomputes only when `points` differs from that snapshot. It returns a copy of the cached list, so a caller that mutates the returned list can't corrupt the cache.
+
+I checked against mutation rather than assuming `points` is fixed. `Track` is a mutable dataclass and `points` is a plain list, so a cache with no invalidation would return stale distances after a change. The comparison costs far less than the trig it saves.
+
+**Tests** added to `tests/test_track.py`:
+- A call-counting patch on `haversine_km` shows that calling `leg_lengths_km()` and then `length_km()` computes each leg once.
+- Replacing a point invalidates the cache and gives the new distances.
+- Mutating the returned list does not affect later calls.
+
+**Not done:** I did not commit. The repo root has many untracked dotfiles (`.bashrc`, `.claude/`, etc.) that I left alone, so the commit should only include `src/trailhead/track.py` and `tests/test_track.py`. Also, `tests/test_track.py` was modified on disk by something outside this session while I was working; my edit applied cleanly and the diff shows only my additions, but you may want to check that file before committing.

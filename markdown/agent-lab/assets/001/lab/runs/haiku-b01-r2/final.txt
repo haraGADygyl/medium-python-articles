@@ -1,0 +1,9 @@
+The cause was in `counted_changes` in `src/trailhead/elevation.py`, and it's fixed. The full test suite passes (47 tests).
+
+**Cause:** the loop reset its reference elevation on every point, not only when a change was counted. A climb in 1 m steps therefore never accumulated to the 3 m threshold: each step looked like a 1 m change, so the ascent came out as 0. Tracks with bigger gaps between points cross the threshold in a single step, which is why they looked fine.
+
+**Fix:** I removed the unconditional `reference = elevation` at the end of the loop. The reference now only moves when a change is counted, which is what the docstring describes. Jitter below the threshold is still ignored.
+
+**Test:** I added `test_long_climb_in_small_steps_is_counted`, which covers a 100-point climb in 1 m steps and expects 99 m. The old code returns 0 for this, so the test would have caught the bug.
+
+I haven't committed anything. The repo's `src/` and `tests/` files show up as tracked, and the change is just these two files.

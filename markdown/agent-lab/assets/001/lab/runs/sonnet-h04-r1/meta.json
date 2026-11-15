@@ -1,0 +1,120 @@
+{
+  "run_id": "sonnet-h04-r1",
+  "task": "h04",
+  "tier": "two-file bug",
+  "baseline": false,
+  "repeat": 1,
+  "sandbox": true,
+  "model_alias": "sonnet",
+  "prompt": "Bug report from a user: \"`trailhead summary` shows `time 0h 44m` for a flat 3.74 km walk. By Naismith's rule that is 44.9 minutes, and the README says times are rounded to the nearest minute.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 22.5,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 7,
+  "duration_ms": 19726,
+  "duration_api_ms": 17686,
+  "api_equivalent_usd": 0.0827498,
+  "usage": {
+    "input_tokens": 13,
+    "cache_creation_input_tokens": 12590,
+    "cache_read_input_tokens": 154338,
+    "output_tokens": 1693,
+    "output_tokens_details": {
+      "thinking_tokens": 86
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 12590,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 1,
+        "output_tokens": 380,
+        "cache_read_input_tokens": 24840,
+        "cache_creation_input_tokens": 513,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 513
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 13,
+      "outputTokens": 1693,
+      "cacheReadInputTokens": 154338,
+      "cacheCreationInputTokens": 12590,
+      "webSearchRequests": 0,
+      "costUSD": 0.0827498,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 86,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 12590,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 1,
+    "Bash": 5
+  },
+  "bash_commands": [
+    "sed -n 52,66p src/trailhead/report.py; sed -n 28,42p src/trailhead/plan.py",
+    "sed -i 's/divmod(int(summary.hours \\* 60), 60)/divmod(round(summary.hours * 60), 60)/' src/trailhead/report.py\nsed -i 's/divmod(int(hours \\* 60), 60)/divmod(round(hours * 60), 60)/' src/trailhead/plan.py\ngit diff --stat; python -m pytest -q 2>&1 | tail -5",
+    "sed -n 1,30p tests/test_report.py",
+    "cat >> tests/test_report.py <<'EOF'\n\n\ndef test_time_is_rounded_to_the_nearest_minute_not_truncated():\n    from dataclasses import replace\n\n    summary = summarise_flat = None\n    base = format_summary.__globals__[\"Summary\"]\n    import inspect\n    fields = {f: 0 for f in inspect.signature(base).parameters}\n    fields.update(name=\"Flat\", heading=\"N\")\n    for hours, expected in ((44.9 / 60, \"0h 45m\"), (59.6 / 60, \"1h 00m\")):\n        fields[\"hours\"] = hours\n        assert f\"time      {expected}\" in format_summary(base(**fields))\nEOF\npython -m pytest -q 2>&1 | tail -5",
+    "python - <<'EOF'\np='tests/test_report.py'\ns=open(p).read()\ni=s.index(\"\\n\\ndef test_time_is_rounded\")\ns=s[:i]+'''\n\n@pytest.mark.parametrize(\"minutes, expected\", [(44.9, \"0h 45m\"), (59.6, \"1h 00m\")])\ndef test_time_is_rounded_to_the_nearest_minute(make_track, minutes, expected):\n    summary = replace(summarise(make_track(*RIDGE)), hours=minutes / 60)\n    assert f\"time      {expected}\" in format_summary(summary)\n'''\ns=s.replace(\"import pytest\\n\",\"from dataclasses import replace\\n\\nimport pytest\\n\",1)\nopen(p,'w').write(s)\nEOF\npython -m pytest -q 2>&1 | tail -5"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 10,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.10s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 10,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

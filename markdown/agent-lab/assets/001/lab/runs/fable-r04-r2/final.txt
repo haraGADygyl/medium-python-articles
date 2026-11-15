@@ -1,0 +1,11 @@
+`Track.leg_lengths_km()` now caches its result, so `summarise()` computes each leg's distance once instead of twice. All 50 tests pass, and a 500-point track gives byte-identical summary, leg lengths, day plan, `repr` and equality with and without the change.
+
+The change is in `src/trailhead/track.py`:
+
+- **Staleness:** `Track` and its `points` list are mutable, so the cache stores the points it was computed for and recomputes when they differ. That check is one cheap pass over the points per call, with no distance calculations.
+- **Returned list:** each call still returns a fresh list, so a caller modifying the result cannot corrupt the cache.
+- **Dataclass surface:** the cache is a private field excluded from the constructor, `repr` and equality. It would show up in `dataclasses.fields()` or `asdict()`, which nothing in the repo uses.
+
+I added three tests to `tests/test_track.py`: a summary makes exactly one distance call per leg, leg lengths follow appends, replacements and reassignment of `points`, and mutating the returned list leaves the track alone.
+
+Nothing is committed.

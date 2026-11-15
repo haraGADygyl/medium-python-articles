@@ -1,0 +1,5 @@
+`haversine_km` is now `distance_km` in `src/trailhead/geo.py`, and the callers in `track.py`, `report.py` and `tests/test_geo.py` use the new name. The full test suite passes with warnings treated as errors, and ruff and mypy are clean.
+
+`haversine_km` remains importable from `trailhead.geo` as a thin wrapper that emits a `DeprecationWarning` (pointing at the caller's line) and returns `distance_km`'s result. I added one test to `tests/test_geo.py` covering the warning and the matching result.
+
+Nothing is committed.

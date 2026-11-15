@@ -1,0 +1,124 @@
+{
+  "run_id": "opus-h04-r4",
+  "task": "h04",
+  "tier": "two-file bug",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "opus",
+  "prompt": "Bug report from a user: \"`trailhead summary` shows `time 0h 44m` for a flat 3.74 km walk. By Naismith's rule that is 44.9 minutes, and the README says times are rounded to the nearest minute.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 40.2,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 7,
+  "duration_ms": 37799,
+  "duration_api_ms": 34875,
+  "api_equivalent_usd": 0.2441924,
+  "usage": {
+    "input_tokens": 14,
+    "cache_creation_input_tokens": 19228,
+    "cache_read_input_tokens": 172362,
+    "output_tokens": 2792,
+    "output_tokens_details": {
+      "thinking_tokens": 571
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 19228,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 602,
+        "cache_read_input_tokens": 30041,
+        "cache_creation_input_tokens": 1950,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1950
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 14,
+      "outputTokens": 2792,
+      "cacheReadInputTokens": 172362,
+      "cacheCreationInputTokens": 19228,
+      "webSearchRequests": 0,
+      "costUSD": 0.2441924,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 571,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 19228,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 6
+  },
+  "bash_commands": [
+    "git ls-files; cat README* | head -50; grep -rn \"int(\\|round\\|//\\|floor\" --include=*.py . | grep -v test | head -30",
+    "sed -n 50,90p README.md; cat src/trailhead/report.py src/trailhead/plan.py src/trailhead/pace.py; grep -n \"0h\\|h \\|m\\b\" tests/test_report.py tests/test_plan.py tests/test_cli.py | head -30",
+    "cd src/trailhead && python - <<'EOF'\nimport re\np=open('pace.py').read()\np=p.replace('''def tobler_kmh''','''def format_duration(hours: float) -> str:\n    \"\"\"Format hours as ``<hours>h <minutes>m``, rounded to the nearest minute.\n\n    Halves round up, so 44.5 minutes is ``0h 45m``.\n    \"\"\"\n    whole, minutes = divmod(floor(hours * 60 + 0.5), 60)\n    return f\"{whole}h {minutes:02d}m\"\n\n\ndef tobler_kmh''',1).replace('from math import exp','from math import exp, floor')\nopen('pace.py','w').write(p)\nr=open('report.py').read()\nr=r.replace('from trailhead.pace import naismith_hours','from trailhead.pace import format_duration, naismith_hours')\nr=r.replace('    whole, minutes = divmod(int(summary.hours * 60), 60)\\n','')\nr=r.replace('{whole}h {minutes:02d}m','{format_duration(summary.hours)}')\nopen('report.py','w').write(r)\nq=open('plan.py').read()\nq=q.replace('from trailhead.pace import leg_hours','from trailhead.pace import format_duration, leg_hours')\nq=q.replace('        whole, minutes = divmod(int(hours * 60), 60)\\n','')\nq=q.replace('{whole}h {minutes:02d}m','{format_duration(hours)}')\nopen('plan.py','w').write(q)\nEOF\ncd ../.. && git diff --stat && python -m pytest -q 2>&1 | tail -15",
+    "head -15 tests/test_pace.py; cat tests/test_report.py | head -30; grep -n \"def \\|Track(\\|Point(\" tests/conftest.py tests/test_plan.py | head",
+    "sed -i 's/^from trailhead.pace import leg_hours, naismith_hours, tobler_kmh/from trailhead.pace import format_duration, leg_hours, naismith_hours, tobler_kmh/' tests/test_pace.py\ncat >> tests/test_pace.py <<'EOF'\n\n\n@pytest.mark.parametrize(\n    (\"hours\", \"text\"),\n    [\n        (naismith_hours(3.74, 0), \"0h 45m\"),  # 44.88 minutes: rounds up, not down\n        (44.4 / 60, \"0h 44m\"),\n        (44.5 / 60, \"0h 45m\"),\n        (59.7 / 60, \"1h 00m\"),\n        (5 + 7 / 60, \"5h 07m\"),\n        (12.0, \"12h 00m\"),\n        (0.0, \"0h 00m\"),\n    ],\n)\ndef test_format_duration_rounds_to_nearest_minute(hours, text):\n    assert format_duration(hours) == text\nEOF\ncat >> tests/test_plan.py <<'EOF'\n\n\ndef test_describe_plan_rounds_to_nearest_minute():\n    assert describe_plan([(1, 0, 3, 0.748)]) == [\"Day 1: points 0-3, 0h 45m\"]\nEOF\npython -m pytest -q 2>&1 | tail -3; ruff check; mypy 2>&1 | tail -1\ngit stash -q -- src && python -m pytest -q 2>&1 | tail -3; git stash pop -q && git status --short",
+    "ls -la .bashrc .gitconfig .claude .idea .mcp.json 2>&1 | head; git diff src"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 35,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.09s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/pace.py",
+      "M src/trailhead/plan.py",
+      "M src/trailhead/report.py",
+      "M tests/test_pace.py",
+      "M tests/test_plan.py"
+    ],
+    "lines_added": 35,
+    "lines_removed": 8,
+    "own_suite_pass_as_left": true
+  }
+}

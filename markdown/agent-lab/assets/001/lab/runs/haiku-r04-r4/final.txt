@@ -1,0 +1,13 @@
+`Track.leg_lengths_km()` now computes each leg's distance once and reuses it, so `summarise()` makes one distance call per leg instead of two. All 48 tests pass, including a new one.
+
+**The change** (`src/trailhead/track.py`):
+- `Track` has a private `_legs` field that holds the points it was computed from and the resulting lengths. It is excluded from `repr`, `compare` and `__init__`.
+- `leg_lengths_km()` recomputes only when `points` no longer matches that snapshot. It returns a copy of the cached list, so callers can't corrupt the cache.
+- I used a snapshot rather than a simple "already computed" flag because `points` is a public mutable list. A flag would return stale distances if a caller appended or edited points after a summary.
+
+**Verification:**
+- The new test `test_leg_distances_are_computed_once_until_points_change` (`tests/test_track.py`) counts calls to `haversine_km`. Repeated calls hit the cache, and appending a point triggers a recompute.
+- A manual run of `summarise()` on a three-point track made 2 distance calls for 2 legs. Before the change it would have made 4.
+- Results are unchanged: the existing summary and length tests still pass.
+
+I did not commit the change.

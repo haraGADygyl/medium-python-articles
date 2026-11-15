@@ -1,0 +1,63 @@
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index e36d18e..038a86f 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -1,8 +1,8 @@
+ """Walking-time estimates."""
+ 
+-from itertools import pairwise
+ from math import exp
+ 
++from trailhead.elevation import counted_changes
+ from trailhead.track import Track
+ 
+ FLAT_SPEED_KMH = 5.0
+@@ -32,8 +32,14 @@ def tobler_kmh(grade: float) -> float:
+ 
+ 
+ def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:
+-    """Naismith time for every leg, counting the leg's own climb."""
++    """Naismith time for every leg.
++
++    A leg's climb is the ascent ``elevation.counted_changes`` credits to it (default
++    threshold), not its raw rise, so jitter adds no time and the legs add up to the
++    summary time for the whole track.
++    """
++    climbs = counted_changes([point.ele for point in track.points])
+     return [
+-        naismith_hours(km, max(b.ele - a.ele, 0.0), fitness)
+-        for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True)
++        naismith_hours(km, max(climb, 0.0), fitness)
++        for km, climb in zip(track.leg_lengths_km(), climbs, strict=True)
+     ]
+diff --git a/tests/test_plan.py b/tests/test_plan.py
+index 03b3f5d..2caee6d 100644
+--- a/tests/test_plan.py
++++ b/tests/test_plan.py
+@@ -1,6 +1,7 @@
+ import pytest
+ 
+ from trailhead.plan import describe_plan, split_days
++from trailhead.report import summarise
+ 
+ 
+ @pytest.fixture
+@@ -38,3 +39,18 @@ def test_describe_plan():
+         "Day 1: points 0-14, 6h 04m",
+         "Day 2: points 14-31, 0h 45m",
+     ]
++
++
++def test_days_add_up_to_the_summary_time_on_a_noisy_track(make_track):
++    # A steady climb with +/-2 m of jitter on alternate points, in small steps.
++    step = 0.2 / 111.19508
++    track = make_track(
++        *[(0, index * step, 1000 + index * 1.5 + (2 if index % 2 else -2)) for index in range(200)]
++    )
++    for fitness in (1.0, 1.3):
++        days = split_days(track, max_hours_per_day=2, fitness=fitness)
++        assert len(days) > 2
++        total = sum(hours for *_, hours in days)
++        # Each day's hours are rounded to 0.01.
++        expected = summarise(track, fitness).hours
++        assert total == pytest.approx(expected, abs=0.005 * len(days) + 0.001)

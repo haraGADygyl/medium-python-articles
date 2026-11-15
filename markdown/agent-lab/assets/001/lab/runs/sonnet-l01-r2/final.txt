@@ -1,0 +1,9 @@
+`ruff check src/` now passes, and all 46 tests pass. I didn't touch the ruff config and added no `noqa` comments.
+
+- **`track.py`, unused import:** I removed `import os`. That also cleared the import-ordering error, so `--fix` handled both.
+- **`track.py`, bare `except`:** it is now `except ValueError:`, which is what `float()` raises. The re-raise is now `raise TrackError(...) from None`.
+- **`pace.py`, unused `hours`:** the function computed `hours` with the `/ fitness` scaling and then returned the unscaled formula. The docstring says `fitness` scales the result, so I changed the last line to `return hours`.
+
+The `pace.py` change alters behavior. `naismith_hours` now respects `fitness`, so any caller passing a value other than 1.0 (the `--fitness` CLI option, for example) gets different times than before. Ruff's alternative was to delete the assignment, which would have kept the bug.
+
+I haven't committed anything.

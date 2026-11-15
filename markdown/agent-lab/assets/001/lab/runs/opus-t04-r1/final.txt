@@ -1,0 +1,22 @@
+I've written `tests/test_plan.py` with 46 tests. They all pass, the full suite passes (88 tests), and `ruff check` reports nothing. Nothing under `src/` was changed.
+
+**What `split_days` is tested for**
+- **Plan structure:** days are numbered from 1, the plan starts at point 0 and ends at the last point, each day starts where the previous one ended, and hours are rounded to 0.01.
+- **The limit:** the default is 7 hours. A day of several legs never goes over the limit, and a day exactly at the limit is allowed.
+- **Overlong legs:** a leg longer than the limit on its own becomes a day by itself, whether it comes first, in the middle, last, or several in a row.
+- **Errors:** a limit of zero or less, or fitness of zero or less, raises `ValueError`.
+- **Fitness:** it divides the time, and it can change how many days the plan has.
+- **Climbing:** ascent adds time and descent doesn't. GPS jitter adds nothing, and a 300 m climb in 1 m steps counts in full. A climb is credited to the leg where it reaches the 3 m threshold, and so to the day containing that leg.
+- **Matching the summary:** on a hilly track, the days add up to `summarise(track, fitness).hours` across several limits and fitness values. The tolerance allows for each day being rounded to 0.01 h.
+
+**What `describe_plan` is tested for**
+- **Docstring example:** it produces exactly `Day 2: points 14-31, 6h 05m`.
+- **README examples:** `5h 07m`, `0h 45m` and `12h 00m` come out as shown.
+- **Rounding:** times round to the nearest minute, including 119.7 minutes rounding up to `2h 00m`.
+- **Edge cases:** an empty plan gives no lines.
+
+The tests check the documented rules (the limit, overlong legs, days adding up to the summary) rather than one exact split. The docs don't say that days are filled as full as possible, so the tests don't require it.
+
+All the tests pass, so they found no bugs in `plan.py`. One edge case could be read either way: if the track starts with a repeated point, followed by a leg longer than the limit, that long leg shares its day with the zero-length leg before it. The day takes no extra time, so I treated this as fine and didn't test for it.
+
+Several untracked dotfiles and folders appeared in the repo during the session (`.bashrc`, `.gitconfig`, `.claude/`, `.idea`, `.vscode`, and others). I didn't create them and left them alone. They look like they came from the environment.

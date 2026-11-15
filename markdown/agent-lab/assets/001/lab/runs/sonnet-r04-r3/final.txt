@@ -1,0 +1,15 @@
+`Track.leg_lengths_km()` now caches its result, so a summary computes each leg's distance once. The full suite passes (48 tests), including a new one for the caching.
+
+**How it works:** `Track.points` is a mutable list, and the README promises that lengths always reflect the current points. A plain cache would break that promise, so each call compares a snapshot of the points with the cached one. It recomputes only if they differ. Because `Point` is a frozen dataclass, this catches appends, replacements and edits. The comparison is a cheap equality check, far cheaper than the haversine maths.
+
+**Details:**
+- The cache is a private field on the dataclass, excluded from `__init__`, `repr` and `==`. I didn't use `functools.cached_property` because it doesn't work with `slots=True`.
+- Each call returns a copy of the cached list, so a caller that mutates the result can't corrupt the cache.
+- Results are unchanged. The cached values come from the same haversine computation.
+
+**Tests:** the new test in `tests/test_track.py` does four things:
+- It counts `haversine_km` calls and checks that repeated `leg_lengths_km()` and `length_km()` calls compute each leg only once.
+- It checks that mutating a returned list leaves the cache intact.
+- It checks that appending a point and replacing a point both give up-to-date lengths.
+
+I haven't committed anything.

@@ -1,0 +1,10 @@
+`steepest_grade()` now returns percent, so the reported track gives 18.0 instead of 0.18. The full suite passes (47 tests).
+
+**Cause:** `elevation.steepest_grade` returned rise over run (0.18), while its docstring and the README say percent. `report.py` multiplied the result by 100 to compensate, so the CLI report showed the right number and the public function did not. `pace.tobler_kmh` takes rise over run, so it is unchanged.
+
+**Fix:**
+- `src/trailhead/elevation.py`: the function now computes percent directly and rounds to 0.1, as the docstring says. It previously rounded to 3 decimals, which didn't match the docstring either.
+- `src/trailhead/report.py`: removed the `* 100`, since the function now returns percent. The printed report is unchanged (for example, `steepest  6.0%`).
+- `tests/test_elevation.py`: added `test_steepest_grade_is_a_percent`, which checks a leg climbing 18 m over about 100 m reads about 18. It fails on the old code and passes on the fix.
+
+I did not commit anything.

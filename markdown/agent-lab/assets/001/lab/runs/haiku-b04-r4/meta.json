@@ -1,0 +1,118 @@
+{
+  "run_id": "haiku-b04-r4",
+  "task": "b04",
+  "tier": "bug",
+  "baseline": false,
+  "repeat": 4,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "Bug report from a user: \"Track files exported from my Garmin app fail with `trailhead: line 1: expected the header 'lat,lon,ele'`, but when I open one in my editor the first line is exactly `lat,lon,ele`. One of the files is attached as `garmin-export.csv`.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 21.4,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 8,
+  "duration_ms": 19024,
+  "duration_api_ms": 17660,
+  "api_equivalent_usd": 0.006457910000000001,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 17323,
+    "cache_read_input_tokens": 142961,
+    "output_tokens": 3125,
+    "output_tokens_details": {
+      "thinking_tokens": 457
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 17323,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 463,
+        "cache_read_input_tokens": 28469,
+        "cache_creation_input_tokens": 1617,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1617
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 3125,
+      "cacheReadInputTokens": 142961,
+      "cacheCreationInputTokens": 17323,
+      "webSearchRequests": 0,
+      "costUSD": 0.006457910000000001,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 457,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 17323,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 5,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "git status --short && git ls-files && ls -la && grep -rn \"expected the header\" --include=*.py . ; ls -la garmin-export.csv 2>/dev/null && od -c garmin-export.csv | head -5",
+    "cat -n src/trailhead/track.py && cat -n tests/test_track.py && cat tests/conftest.py | head -60",
+    "grep -rn \"read_text\\|open(\\|stdin\\|parse_track\\|load_track\" src tests README.md | grep -v \"^tests/test_track.py\" ; python -m pytest -q 2>&1 | tail -3",
+    "PYTHONPATH=src python -c \"\nfrom trailhead.track import load_track\ntry:\n    print(load_track('garmin-export.csv').length_km())\nexcept Exception as e: print(type(e).__name__, e)\n\"",
+    "python -m pytest -q 2>&1 | tail -3 && PYTHONPATH=src python -c \"\nfrom trailhead.track import load_track\nprint(round(load_track('garmin-export.csv').length_km(), 4))\n\" && git diff --stat"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 15,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "...................................................                      [100%]\n51 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/track.py",
+      "M tests/test_track.py"
+    ],
+    "lines_added": 15,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

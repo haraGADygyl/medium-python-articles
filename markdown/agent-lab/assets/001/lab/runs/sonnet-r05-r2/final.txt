@@ -1,0 +1,10 @@
+Tobler's function is now available as an alternative to Naismith's rule, selectable with `pace="tobler"` or `--pace tobler`. The test suite (49 tests, including two new ones), `ruff` and `mypy` pass. I never ran the CLI itself, because the shell blocked my smoke-test commands.
+
+- **API:** `pace.leg_hours`, `plan.split_days` and `report.summarise` take `pace: str = "naismith"`. Any other value raises `ValueError`, which `pace.check_pace` enforces. `split_days` and `summarise` check it before doing any work.
+- **Tobler time:** each leg takes `km / tobler_kmh(grade) / fitness` hours. A zero-length leg takes 0 hours. Fitness is still validated, so a fitness of 0 or less raises `ValueError` as it does for Naismith. The summary time is the sum of the leg times.
+- **CLI:** both `summary` and `plan` accept `--pace {naismith,naismith}`'s sibling choice `tobler`, with `naismith` as the default.
+- **Unchanged output:** the Naismith code path is untouched, so existing output doesn't change.
+- **README:** I documented the new option and noted Tobler under day plans.
+- **Tests:** I added tests for Tobler leg hours (with fitness and a zero-length leg) and for rejecting an unknown pace in all three functions.
+
+Your spec says "elevation change" for the grade. I used the raw point-to-point elevation difference, so Tobler ignores the 3 m jitter threshold that Naismith applies. As a result, the `--threshold` option on `summary` has no effect under Tobler. If you'd rather Tobler use the threshold-filtered changes, that's a small change.

@@ -1,0 +1,5 @@
+The summary was cutting the time down instead of rounding it. That's fixed now, and the existing tests pass (47). I didn't add a test for the new rounding.
+
+**Cause:** `format_summary` in `src/trailhead/report.py` converted hours to minutes with `int(summary.hours * 60)`, which drops the fraction. 44.9 minutes became 44, so a 3.74 km flat walk showed `0h 44m`. `describe_plan` in `src/trailhead/plan.py` had the same bug, so the per-day lines in multi-day plans were also off by up to a minute.
+
+**Fix:** I added `format_duration(hours)` to `src/trailhead/pace.py`. It uses `round()` before splitting into hours and minutes. Both display paths now call it. Rounding happens before the split, so 59.6 minutes shows as `1h 00m`, not `0h 60m`. 3.74 km now shows `0h 45m`.

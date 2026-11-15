@@ -1,0 +1,126 @@
+{
+  "run_id": "opus-l02-r2",
+  "task": "l02",
+  "tier": "lint",
+  "baseline": false,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "opus",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "harness_timeout": false,
+  "wall_s": 30.7,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 7,
+  "duration_ms": 27677,
+  "duration_api_ms": 25852,
+  "api_equivalent_usd": 0.1732704,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 13653,
+    "cache_read_input_tokens": 131892,
+    "output_tokens": 1881,
+    "output_tokens_details": {
+      "thinking_tokens": 266
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 13653,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 410,
+        "cache_read_input_tokens": 26128,
+        "cache_creation_input_tokens": 288,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 288
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 1881,
+      "cacheReadInputTokens": 131892,
+      "cacheCreationInputTokens": 13653,
+      "webSearchRequests": 0,
+      "costUSD": 0.1732704,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 266,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 13653,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 6
+  },
+  "bash_commands": [
+    "cat pyproject.toml; find src -name '*.py' | xargs wc -l; mypy 2>&1 | tail -30",
+    "cat src/trailhead/geo.py src/trailhead/report.py; grep -rn \"heading\\|initial_bearing\\|compass\" src tests | grep -v \"^src/trailhead/report.py\"",
+    "cat tests/test_report.py; grep -rni \"loop\\|heading\" README* docs 2>/dev/null | head",
+    "python - <<'EOF'\nimport re,pathlib\np=pathlib.Path(\"src/trailhead/geo.py\"); s=p.read_text()\ns=s.replace(\"def initial_bearing(lat1, lon1, lat2, lon2):\",\"def initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:\")\np.write_text(s)\np=pathlib.Path(\"src/trailhead/report.py\"); s=p.read_text()\ns=s.replace(\"    hours: float\\n    heading: str\\n\",\"    hours: float\\n    heading: str | None  # None when the track is a loop\\n\")\ns=s.replace('f\"  heading   {summary.heading}\"','f\"  heading   {summary.heading or \\'loop\\'}\"')\np.write_text(s)\nEOF\ngit diff --stat; mypy && ruff check src && ruff format --check src; python -m pytest -q 2>&1 | tail -3\npython -c \"\nimport sys; sys.path.insert(0,'src')\nfrom trailhead.track import *; import trailhead.track as t; print([n for n in dir(t) if not n.startswith('_')])\"",
+    "cat tests/conftest.py",
+    "cat >> tests/test_report.py <<'EOF'\n\n\ndef test_a_loop_has_no_heading(make_track):\n    summary = summarise(make_track((0, 0, 1000), (0.01, 0.01, 1095), (0, 0.0005, 1000)))\n    assert summary.heading is None\n    assert format_summary(summary).splitlines()[-1] == \"  heading   loop\"\nEOF\npython -m pytest -q 2>&1 | tail -1; ruff check tests && ruff format --check tests"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py",
+      "M src/trailhead/report.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 9,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "fail",
+    "reasons": [
+      "hidden or regression tests fail"
+    ],
+    "tests_pass": false,
+    "tests_output_tail": "=====================\n__________________________ test_loop_heading_is_loop ___________________________\n\nmake_track = <function make_track.<locals>.build at 0x7ee582659a80>\n\n    def test_loop_heading_is_loop(make_track):\n        summary = summarise(make_track(*LOOP, name=\"Lake Circuit\"))\n>       assert summary.heading == \"loop\"\nE       AssertionError: assert None == 'loop'\nE        +  where None = Summary(name='Lake Circuit', length_km=2.2, gain_m=100.0, loss_m=100.0, highest_m=1100, lowest_m=1000, steepest_pct=9.3, hours=0.605061677928428, heading=None).heading\n\ntests/test_hidden.py:11: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_hidden.py::test_loop_heading_is_loop - AssertionError: asse...\n1 failed, 49 passed in 0.09s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py",
+      "M src/trailhead/report.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 9,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  }
+}

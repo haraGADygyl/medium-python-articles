@@ -1,0 +1,5 @@
+I added `tests/test_pace.py` with 40 tests covering `naismith_hours`, `tobler_kmh` and `leg_hours`; they all pass, the full suite passes (80 tests), and `ruff check` is clean. Nothing under `src/` was touched.
+
+One documented behaviour does not hold exactly, and my tests do not pin it down. The README and the `leg_hours` docstring say the legs add up to the summary time. With fractional elevations they differ slightly, because `summarise` computes its time from the ascent rounded to 0.1 m while `leg_hours` uses the unrounded climbs. For example, three climbs of 10.04 m give 0.717370 h from the legs against 0.717337 h in the summary, about 0.1 s apart.
+
+My "legs add up to the summary time" test uses whole-metre elevations, where the two agree, so it passes. If you want the claim enforced exactly, I can add a fractional-elevation test that fails until `report.py` is changed — say if you want it.

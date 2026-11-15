@@ -1,0 +1,11 @@
+The bug is fixed: the attached `garmin-export.csv` now loads, and the full suite passes (48 tests, including a new regression test).
+
+**Cause:** Garmin's export starts with a UTF-8 byte-order mark (`EF BB BF`). `load_track` read the file with `encoding="utf-8"`, which keeps that mark as an invisible `U+FEFF` character at the start of line 1. The line then read as `\ufefflat,lon,ele`. Python's `str.strip()` doesn't remove `U+FEFF`, so the header check failed. Your editor hides the mark, which is why the first line looked correct. The file also uses CRLF line endings, but those were already handled.
+
+**Fix** (`src/trailhead/track.py`): `load_track` now reads with `utf-8-sig`, which drops a leading BOM when present and behaves like `utf-8` otherwise. I also updated its docstring to say why.
+
+**Test** (`tests/test_track.py`): added `test_file_with_bom_and_crlf_line_endings`, which writes a BOM + CRLF file and checks that it parses.
+
+Before the fix, the attached file failed with `line 1: expected the header 'lat,lon,ele'`. After it, the file parses to a 4-point track of 0.648 km. `ruff check` passes.
+
+I haven't committed anything. The changes are in the working tree (`src/trailhead/track.py`, `tests/test_track.py`) if you want me to commit them.

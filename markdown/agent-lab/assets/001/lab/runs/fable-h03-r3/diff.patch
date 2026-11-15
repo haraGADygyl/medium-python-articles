@@ -1,0 +1,60 @@
+diff --git a/src/trailhead/elevation.py b/src/trailhead/elevation.py
+index 441cce3..38ee915 100644
+--- a/src/trailhead/elevation.py
++++ b/src/trailhead/elevation.py
+@@ -62,5 +62,5 @@ def steepest_grade(track: Track) -> float:
+     for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):
+         if km == 0:
+             continue
+-        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000))
+-    return round(steepest, 3)
++        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000) * 100)
++    return round(steepest, 1)
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 0525756..9c7e1a7 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -48,7 +48,7 @@ def summarise(
+         loss_m=loss,
+         highest_m=highest,
+         lowest_m=lowest,
+-        steepest_pct=round(steepest_grade(track) * 100, 1),
++        steepest_pct=steepest_grade(track),
+         hours=naismith_hours(length, gain, fitness),
+         heading=_heading(track),
+     )
+diff --git a/tests/test_elevation.py b/tests/test_elevation.py
+index 3e1fb58..84f8893 100644
+--- a/tests/test_elevation.py
++++ b/tests/test_elevation.py
+@@ -1,6 +1,9 @@
++from math import degrees
++
+ import pytest
+ 
+-from trailhead.elevation import gain_and_loss, highest_and_lowest
++from trailhead.elevation import gain_and_loss, highest_and_lowest, steepest_grade
++from trailhead.geo import EARTH_RADIUS_KM
+ 
+ 
+ def test_simple_climb_and_descent():
+@@ -28,3 +31,19 @@ def test_negative_threshold_is_rejected():
+ def test_highest_and_lowest(make_track):
+     track = make_track((0, 0, 900), (0, 0.01, 1450), (0, 0.02, 700))
+     assert highest_and_lowest(track) == (1450, 700)
++
++
++def test_steepest_grade_is_a_percentage(make_track):
++    # 100 m along the equator, in degrees of longitude.
++    lon_100m = degrees(0.1 / EARTH_RADIUS_KM)
++    track = make_track(
++        (0, 0, 500), (0, lon_100m, 518), (0, 2 * lon_100m, 518), (0, 3 * lon_100m, 513)
++    )
++    assert steepest_grade(track) == 18.0
++
++
++def test_steepest_grade_counts_descents_and_skips_repeated_points(make_track):
++    lon_100m = degrees(0.1 / EARTH_RADIUS_KM)
++    track = make_track((0, 0, 500), (0, 0, 900), (0, lon_100m, 487.5))
++    assert steepest_grade(track) == 412.5
++    assert steepest_grade(make_track((0, 0, 500), (0, 0, 900))) == 0.0

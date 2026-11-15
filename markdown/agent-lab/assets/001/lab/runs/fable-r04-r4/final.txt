@@ -1,0 +1,11 @@
+`Track.leg_lengths_km()` now caches its result, so a summary computes each leg's great-circle distance once instead of twice. The full suite passes (50 tests, including three new ones) and ruff is clean on `src` and `tests`.
+
+The change is in `src/trailhead/track.py`:
+
+- **Stale cache protection:** `Track.points` is a public, mutable list, so the cache keeps a snapshot of the points it was computed from and recomputes if they differ. Appending, replacing a point or reassigning `points` all give fresh, correct lengths. The check is a cheap list comparison per call, with no trigonometry.
+- **Fresh list per call:** each call still returns a new list, as before, so a caller modifying the result cannot corrupt the cache.
+- **Same public surface:** the two cache fields are excluded from `__init__`, `repr` and equality, so constructing, printing and comparing tracks behave as before.
+
+The new tests in `tests/test_track.py` check that summarising a three-point track calls the distance function exactly twice with an unchanged result, that the lengths follow changes to `points`, and that modifying a returned list is harmless.
+
+Nothing is committed.

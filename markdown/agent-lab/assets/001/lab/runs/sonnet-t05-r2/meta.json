@@ -1,0 +1,148 @@
+{
+  "run_id": "sonnet-t05-r2",
+  "task": "t05",
+  "tier": "tests",
+  "baseline": false,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "sonnet",
+  "prompt": "`src/trailhead/report.py` has no tests. Write `tests/test_report.py` with pytest tests that check its behaviour as documented in the README and the docstrings. Don't change anything under `src/`.",
+  "harness_timeout": false,
+  "wall_s": 51.8,
+  "model_id": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 7,
+  "duration_ms": 47722,
+  "duration_api_ms": 46909,
+  "api_equivalent_usd": 0.1868125,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 23102,
+    "cache_read_input_tokens": 155405,
+    "output_tokens": 7884,
+    "output_tokens_details": {
+      "thinking_tokens": 455
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 23102,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 394,
+        "cache_read_input_tokens": 35624,
+        "cache_creation_input_tokens": 241,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 241
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-sonnet-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 7884,
+      "cacheReadInputTokens": 155405,
+      "cacheCreationInputTokens": 23102,
+      "webSearchRequests": 0,
+      "costUSD": 0.1868125,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 455,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 23102,
+      "canonicalModel": "claude-sonnet-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Read": 1,
+    "Bash": 4,
+    "Write": 1
+  },
+  "bash_commands": [
+    "git ls-files && cat README.md",
+    "cat tests/conftest.py src/trailhead/elevation.py src/trailhead/track.py src/trailhead/geo.py src/trailhead/pace.py; head -30 tests/test_plan.py",
+    "cat > tests/test_report.py <<'EOF'\nimport dataclasses\n\nimport pytest\n\nfrom trailhead.report import Summary, format_summary, summarise\n\nKM = 1 / 111.19508  # degrees of latitude/longitude (on the equator) per km\n\n\ndef make_summary(**overrides) -> Summary:\n    values = {\n        \"name\": \"Test\",\n        \"length_km\": 10.0,\n        \"gain_m\": 0.0,\n        \"loss_m\": 0.0,\n        \"highest_m\": 0.0,\n        \"lowest_m\": 0.0,\n        \"steepest_pct\": 0.0,\n        \"hours\": 1.0,\n        \"heading\": \"N\",\n    }\n    values.update(overrides)\n    return Summary(**values)\n\n\n@pytest.fixture\ndef climb(make_track):\n    # 10 km due east along the equator, climbing 600 m then descending 100 m.\n    return make_track(\n        (0, 0, 1000),\n        (0, 5 * KM, 1600),\n        (0, 10 * KM, 1500),\n        name=\"Climb\",\n    )\n\n\n# --- summarise ---------------------------------------------------------------\n\n\ndef test_summary_fields(climb):\n    summary = summarise(climb)\n    assert summary.name == \"Climb\"\n    assert summary.length_km == 10.0\n    assert summary.gain_m == 600.0\n    assert summary.loss_m == 100.0\n    assert summary.highest_m == 1600\n    assert summary.lowest_m == 1000\n    assert summary.heading == \"E\"\n\n\ndef test_summary_is_frozen(climb):\n    with pytest.raises(dataclasses.FrozenInstanceError):\n        summarise(climb).name = \"other\"\n\n\ndef test_length_is_rounded_to_a_tenth(make_track):\n    track = make_track((0, 0, 0), (0, 1.2345 * KM, 0))\n    assert summarise(track).length_km == 1.2\n\n\ndef test_time_is_naismith_and_not_rounded(make_track):\n    # 1.234 km flat: length is rounded for display, but the time uses the true length.\n    track = make_track((0, 0, 0), (0, 1.234 * KM, 0))\n    assert summarise(track).hours == pytest.approx(1.234 / 5)\n\n\ndef test_time_includes_ascent(climb):\n    assert summarise(climb).hours == pytest.approx(10 / 5 + 600 / 600)\n\n\ndef test_descent_adds_no_time(make_track):\n    flat = make_track((0, 0, 500), (0, 5 * KM, 500))\n    down = make_track((0, 0, 500), (0, 5 * KM, 0))\n    assert summarise(down).hours == pytest.approx(summarise(flat).hours)\n\n\ndef test_fitness_divides_time(climb):\n    assert summarise(climb, fitness=1.25).hours == pytest.approx(summarise(climb).hours / 1.25)\n\n\n@pytest.mark.parametrize(\"fitness\", [0, -1])\ndef test_bad_fitness_is_an_error(climb, fitness):\n    with pytest.raises(ValueError):\n        summarise(climb, fitness=fitness)\n\n\ndef test_jitter_below_threshold_is_ignored(make_track):\n    track = make_track((0, 0, 100), (0, KM, 101), (0, 2 * KM, 100), (0, 3 * KM, 101))\n    summary = summarise(track)\n    assert (summary.gain_m, summary.loss_m) == (0.0, 0.0)\n\n\ndef test_slow_climb_in_small_steps_still_counts(make_track):\n    track = make_track(*[(0, i * 0.1 * KM, i) for i in range(301)])\n    assert summarise(track).gain_m == 300.0\n\n\ndef test_threshold_argument_is_used(make_track):\n    track = make_track((0, 0, 100), (0, KM, 105), (0, 2 * KM, 110))\n    assert summarise(track).gain_m == 10.0\n    assert summarise(track, threshold=20).gain_m == 0.0\n\n\ndef test_negative_threshold_is_an_error(climb):\n    with pytest.raises(ValueError):\n        summarise(climb, threshold=-1)\n\n\ndef test_steepest_grade_is_in_percent(make_track):\n    # A leg climbing 18 m over 100 m is 18.0 %.\n    track = make_track((0, 0, 0), (0, 0.1 * KM, 18))\n    assert summarise(track).steepest_pct == 18.0\n\n\ndef test_steepest_grade_counts_descents(make_track):\n    track = make_track((0, 0, 50), (0, 0.1 * KM, 0), (0, 0.2 * KM, 10))\n    assert summarise(track).steepest_pct == 50.0\n\n\ndef test_feet_track_is_summarised_in_metres(write_track):\n    from trailhead.track import load_track\n\n    text = \"# units: ft\\nlat,lon,ele\\n0,0,0\\n0,0.05,1000\\n\"\n    summary = summarise(load_track(write_track(text)))\n    assert summary.gain_m == pytest.approx(304.8)\n    assert summary.highest_m == pytest.approx(304.8)\n\n\n# --- heading -----------------------------------------------------------------\n\n\n@pytest.mark.parametrize(\n    (\"finish\", \"expected\"),\n    [\n        ((1, 0), \"N\"),\n        ((1, 1), \"NE\"),\n        ((0, 1), \"E\"),\n        ((-1, 1), \"SE\"),\n        ((-1, 0), \"S\"),\n        ((-1, -1), \"SW\"),\n        ((0, -1), \"W\"),\n        ((1, -1), \"NW\"),\n    ],\n)\ndef test_heading_is_compass_point_from_start_to_finish(make_track, finish, expected):\n    track = make_track((0, 0, 0), (0.5, 0.5, 0), (*finish, 0))\n    assert summarise(track).heading == expected\n\n\ndef test_heading_ignores_the_route_between(make_track):\n    # Wanders far south but finishes north of the start.\n    track = make_track((0, 0, 0), (-1, 0, 0), (1, 0, 0))\n    assert summarise(track).heading == \"N\"\n\n\ndef test_finish_at_start_is_a_loop(make_track):\n    track = make_track((42, 23, 0), (42.01, 23.01, 50), (42, 23, 0))\n    assert summarise(track).heading == \"loop\"\n\n\ndef test_finish_just_within_100_m_is_a_loop(make_track):\n    track = make_track((0, 0, 0), (0.5, 0.5, 0), (0, 0.099 * KM, 0))\n    assert summarise(track).heading == \"loop\"\n\n\ndef test_finish_just_beyond_100_m_is_not_a_loop(make_track):\n    track = make_track((0, 0, 0), (0.5, 0.5, 0), (0, 0.101 * KM, 0))\n    assert summarise(track).heading == \"E\"\n\n\n# --- format_summary ----------------------------------------------------------\n\n\ndef test_format_layout():\n    summary = make_summary(\n        name=\"Seven Rila Lakes\",\n        length_km=12.34,\n        gain_m=612.4,\n        loss_m=598.6,\n        highest_m=2535.2,\n        lowest_m=2140.4,\n        steepest_pct=18.04,\n        hours=5 + 7 / 60,\n        heading=\"NE\",\n    )\n    assert format_summary(summary).split(\"\\n\") == [\n        \"Seven Rila Lakes\",\n        \"  distance  12.3 km\",\n        \"  ascent    +612 m / -599 m\",\n        \"  altitude  2140-2535 m\",\n        \"  steepest  18.0%\",\n        \"  time      5h 07m\",\n        \"  heading   NE\",\n    ]\n\n\n@pytest.mark.parametrize(\n    (\"hours\", \"expected\"),\n    [\n        (5 + 7 / 60, \"5h 07m\"),\n        (0.75, \"0h 45m\"),\n        (12.0, \"12h 00m\"),\n        (0.0, \"0h 00m\"),\n        (1 + 20 / 60 + 0.4 / 60, \"1h 20m\"),  # rounds down\n        (1 + 20 / 60 + 0.6 / 60, \"1h 21m\"),  # rounds up\n        (1 - 0.4 / 60, \"1h 00m\"),  # rounding carries into the hour\n        (2 - 0.4 / 60, \"2h 00m\"),\n    ],\n)\ndef test_duration_format(hours, expected):\n    line = format_summary(make_summary(hours=hours)).split(\"\\n\")[5]\n    assert line == f\"  time      {expected}\"\n\n\ndef test_format_has_no_trailing_newline():\n    assert not format_summary(make_summary()).endswith(\"\\n\")\n\n\ndef test_summarise_then_format(climb):\n    assert format_summary(summarise(climb)) == \"\\n\".join(\n        [\n            \"Climb\",\n            \"  distance  10.0 km\",\n            \"  ascent    +600 m / -100 m\",\n            \"  altitude  1000-1600 m\",\n            \"  steepest  \" + f\"{summarise(climb).steepest_pct:.1f}%\",\n            \"  time      3h 00m\",\n            \"  heading   E\",\n        ]\n    )\nEOF\npython -m pytest tests/test_report.py -q 2>&1 | tail -30; ruff check tests/test_report.py 2>&1 | tail",
+    "python -m pytest tests/test_report.py -q 2>&1 | tail -30; ruff check tests/test_report.py 2>&1 | tail"
+  ],
+  "permission_denials": [
+    {
+      "command": "cat > tests/test_report.py <<'EOF'\nimport dataclasses\n\nimport pytest\n\nfrom trailhead.report import Summary, format_summary, summarise\n\nKM = 1 / 111.19508  # degrees of latitude/longitude (on the equator) per km\n\n\ndef make_summary(**overrides) -> Summary:\n    values = {\n        \"name\": \"Test\",\n        \"length_km\": 10.0,\n        \"gain_m\": 0.0,\n        \"loss_m\": 0.0,\n        \"highest_m\": 0.0,\n        \"lowest_m\": 0.0,\n        \"steepest_pct\": 0.0,\n        \"hours\": 1.0,\n        \"heading\": \"N\",\n    }\n    values.update(overrides)\n    return Summary(**values)\n\n\n@pytest.fixture\ndef climb(make_track):\n    # 10 km due east along the equator, climbing 600 m then descending 100 m.\n    return make_track(\n        (0, 0, 1000),\n        (0, 5 * KM, 1600),\n        (0, 10 * KM, 1500),\n        name=\"Climb\",\n    )\n\n\n# --- summarise ---------------------------------------------------------------\n\n\ndef test_summary_fields(climb):\n    summary = summarise(climb)\n    assert summary.name == \"Climb\"\n    assert summary.length_km == 10.0\n    assert summary.gain_m == 600.0\n    assert summary.loss_m == 100.0\n    assert summary.highest_m == 1600\n    assert summary.lowest_m == 1000\n    assert summary.heading == \"E\"\n\n\ndef test_summary_is_frozen(climb):\n    with pytest.raises(dataclasses.FrozenInstanceError):\n        summarise(climb).name = \"other\"\n\n\ndef test_length_is_rounded_to_a_tenth(make_track):\n    track = make_track((0, 0, 0), (0, 1.2345 * KM, 0))\n    assert summarise(track).length_km == 1.2\n\n\ndef test_time_is_naismith_and_not_rounded(make_track):\n    # 1.234 km flat: length is rounded for display, but the time uses the true length.\n    track = make_track((0, 0, 0), (0, 1.234 * KM, 0))\n    assert summarise(track).hours == pytest.approx(1.234 / 5)\n\n\ndef test_time_includes_ascent(climb):\n    assert summarise(climb).hours == pytest.approx(10 / 5 + 600 / 600)\n\n\ndef test_descent_adds_no_time(make_track):\n    flat = make_track((0, 0, 500), (0, 5 * KM, 500))\n    down = make_track((0, 0, 500), (0, 5 * KM, 0))\n    assert summarise(down).hours == pytest.approx(summarise(flat).hours)\n\n\ndef test_fitness_divides_time(climb):\n    assert summarise(climb, fitness=1.25).hours == pytest.approx(summarise(climb).hours / 1.25)\n\n\n@pytest.mark.parametrize(\"fitness\", [0, -1])\ndef test_bad_fitness_is_an_error(climb, fitness):\n    with pytest.raises(ValueError):\n        summarise(climb, fitness=fitness)\n\n\ndef test_jitter_below_threshold_is_ignored(make_track):\n    track = make_track((0, 0, 100), (0, KM, 101), (0, 2 * KM, 100), (0, 3 * KM, 101))\n    summary = summarise(track)\n    assert (summary.gain_m, summary.loss_m) == (0.0, 0.0)\n\n\ndef test_slow_climb_in_small_steps_still_counts(make_track):\n    track = make_track(*[(0, i * 0.1 * KM, i) for i in range(301)])\n    assert summarise(track).gain_m == 300.0\n\n\ndef test_threshold_argument_is_used(make_track):\n    track = make_track((0, 0, 100), (0, KM, 105), (0, 2 * KM, 110))\n    assert summarise(track).gain_m == 10.0\n    assert summarise(track, threshold=20).gain_m == 0.0\n\n\ndef test_negative_threshold_is_an_error(climb):\n    with pytest.raises(ValueError):\n        summarise(climb, threshold=-1)\n\n\ndef test_steepest_grade_is_in_percent(make_track):\n    # A leg climbing 18 m over 100 m is 18.0 %.\n    track = make_track((0, 0, 0), (0, 0.1 * KM, 18))\n    assert summarise(track).steepest_pct == 18.0\n\n\ndef test_steepest_grade_counts_descents(make_track):\n    track = make_track((0, 0, 50), (0, 0.1 * KM, 0), (0, 0.2 * KM, 10))\n    assert summarise(track).steepest_pct == 50.0\n\n\ndef test_feet_track_is_summarised_in_metres(write_track):\n    from trailhead.track import load_track\n\n    text = \"# units: ft\\nlat,lon,ele\\n0,0,0\\n0,0.05,1000\\n\"\n    summary = summarise(load_track(write_track(text)))\n    assert summary.gain_m == pytest.approx(304.8)\n    assert summary.highest_m == pytest.approx(304.8)\n\n\n# --- heading -----------------------------------------------------------------\n\n\n@pytest.mark.parametrize(\n    (\"finish\", \"expected\"),\n    [\n        ((1, 0), \"N\"),\n        ((1, 1), \"NE\"),\n        ((0, 1), \"E\"),\n        ((-1, 1), \"SE\"),\n        ((-1, 0), \"S\"),\n        ((-1, -1), \"SW\"),\n        ((0, -1), \"W\"),\n        ((1, -1), \"NW\"),\n    ],\n)\ndef test_heading_is_compass_point_from_start_to_finish(make_track, finish, expected):\n    track = make_track((0, 0, 0), (0.5, 0.5, 0), (*finish, 0))\n    assert summarise(track).heading == expected\n\n\ndef test_heading_ignores_the_route_between(make_track):\n    # Wanders far south but finishes north of the start.\n    track = make_track((0, 0, 0), (-1, 0, 0), (1, 0, 0))\n    assert summarise(track).heading == \"N\"\n\n\ndef test_finish_at_start_is_a_loop(make_track):\n    track = make_track((42, 23, 0), (42.01, 23.01, 50), (42, 23, 0))\n    assert summarise(track).heading == \"loop\"\n\n\ndef test_finish_just_within_100_m_is_a_loop(make_track):\n    track = make_track((0, 0, 0), (0.5, 0.5, 0), (0, 0.099 * KM, 0))\n    assert summarise(track).heading == \"loop\"\n\n\ndef test_finish_just_beyond_100_m_is_not_a_loop(make_track):\n    track = make_track((0, 0, 0), (0.5, 0.5, 0), (0, 0.101 * KM, 0))\n    assert summarise(track).heading == \"E\"\n\n\n# --- format_summary ----------------------------------------------------------\n\n\ndef test_format_layout():\n    summary = make_summary(\n        name=\"Seven Rila Lakes\",\n        length_km=12.34,\n        gain_m=612.4,\n        loss_m=598.6,\n        highest_m=2535.2,\n        lowest_m=2140.4,\n        steepest_pct=18.04,\n        hours=5 + 7 / 60,\n        heading=\"NE\",\n    )\n    assert format_summary(summary).split(\"\\n\") == [\n        \"Seven Rila Lakes\",\n        \"  distance  12.3 km\",\n        \"  ascent    +612 m / -599 m\",\n        \"  altitude  2140-2535 m\",\n        \"  steepest  18.0%\",\n        \"  time      5h 07m\",\n        \"  heading   NE\",\n    ]\n\n\n@pytest.mark.parametrize(\n    (\"hours\", \"expected\"),\n    [\n        (5 + 7 / 60, \"5h 07m\"),\n        (0.75, \"0h 45m\"),\n        (12.0, \"12h 00m\"),\n        (0.0, \"0h 00m\"),\n        (1 + 20 / 60 + 0.4 / 60, \"1h 20m\"),  # rounds down\n        (1 + 20 / 60 + 0.6 / 60, \"1h 21m\"),  # rounds up\n        (1 - 0.4 / 60, \"1h 00m\"),  # rounding carries into the hour\n        (2 - 0.4 / 60, \"2h 00m\"),\n    ],\n)\ndef test_duration_format(hours, expected):\n    line = format_summary(make_summary(hours=hours)).split(\"\\n\")[5]\n    assert line == f\"  time      {expected}\"\n\n\ndef test_format_has_no_trailing_newline():\n    assert not format_summary(make_summary()).endswith(\"\\n\")\n\n\ndef test_summarise_then_format(climb):\n    assert format_summary(summarise(climb)) == \"\\n\".join(\n        [\n            \"Climb\",\n            \"  distance  10.0 km\",\n            \"  ascent    +600 m / -100 m\",\n            \"  altitude  1000-1600 m\",\n            \"  steepest  \" + f\"{summarise(climb).steepest_pct:.1f}%\",\n            \"  time      3h 00m\",\n            \"  heading   E\",\n        ]\n    )\nEOF\npython -m pytest tests/test_report.py -q 2>&1 | tail -30; ruff check tests/test_report.py 2>&1 | tail"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_report.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".......................................                                  [100%]\n39 passed in 0.05s\n",
+    "src_changed": [],
+    "killed": [
+      "loop radius 1 km",
+      "heading measured finish to start",
+      "time uses descent",
+      "fitness dropped",
+      "threshold dropped",
+      "minutes truncated"
+    ],
+    "survived": [
+      "steepest rounded to whole percent"
+    ],
+    "kills": 6,
+    "mutants": 7,
+    "changed": [
+      "A tests/test_report.py"
+    ],
+    "lines_added": 227,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "test_files": [
+      "tests/test_report.py"
+    ],
+    "tests_pass_on_real_code": true,
+    "tests_output_tail": ".......................................                                  [100%]\n39 passed in 0.05s\n",
+    "src_changed": [],
+    "killed": [
+      "loop radius 1 km",
+      "heading measured finish to start",
+      "distance rounded to 0.01",
+      "time uses descent",
+      "fitness dropped",
+      "threshold dropped",
+      "altitude printed high-low",
+      "minutes truncated"
+    ],
+    "survived": [
+      "steepest rounded to whole percent"
+    ],
+    "kills": 8,
+    "mutants": 9,
+    "changed": [
+      "A tests/test_report.py"
+    ],
+    "lines_added": 227,
+    "lines_removed": 0,
+    "own_suite_pass_as_left": true
+  }
+}

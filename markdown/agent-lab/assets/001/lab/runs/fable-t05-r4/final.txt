@@ -1,0 +1,13 @@
+I've added `tests/test_report.py` with 42 tests, and they all pass against the current code, so I found no place where `report.py` disagrees with the README or docstrings. The full suite is 87 passing and `ruff check` is clean; nothing under `src/` was touched.
+
+The tests cover:
+
+- **`summarise` fields:** name, length rounded to 0.1 km, gain and loss, highest and lowest, and steepest grade in percent (uphill or downhill).
+- **Walking time:** Naismith's rule, with the time taken from the unrounded distance. `fitness` divides the time and changes nothing else; zero or negative fitness raises `ValueError`.
+- **Threshold:** the 3 m default ignores jitter, a 300 m climb in 1 m steps counts in full, a custom threshold is passed through, and a negative one raises `ValueError`.
+- **Heading:** all eight compass points from start to finish regardless of the route in between, and `loop` at about 89 m from the start but not at about 111 m.
+- **`format_summary`:** the exact seven-line layout, and the README's duration examples (`5h 07m`, `0h 45m`, `12h 00m`) plus rounding to the nearest minute, including 11.999 h showing as `12h 00m`.
+
+The exact layout test pins the current output (label spacing, `+850 m / -420 m`, `2140-2729 m`). The README only documents the duration format, so that test guards against accidental changes rather than checking a documented contract.
+
+The untracked dotfiles `git status` now lists in the repo root (`.bashrc`, `.gitconfig`, `.idea` and so on) are sandbox placeholder devices, not files I created. The only new file to commit is `tests/test_report.py`.

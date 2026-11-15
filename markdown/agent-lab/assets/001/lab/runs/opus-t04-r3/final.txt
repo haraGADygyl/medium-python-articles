@@ -1,0 +1,32 @@
+I wrote `tests/test_plan.py` with 54 tests. The whole suite passes (96 tests) and `ruff check` is clean. Nothing under `src/` was changed.
+
+**What the tests check**
+
+- **`split_days`**
+  - Output shape: days count from 1, the first day starts at point 0, the last day ends at the last point, consecutive days share their boundary point, and hours are rounded to 0.01.
+  - The default limit is 7 hours, both through the constant and through actual splitting. A custom limit also works.
+  - No day goes over the limit, checked on a track with mixed leg lengths at several limits. A day only ends when the next leg would push it over.
+  - A leg longer than the limit is a day by itself, whether it comes first, last, in the middle or twice in a row.
+  - Leg times follow Naismith's rule: climbing adds time and descending adds nothing. Wobbles in elevation smaller than the 3 m threshold add no time, but a 300 m climb in 1 m steps still counts.
+  - The days add up to the summary time across a range of fitness values and limits. I allowed a small tolerance because each day is rounded separately.
+  - `fitness` divides the time, matches the summary, and zero or negative values raise `ValueError`.
+  - A limit of zero or less raises `ValueError`. Neither the README nor the docstring mentions this, but the code does it on purpose.
+  - Repeated points (zero-length legs) are handled.
+- **`describe_plan`**
+  - It matches the docstring example (`Day 2: points 14-31, 6h 05m`) and the README examples (`5h 07m`, `0h 45m`, `12h 00m`).
+  - Times round to the nearest minute, including 59.94 minutes becoming `1h 00m`.
+  - It returns one line per day, and an empty list for an empty plan.
+
+The test tracks run along the equator with leg lengths chosen to take an exact number of hours. That keeps the expected values readable, and no test depends on a time landing exactly on the limit, where floating-point error could flip the result.
+
+**Do the tests catch bugs?** I broke a copy of `plan.py` six different ways:
+- splitting before the first leg
+- starting the next day at the wrong point
+- rounding hours to 0.1
+- dropping the two-digit minutes
+- ignoring `fitness`
+- accepting a limit of 0
+
+The tests failed every time. I didn't find any case where `plan.py` disagrees with the README or its docstrings.
+
+`git status` lists some untracked dotfiles in the repo, such as `.bashrc` and `.claude/settings.json`. These aren't real files: the sandbox put them there as placeholders pointing to `/dev/null`. I left them alone.

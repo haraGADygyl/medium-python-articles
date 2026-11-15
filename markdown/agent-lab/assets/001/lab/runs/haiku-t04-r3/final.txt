@@ -1,0 +1,15 @@
+I added `tests/test_plan.py` with 32 pytest tests for `src/trailhead/plan.py`. All 32 pass, the full suite passes (74 tests), and `ruff check` and `ruff format --check` are clean on the new file. Nothing under `src/` changed.
+
+The tests cover what the README and docstrings promise:
+
+- **`split_days` grouping:** days are numbered from 1 and point indexes from 0. A day closes before it would go over the limit. A leg longer than the limit becomes a day by itself, wherever it sits. The default limit is 7 hours.
+- **Fitness:** it changes how legs group, as the README says it should.
+- **Rounding and validation:** hours are rounded to 0.01. A limit of zero or less raises `ValueError`.
+- **Climb and jitter:** the climb is credited the same way the summary credits it, and jitter below the 3 m threshold adds no time.
+- **Agreement with the summary:** on a realistic track, the days are contiguous and their hours add up to `summarise(...).hours` across fitness values and limits. This is the README's "days add up to the summary time" claim.
+- **`describe_plan`:** the README's example line, durations such as `5h 07m` and `12h 00m`, rounding to the nearest minute including carry into the hour, and one line per day.
+
+Two things to know:
+
+- The flat-track helper builds legs along a meridian, where haversine distance is exact, so each leg's flat time is exactly the value passed in. I avoided tests that sit exactly on the limit boundary, since float error there would make them flaky.
+- I did not check that these tests fail against a broken `plan.py`. I only confirmed they pass on the current code.

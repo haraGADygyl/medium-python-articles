@@ -1,0 +1,13 @@
+`Track.leg_lengths_km()` now caches its results, so summarising a track works out each leg's distance once. Before the change a two-leg track took 4 great-circle calculations, now it takes 2. All 49 tests pass, including two new ones.
+
+**How it works** (`src/trailhead/track.py`):
+- **The cache checks it's still current.** `points` is an ordinary list anyone can change, so the cache keeps a copy of the points it was computed from. If the points have changed since, it recomputes, so adding or replacing a point never gives you old lengths. Checking costs one cheap comparison of the points; no distances are recalculated.
+- **Callers get their own copy.** Each call returns a new list, so if a caller modifies what it gets back, the cache is unaffected.
+- **Track behaves as before.** The cache is a private field that doesn't appear in `repr`, doesn't count in `==` comparisons, and isn't a constructor argument. I couldn't use `functools.cached_property` because `Track` is declared with `slots=True`, which it doesn't support.
+- **Results are identical.** It runs the same calculation in the same order.
+
+**New tests** (`tests/test_track.py`):
+- `test_summary_computes_each_leg_once` counts the distance calculations during `summarise`. It fails on the old code (4 calls instead of 2) and passes now.
+- `test_leg_lengths_follow_changes_to_points` checks that adding or replacing a point, or modifying the returned list, never gives wrong lengths.
+
+`git status` also lists some untracked files that aren't part of this change: dotfiles like `.bashrc` and `.gitconfig`, plus `.claude/`, `.idea` and `.vscode`. The repo was clean when I started, and they're most likely placeholders created by the sandbox. I haven't touched them, and nothing is committed.

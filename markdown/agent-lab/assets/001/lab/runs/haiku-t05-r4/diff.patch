@@ -1,0 +1,198 @@
+diff --git a/tests/test_report.py b/tests/test_report.py
+new file mode 100644
+index 0000000..005d6fb
+--- /dev/null
++++ b/tests/test_report.py
+@@ -0,0 +1,192 @@
++import pytest
++
++from trailhead.report import Summary, format_summary, summarise
++from trailhead.track import load_track, parse_track
++
++# Two legs of 0.01 degrees of longitude on the equator (about 1.112 km each),
++# climbing 300 m then descending 300 m.
++UP_AND_DOWN = [(0, 0, 1000), (0, 0.01, 1300), (0, 0.02, 1000)]
++
++
++def _summary(**overrides) -> Summary:
++    fields = dict(
++        name="Rila",
++        length_km=12.0,
++        gain_m=850.0,
++        loss_m=640.0,
++        highest_m=2700.0,
++        lowest_m=1100.0,
++        steepest_pct=18.0,
++        hours=5 + 7 / 60,
++        heading="NE",
++    )
++    fields.update(overrides)
++    return Summary(**fields)
++
++
++def _time_line(text: str) -> str:
++    return next(line for line in text.splitlines() if line.lstrip().startswith("time"))
++
++
++# --- summarise: the numbers ---------------------------------------------------
++
++
++def test_summary_of_an_up_and_down_track(make_track):
++    summary = summarise(make_track(*UP_AND_DOWN, name="Up Down"))
++
++    assert summary.name == "Up Down"
++    assert summary.length_km == 2.2
++    assert summary.gain_m == pytest.approx(300.0)
++    assert summary.loss_m == pytest.approx(300.0)
++    assert summary.highest_m == 1300
++    assert summary.lowest_m == 1000
++    # 300 m over 1.112 km is about 27%.
++    assert summary.steepest_pct == 27.0
++    assert summary.heading == "E"
++
++
++def test_time_is_naismith_and_not_rounded(make_track):
++    summary = summarise(make_track(*UP_AND_DOWN))
++
++    # 2.2239 km at 5 km/h, plus one hour for 300 m of ascent.
++    assert summary.hours == pytest.approx(2.2239 / 5 + 300 / 600, abs=1e-4)
++
++
++def test_fitness_divides_the_time(make_track):
++    track = make_track(*UP_AND_DOWN)
++    average = summarise(track).hours
++    quick = summarise(track, fitness=2.0).hours
++
++    assert quick == pytest.approx(average / 2)
++
++
++@pytest.mark.parametrize("fitness", [0, -1.0])
++def test_non_positive_fitness_is_an_error(make_track, fitness):
++    with pytest.raises(ValueError):
++        summarise(make_track(*UP_AND_DOWN), fitness=fitness)
++
++
++def test_threshold_is_passed_to_the_ascent_rule(make_track):
++    track = make_track((0, 0, 1000), (0, 0.01, 1002))
++
++    assert summarise(track).gain_m == 0.0
++    assert summarise(track, threshold=1.0).gain_m == pytest.approx(2.0)
++
++
++def test_negative_threshold_is_an_error(make_track):
++    with pytest.raises(ValueError):
++        summarise(make_track(*UP_AND_DOWN), threshold=-1.0)
++
++
++def test_feet_track_is_summarised_in_metres():
++    track = parse_track("# units: ft\nlat,lon,ele\n0,0,1000\n0,0.01,1000\n")
++
++    assert summarise(track).highest_m == pytest.approx(1000 * 0.3048)
++
++
++def test_unnamed_track_uses_default_name():
++    track = parse_track("lat,lon,ele\n0,0,0\n0,0.01,0\n")
++
++    assert summarise(track).name == "unnamed"
++
++
++def test_track_loaded_from_file_is_named_after_the_file(write_track):
++    path = write_track("lat,lon,ele\n0,0,0\n0,0.01,0\n", filename="rila.csv")
++
++    assert summarise(load_track(path)).name == "rila"
++
++
++# --- heading ------------------------------------------------------------------
++
++
++@pytest.mark.parametrize(
++    ("finish", "expected"),
++    [
++        ((0.01, 0.0), "N"),
++        ((0.01, 0.01), "NE"),
++        ((0.0, 0.01), "E"),
++        ((-0.01, 0.01), "SE"),
++        ((-0.01, 0.0), "S"),
++        ((-0.01, -0.01), "SW"),
++        ((0.0, -0.01), "W"),
++        ((0.01, -0.01), "NW"),
++    ],
++)
++def test_heading_is_the_compass_point_from_start_to_finish(make_track, finish, expected):
++    track = make_track((0, 0, 0), (finish[0], finish[1], 0))
++
++    assert summarise(track).heading == expected
++
++
++def test_heading_uses_only_the_start_and_finish(make_track):
++    # Goes far east first, then comes back to a point due north of the start.
++    track = make_track((0, 0, 0), (0, 0.5, 0), (0.01, 0.0, 0))
++
++    assert summarise(track).heading == "N"
++
++
++def test_returning_to_the_start_is_a_loop(make_track):
++    track = make_track((0, 0, 0), (0, 0.01, 0), (0.01, 0.01, 0), (0, 0, 0))
++
++    assert summarise(track).heading == "loop"
++
++
++def test_finish_within_100_metres_of_start_is_a_loop(make_track):
++    # About 56 m north of the start.
++    track = make_track((0, 0, 0), (0.0005, 0.0, 0))
++
++    assert summarise(track).heading == "loop"
++
++
++def test_finish_beyond_100_metres_of_start_has_a_heading(make_track):
++    # About 167 m north of the start.
++    track = make_track((0, 0, 0), (0.0015, 0.0, 0))
++
++    assert summarise(track).heading == "N"
++
++
++# --- format_summary -----------------------------------------------------------
++
++
++def test_format_summary_layout():
++    text = format_summary(_summary())
++
++    assert text == "\n".join(
++        [
++            "Rila",
++            "  distance  12.0 km",
++            "  ascent    +850 m / -640 m",
++            "  altitude  1100-2700 m",
++            "  steepest  18.0%",
++            "  time      5h 07m",
++            "  heading   NE",
++        ]
++    )
++
++
++@pytest.mark.parametrize(
++    ("hours", "expected"),
++    [
++        (5 + 7 / 60, "5h 07m"),
++        (0.75, "0h 45m"),
++        (12.0, "12h 00m"),
++        (0.0, "0h 00m"),
++        (2 + 7.4 / 60, "2h 07m"),
++        (2 + 7.6 / 60, "2h 08m"),
++        (0.9999, "1h 00m"),
++    ],
++)
++def test_time_is_shown_as_hours_and_two_digit_minutes(hours, expected):
++    assert _time_line(format_summary(_summary(hours=hours))).endswith(expected)
++
++
++def test_format_summary_of_a_real_summary(make_track):
++    text = format_summary(summarise(make_track(*UP_AND_DOWN, name="Up Down")))
++
++    lines = text.splitlines()
++    assert lines[0] == "Up Down"
++    assert "  distance  2.2 km" in lines
++    assert "  ascent    +300 m / -300 m" in lines
++    assert "  altitude  1000-1300 m" in lines
++    assert "  steepest  27.0%" in lines
++    assert "  heading   E" in lines

@@ -1,0 +1,21 @@
+I've written `tests/test_plan.py` with 51 tests, and they all pass. The full suite has 93, all passing, and `ruff check` is clean. Nothing under `src/` was changed, and none of the tests turned up a gap between `plan.py` and what the README and docstrings say.
+
+Most tests use a helper that builds tracks where every point is in the same place and only the elevation changes. Each leg then takes exactly climb ÷ 600 hours (600 m = 1 h, 300 m = 0.5 h), so the expected day splits can be written out precisely.
+
+**`split_days`**
+- **Basics:** a short walk is one day; the default limit is 7 hours; days are numbered from 1; a day's last point is the next day's first point; and the plan runs from point 0 to the last point.
+- **The limit:**
+  - A day can end exactly on the limit, and days are filled as far as the limit allows.
+  - No day goes over the limit when every leg fits, checked across several limits.
+  - A leg that is longer than the limit on its own becomes its own day, whether it comes first, in the middle, last, or twice in a row.
+- **Timing:** descent adds no time, flat legs are timed at 5 km/h, hours are rounded to 0.01, and `fitness` divides the time.
+- **Climb threshold:** a metre of jitter either way adds no time, but a 300 m climb in 1 m steps still counts as half an hour.
+- **Adds up to the summary:** on a realistic track that has small bumps below the 3 m threshold, the day hours add up to `summarise(...).hours` for several fitness and limit combinations. The comparison allows for each day being rounded to 0.01.
+- **Errors:** a limit of zero or less, or a fitness of zero or less, raises `ValueError`.
+
+**`describe_plan`**
+- The docstring example (`Day 2: points 14-31, 6h 05m`) and the README's duration examples (`0h 45m`, `5h 07m`, `12h 00m`).
+- Rounding to the nearest minute, including a time like 1.995 h that rounds up to `2h 00m`.
+- An empty plan gives no lines, and the output of a real `split_days` plan is checked line by line.
+
+I didn't test what happens at exactly half a minute: the README just says "nearest minute", and Python's `round` sends halves to the even number.

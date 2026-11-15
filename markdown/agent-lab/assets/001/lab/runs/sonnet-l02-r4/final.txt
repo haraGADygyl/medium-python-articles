@@ -1,0 +1,8 @@
+`mypy` now passes with no issues across the 9 source files. I made two one-line changes:
+
+- **`src/trailhead/geo.py`:** I annotated `initial_bearing` as `(lat1: float, lon1: float, lat2: float, lon2: float) -> float`. That fixed the missing-annotation error and the untyped-call error in `report.py`.
+- **`src/trailhead/report.py`:** I changed `Summary.heading` from `str` to `str | None`. `_heading()` returns `None` when the track is a loop, so the old type was wrong.
+
+`format_summary` still prints `heading   None` for loop tracks, as it did before. I left that alone because you asked only for the type errors. If you'd like something friendlier, like "loop", say so and I'll add it.
+
+I didn't run any tests.

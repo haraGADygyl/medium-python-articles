@@ -1,0 +1,13 @@
+`mypy` now passes with no errors. All 48 tests pass and `ruff` is clean.
+
+**What was wrong:** these weren't just annotation problems. `Point.ele` is `float | None` because the format allows a blank elevation where the GPS lost signal. Four places used `ele` as if it were always a number: highest/lowest, steepest grade, walking time per leg, and the summary's ascent/descent. Any track with a blank elevation would have crashed with a `TypeError`.
+
+**The fix:** the README already says what should happen. A missing elevation takes the value of the nearest earlier point that has one, or if there isn't one, the nearest later point. I wrote that rule once as `Track.elevations()` in `src/trailhead/track.py`, which returns a gap-filled `list[float]`. Those four places now call it instead of reading `point.ele`. Points with `ele=None` still count for distance, and `parse_track` still keeps `None` on the point, as `test_missing_elevation_is_none` expects.
+
+I checked it on a track with blank elevations, including the first point: `[None, 100, None, 130]` fills to `[100, 100, 100, 130]` and the summary prints normally.
+
+**Two things you should know:**
+- **No elevations at all:** the README doesn't cover a track where every elevation is blank. I made `elevations()` raise `TrackError("the track has no elevations")`, which the CLI already catches and shows as an error. Distance still works for such a track; only the elevation figures fail. If you'd rather reject these tracks when they're parsed, or handle them some other way, that's an easy change.
+- **Steepest grade can be inflated:** following the README's rule, a gap can make one leg look very steep. Filling forward puts the whole climb across a gap onto the leg where the next real reading appears. In my example that gave 27% on that leg.
+
+I didn't add tests for the gap filling. None of the existing tests cover it, so it's worth adding some.

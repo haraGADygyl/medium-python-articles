@@ -1,0 +1,11 @@
+I added `tests/test_pace.py` with 28 tests. They pass, the full suite passes (68 tests), and `ruff check` is clean on the new file. Nothing under `src/` was changed.
+
+The tests cover what the README and docstrings say about `pace.py`:
+
+- **`naismith_hours`**: 5 km/h on the flat, one hour per 600 m of ascent, distance and ascent adding up, `fitness` dividing the time (1.25 and 0.8 checked), times left unrounded, and `ValueError` for negative distance or ascent and for zero or negative fitness.
+- **`tobler_kmh`**: the 6 km/h peak at a -5% grade, the formula at +10% and -10%, flat ground slower than the gentle descent, and symmetry around -5%.
+- **`leg_hours`**: flat legs at one hour each, descent adding nothing, a climb credited to its own leg, 1 m GPS jitter ignored while small steps still count once they reach 3 m, the legs summing to the summary Naismith time (checked at two fitness values), `fitness` applying to every leg, and zero fitness raising.
+
+The tests use the `make_track` fixture from `conftest.py` and build equator tracks with the same degree-to-km conversion as `test_plan.py`.
+
+I did not check that the tests catch deliberate bugs in `pace.py`, since that would mean editing `src/`. The README sections on track parsing, elevation and the day plan are outside this file's scope and are not covered here.

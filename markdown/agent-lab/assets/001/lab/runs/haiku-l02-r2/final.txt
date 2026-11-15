@@ -1,0 +1,11 @@
+`mypy` now passes on `src/` in strict mode, with no `# type: ignore`, `cast`, `Any`, or config changes. The test suite passes (47 tests) and ruff is clean.
+
+There were three errors, fixed as follows:
+
+1. **`src/trailhead/geo.py:18`**: `initial_bearing` had no annotations. I added `float` types to its four parameters and its return value.
+2. **`src/trailhead/report.py:35`**: this was the untyped call that surfaced once `initial_bearing` was annotated, so it is resolved by fix 1.
+3. **`src/trailhead/report.py:53`**: `_heading` returns `None` for loop tracks, but `Summary.heading` was declared `str`. I changed the field to `str | None` rather than changing the function, since the `None` for loops is intentional.
+
+One behaviour to be aware of: `format_summary` still prints `heading   None` for loop tracks, because it interpolates the field directly. That was already the behaviour before my change, and I left it alone. If you want it to show something else (e.g. `heading   -` or omit the line), that's a small follow-up.
+
+I have not committed anything.

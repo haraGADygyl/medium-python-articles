@@ -1,0 +1,16 @@
+`tests/test_report.py` is in place with 42 tests, and they all pass against the current code (87 in the full suite, `ruff check` clean). Nothing under `src/` was touched, and I found no behaviour in `report.py` that contradicts the README or docstrings.
+
+The tests cover:
+
+- **`summarise` figures**: name, distance, ascent/descent, highest/lowest, steepest grade and Naismith time on a track with hand-computed values.
+- **Fitness and threshold**: fitness divides the time only, zero or negative fitness raises `ValueError`, the threshold is passed through to ascent and time, and a negative threshold raises `ValueError`.
+- **Documented rules**: jitter is ignored, a long climb in small steps counts in full, descent adds no time, repeated points are skipped for steepest grade, and feet are converted to metres.
+- **Unrounded time**: the hours are computed from the unrounded distance, not the displayed 0.1 km figure.
+- **Heading**: all eight compass points, start-to-finish rather than first leg, `loop` at and just inside 0.1 km, not `loop` just outside, and an antimeridian crossing.
+- **Plan agreement**: the days from `split_days` add up to the summary time, at fitness 1.0 and 1.2.
+- **`format_summary`**: the duration format, including the README examples `5h 07m`, `0h 45m`, `12h 00m` and the "never `1h 60m`" case.
+
+- **Layout test goes beyond the docs**: `test_format_summary_layout` pins the full seven-line output, but the README only documents the duration format. That test will fail if you ever reword the labels or spacing; delete it if you'd rather not lock that in.
+- **Small rounding gap, not tested**: `summarise` computes hours from the ascent already rounded to 0.1 m, while the README says times aren't rounded until displayed. The effect is at most about 0.3 seconds, so I left it alone.
+
+The untracked dotfiles `git status` now shows in the repo root (`.bashrc`, `.gitconfig`, `.idea` and so on) are sandbox placeholders, not files I created; the only new file is `tests/test_report.py`.

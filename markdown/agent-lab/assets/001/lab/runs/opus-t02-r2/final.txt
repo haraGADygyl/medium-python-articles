@@ -1,0 +1,24 @@
+I wrote `tests/test_pace.py`. The full suite passes (74 tests), `ruff check` is clean on the new file, and nothing under `src/` changed.
+
+What the tests cover:
+
+- **`naismith_hours`**:
+  - 5 km/h on the flat, plus an hour for every 600 m of ascent.
+  - `fitness` divides the time (1.25 and 0.8 checked), and leaving it out is the same as 1.0.
+  - Times aren't rounded.
+  - Zero or negative fitness, or negative distance or ascent, raises `ValueError`.
+- **`tobler_kmh`**:
+  - Matches `6 * exp(-3.5 * |grade + 0.05|)` across a range of grades.
+  - Peaks at 6 km/h on a 5% descent and is symmetric around that point.
+  - Gets slower the steeper the slope, uphill or downhill.
+- **`leg_hours`**:
+  - Returns one time per leg, with flat legs timed by Naismith's rule.
+  - Climbs add time and descents don't.
+  - Elevation jitter under the 3 m threshold adds nothing, while a climb in 1 m steps gets 3 m credited on every third leg.
+  - Fitness applies to every leg, and invalid fitness raises.
+  - Repeated points take no time.
+  - The legs add up to `summarise(track, fitness).hours`, which is what the README promises, checked at three fitness values.
+
+The tests that need a known leg length place points along the equator, where 5 km is 5 / 111.19508 degrees of longitude, the same approach `tests/test_plan.py` uses.
+
+The leg-sum test compares with a small tolerance, not exact equality. That's because the summary works from ascent rounded to 0.1 m while `leg_hours` uses the unrounded climbs, so the two totals can differ by a tiny amount. The README says they "add up", and the test reads that as equal within floating-point tolerance.

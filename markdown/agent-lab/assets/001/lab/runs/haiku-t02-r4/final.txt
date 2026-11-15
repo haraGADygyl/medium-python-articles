@@ -1,0 +1,9 @@
+I added `tests/test_pace.py` with 26 pytest tests for `src/trailhead/pace.py`. They all pass, and `ruff check` and `ruff format --check` are clean on the file. Nothing under `src/` changed, and I didn't commit.
+
+The tests cover what the README and docstrings state:
+
+- **`naismith_hours`**: 5 km/h on the flat, 1 hour per 600 m of ascent, descent adds nothing, `fitness` divides the time (1.25 is 25% faster), and `ValueError` for negative distance or ascent and for zero or negative fitness.
+- **`tobler_kmh`**: the peak of 6 km/h at a -5% grade, the 10% climb value, symmetry around the peak, and speed falling off on steeper grades in both directions.
+- **`leg_hours`**: one entry per leg, flat legs cost distance / 5, descent adds nothing, a climb is credited to the leg where the 3 m threshold is reached, sub-threshold jitter adds nothing, the legs sum to the summary time for several fitness values, `fitness` applies to every leg, and zero fitness is rejected.
+
+The tests are in the style of the existing suite and use its `make_track` fixture. Running `python -m pytest` from the repo gives 66 passed across the whole suite.

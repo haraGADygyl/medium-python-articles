@@ -1,0 +1,128 @@
+{
+  "run_id": "fable-b01-r2",
+  "task": "b01",
+  "tier": "bug",
+  "baseline": true,
+  "repeat": 2,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "Bug report from a user: \"I recorded a long, steady climb with a point for every metre of height, about 300 m up in total. `trailhead summary` shows the ascent as +0 m. Tracks with bigger gaps between points look fine.\" Find the cause and fix it.",
+  "harness_timeout": false,
+  "wall_s": 37.8,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.325",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 11,
+  "duration_ms": 35645,
+  "duration_api_ms": 34062,
+  "api_equivalent_usd": 0.4313822,
+  "usage": {
+    "input_tokens": 13,
+    "cache_creation_input_tokens": 18643,
+    "cache_read_input_tokens": 182351,
+    "output_tokens": 2413,
+    "output_tokens_details": {
+      "thinking_tokens": 178
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 18643,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 1,
+        "output_tokens": 381,
+        "cache_read_input_tokens": 30924,
+        "cache_creation_input_tokens": 482,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 482
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 13,
+      "outputTokens": 2413,
+      "cacheReadInputTokens": 182351,
+      "cacheCreationInputTokens": 18643,
+      "webSearchRequests": 0,
+      "costUSD": 0.4313822,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 178,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 18643,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Grep": 1,
+    "Read": 3,
+    "Edit": 2,
+    "Bash": 4
+  },
+  "bash_commands": [
+    "python -m pytest -q 2>&1 | tail -15; ruff check 2>&1 | tail -5; mypy 2>&1 | tail -3; git diff --stat",
+    "f=$TMPDIR/climb.csv; { echo \"lat,lon,ele\"; for i in $(seq 0 300); do echo \"42.$((2000+i)),23.32,$((1000+i))\"; done; } > $f; PYTHONPATH=src python -m trailhead summary $f; PYTHONPATH=src python -m trailhead plan $f | tail -3",
+    "f=$TMPDIR/climb.csv; echo \"lat,lon,ele\" > $f; for i in $(seq 0 300); do echo \"42.$((2000+i)),23.32,$((1000+i))\" >> $f; done; PYTHONPATH=src python -m trailhead summary $f; PYTHONPATH=src python -m trailhead plan $f | tail -3",
+    "PYTHONPATH=src python -c \"\nimport os, subprocess, sys\nf = os.path.join(os.environ['TMPDIR'], 'climb.csv')\nopen(f, 'w').write('lat,lon,ele\\n' + ''.join(f'{42.2 + i * 1e-4:.4f},23.32,{1000 + i}\\n' for i in range(301)))\nfor cmd in ('summary', 'plan'):\n    subprocess.run([sys.executable, '-m', 'trailhead', cmd, f])\n\""
+  ],
+  "permission_denials": [
+    {
+      "command": "f=$TMPDIR/climb.csv; { echo \"lat,lon,ele\"; for i in $(seq 0 300); do echo \"42.$((2000+i)),23.32,$((1000+i))\"; done; } > $f; PYTHONPATH=src python -m trailhead summary $f; PYTHONPATH=src python -m trailhead plan $f | tail -3",
+      "description": "Run summary and plan on a 300 m climb in 1 m steps"
+    },
+    {
+      "command": "f=$TMPDIR/climb.csv; echo \"lat,lon,ele\" > $f; for i in $(seq 0 300); do echo \"42.$((2000+i)),23.32,$((1000+i))\" >> $f; done; PYTHONPATH=src python -m trailhead summary $f; PYTHONPATH=src python -m trailhead plan $f | tail -3",
+      "description": "Run summary and plan on a 300 m climb in 1 m steps"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 5,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  },
+  "grade_v1": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {},
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M tests/test_elevation.py"
+    ],
+    "lines_added": 5,
+    "lines_removed": 1,
+    "own_suite_pass_as_left": true
+  }
+}

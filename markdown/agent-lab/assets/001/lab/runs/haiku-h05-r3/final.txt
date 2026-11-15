@@ -1,0 +1,14 @@
+The bug is fixed. The plan's days now add up to the summary's time.
+
+**Cause:** `pace.leg_hours`, which `plan` uses, charged each leg its raw rise, `max(b.ele - a.ele, 0)`. A GPS track that wobbles up and down by 1 m therefore adds climb on every wobble. The summary uses `elevation.gain_and_loss`, which ignores changes under the 3 m threshold. The README says the two must agree, so this was a real bug.
+
+**Fix** (`src/trailhead/pace.py`): `leg_hours` now takes each leg's climb from `elevation.counted_changes`, the same function the summary uses, and gets a `threshold` argument that defaults to 3 m. Each leg's climb is the one `gain_and_loss` credits to it.
+
+**Verification:**
+- I built a synthetic track: a 300 m climb with ±1.5 m noise over 4,000 points. Before the fix, the summary said 44h 58m and the plan's days summed to about 48 h. After the fix, the days sum to 44h 58m, matching the summary.
+- I added a regression test, `test_leg_hours_ignores_jitter_like_the_summary`, to `tests/test_pace.py`. It checks that 1 m up/down wobble adds no climb while a real 10 m climb is counted.
+- `pytest` passes (48 tests), and `ruff check` and `mypy` are clean.
+
+I did not commit the change.
+
+**One thing to be aware of:** `summary --threshold` lets you change the threshold, but `plan` has no such option and always uses the default 3 m. If you run `summary --threshold` with a different value, the two commands will disagree. That matches the README, which only promises agreement at the default threshold. If you want the plan to honour the threshold too, I can add a `--threshold` flag to `plan`.

@@ -1,0 +1,100 @@
+diff --git a/src/trailhead/elevation.py b/src/trailhead/elevation.py
+index 38ee915..54bc0fb 100644
+--- a/src/trailhead/elevation.py
++++ b/src/trailhead/elevation.py
+@@ -48,7 +48,7 @@ def gain_and_loss(
+ 
+ def highest_and_lowest(track: Track) -> tuple[float, float]:
+     """Highest and lowest elevation on the track, in metres."""
+-    elevations = [point.ele for point in track.points]
++    elevations = track.elevations()
+     return max(elevations), min(elevations)
+ 
+ 
+@@ -59,8 +59,10 @@ def steepest_grade(track: Track) -> float:
+     zero length (repeated points) are skipped.
+     """
+     steepest = 0.0
+-    for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):
++    for (before, after), km in zip(
++        pairwise(track.elevations()), track.leg_lengths_km(), strict=True
++    ):
+         if km == 0:
+             continue
+-        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000) * 100)
++        steepest = max(steepest, abs(after - before) / (km * 1000) * 100)
+     return round(steepest, 1)
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index d2fe23c..27885d2 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -38,7 +38,7 @@ def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:
+     (`elevation.counted_changes` with the default threshold), so the legs of a
+     track add up to its summary time.
+     """
+-    climbs = [max(change, 0.0) for change in counted_changes([p.ele for p in track.points])]
++    climbs = [max(change, 0.0) for change in counted_changes(track.elevations())]
+     return [
+         naismith_hours(km, climb, fitness)
+         for km, climb in zip(track.leg_lengths_km(), climbs, strict=True)
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 9c7e1a7..df6cf94 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -38,7 +38,7 @@ def _heading(track: Track) -> str:
+ def summarise(
+     track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M
+ ) -> Summary:
+-    gain, loss = gain_and_loss([point.ele for point in track.points], threshold)
++    gain, loss = gain_and_loss(track.elevations(), threshold)
+     highest, lowest = highest_and_lowest(track)
+     length = track.length_km()
+     return Summary(
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index 48670aa..074a035 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -26,6 +26,24 @@ class Track:
+     name: str
+     points: list[Point] = field(default_factory=list)
+ 
++    def elevations(self) -> list[float]:
++        """Elevation of every point in metres, with the gaps (``ele=None``) filled in.
++
++        A missing elevation takes that of the nearest earlier point that has one or,
++        if there is none, of the nearest later point. Raises ``ValueError`` when no
++        point has an elevation at all.
++        """
++        known = [point.ele for point in self.points if point.ele is not None]
++        if not known:
++            raise ValueError(f"track {self.name!r} has no elevations")
++        filled: list[float] = []
++        last = known[0]
++        for point in self.points:
++            if point.ele is not None:
++                last = point.ele
++            filled.append(last)
++        return filled
++
+     def leg_lengths_km(self) -> list[float]:
+         """Length of each leg, the stretch between two consecutive points."""
+         return [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]
+diff --git a/tests/test_track.py b/tests/test_track.py
+index 978ce36..2525202 100644
+--- a/tests/test_track.py
++++ b/tests/test_track.py
+@@ -65,3 +65,14 @@ def test_track_length_is_the_sum_of_legs(make_track):
+     track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0))
+     assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)
+     assert track.length_km() == pytest.approx(3.33585, abs=1e-3)
++
++
++def test_elevations_fill_gaps_from_the_nearest_known_point():
++    track = parse_track("lat,lon,ele\n0,0,\n0,0.01,100\n0,0.02,\n0,0.03,160\n0,0.04,\n")
++    assert track.elevations() == [100, 100, 100, 160, 160]
++
++
++def test_elevations_need_at_least_one_known_point():
++    track = parse_track("lat,lon,ele\n0,0,\n0,0.01,\n")
++    with pytest.raises(ValueError):
++        track.elevations()

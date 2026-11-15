@@ -1,0 +1,58 @@
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index e147dce..2dfb9a2 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -25,10 +25,22 @@ class Point:
+ class Track:
+     name: str
+     points: list[Point] = field(default_factory=list)
++    # Cached (snapshot of points, leg lengths); see leg_lengths_km.
++    _legs: tuple[list[Point], list[float]] | None = field(
++        default=None, init=False, repr=False, compare=False
++    )
+ 
+     def leg_lengths_km(self) -> list[float]:
+-        """Length of each leg, the stretch between two consecutive points."""
+-        return [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]
++        """Length of each leg, the stretch between two consecutive points.
++
++        Computed once and reused until ``points`` changes.
++        """
++        cached = self._legs
++        if cached is None or cached[0] != self.points:
++            legs = [haversine_km(a.lat, a.lon, b.lat, b.lon) for a, b in pairwise(self.points)]
++            cached = (list(self.points), legs)
++            self._legs = cached
++        return list(cached[1])
+ 
+     def length_km(self) -> float:
+         return sum(self.leg_lengths_km())
+diff --git a/tests/test_track.py b/tests/test_track.py
+index ba1bbad..c7ca747 100644
+--- a/tests/test_track.py
++++ b/tests/test_track.py
+@@ -59,3 +59,24 @@ def test_track_length_is_the_sum_of_legs(make_track):
+     track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0))
+     assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)
+     assert track.length_km() == pytest.approx(3.33585, abs=1e-3)
++
++
++def test_leg_lengths_are_computed_once_per_track(make_track, monkeypatch):
++    import trailhead.track as track_module
++
++    calls = []
++    real = track_module.haversine_km
++
++    def counting(*args):
++        calls.append(args)
++        return real(*args)
++
++    monkeypatch.setattr(track_module, "haversine_km", counting)
++    track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0))
++    first = track.leg_lengths_km()
++    first.append(999.0)  # callers mutating the result must not affect the cache
++    assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)
++    assert len(calls) == 2
++    track.points.append(track.points[-1])
++    assert track.leg_lengths_km()[-1] == 0
++    assert len(calls) == 5  # the change to points recomputes all three legs

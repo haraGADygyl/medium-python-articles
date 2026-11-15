@@ -1,0 +1,34 @@
+diff --git a/src/trailhead/geo.py b/src/trailhead/geo.py
+index 7cb3c70..0b8f135 100644
+--- a/src/trailhead/geo.py
++++ b/src/trailhead/geo.py
+@@ -15,7 +15,7 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+     return 2 * EARTH_RADIUS_KM * asin(sqrt(a))
+ 
+ 
+-def initial_bearing(lat1, lon1, lat2, lon2):
++def initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+     """Compass bearing in degrees, 0 <= bearing < 360, from the first point to the second."""
+     phi1, phi2 = radians(lat1), radians(lat2)
+     d_lambda = radians(lon2 - lon1)
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 18f0ba2..57df2b4 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -25,7 +25,7 @@ class Summary:
+     lowest_m: float
+     steepest_pct: float
+     hours: float
+-    heading: str
++    heading: str | None
+ 
+ 
+ def _heading(track: Track) -> str | None:
+@@ -64,6 +64,6 @@ def format_summary(summary: Summary) -> str:
+             f"  altitude  {summary.lowest_m:.0f}-{summary.highest_m:.0f} m",
+             f"  steepest  {summary.steepest_pct:.1f}%",
+             f"  time      {whole}h {minutes:02d}m",
+-            f"  heading   {summary.heading}",
++            f"  heading   {summary.heading or 'loop'}",
+         ]
+     )

@@ -1,0 +1,221 @@
+diff --git a/tests/test_report.py b/tests/test_report.py
+new file mode 100644
+index 0000000..1d28ad3
+--- /dev/null
++++ b/tests/test_report.py
+@@ -0,0 +1,215 @@
++"""Tests for trailhead.report, checked against the README and the docstrings."""
++
++import pytest
++
++from trailhead.report import Summary, format_summary, summarise
++from trailhead.track import load_track
++
++# One thousandth of a degree of latitude is about 111.2 m on the spherical Earth.
++STEP_DEG = 0.001
++
++
++@pytest.fixture
++def north(make_track):
++    """A straight northward track with one point per elevation, STEP_DEG apart."""
++
++    def build(*elevations: float, name: str = "test"):
++        points = [(i * STEP_DEG, 0.0, ele) for i, ele in enumerate(elevations)]
++        return make_track(*points, name=name)
++
++    return build
++
++
++def make_summary(**overrides) -> Summary:
++    values = dict(
++        name="Test",
++        length_km=10.0,
++        gain_m=500.0,
++        loss_m=500.0,
++        highest_m=2000.0,
++        lowest_m=1500.0,
++        steepest_pct=18.0,
++        hours=5.0,
++        heading="N",
++    )
++    return Summary(**(values | overrides))
++
++
++def parse_lines(text: str) -> dict[str, str]:
++    """Map each label of a formatted summary to its value, e.g. 'distance' -> '12.3 km'."""
++    fields: dict[str, str] = {}
++    for line in text.splitlines()[1:]:
++        label, value = line.split(None, 1)
++        fields[label] = value
++    return fields
++
++
++# --- summarise: distance, ascent, descent, altitude, grade ----------------------
++
++
++def test_climb_is_reported_with_gain_loss_altitude_and_grade(north):
++    summary = summarise(north(1000, 1020, 1040, name="Climb"))
++    assert summary.name == "Climb"
++    assert summary.gain_m == pytest.approx(40.0)
++    assert summary.loss_m == pytest.approx(0.0)
++    assert summary.highest_m == pytest.approx(1040)
++    assert summary.lowest_m == pytest.approx(1000)
++    # 20 m over about 111.2 m is 17.99%, which rounds to 18.0.
++    assert summary.steepest_pct == pytest.approx(18.0)
++
++
++def test_descent_is_reported_as_loss_with_grade_in_percent(north):
++    summary = summarise(north(1040, 1020, 1000))
++    assert summary.gain_m == pytest.approx(0.0)
++    assert summary.loss_m == pytest.approx(40.0)
++    assert summary.steepest_pct == pytest.approx(18.0)
++
++
++def test_distance_is_great_circle_length_rounded_to_a_tenth(make_track):
++    # One degree of latitude is about 111.19 km on a sphere of radius 6371.0088 km.
++    summary = summarise(make_track((0, 0, 0), (1, 0, 0)))
++    assert summary.length_km == pytest.approx(111.2)
++
++
++def test_jitter_under_the_threshold_adds_no_ascent(north):
++    summary = summarise(north(1000, 1001, 1000, 1002, 1001))
++    assert summary.gain_m == pytest.approx(0.0)
++    assert summary.loss_m == pytest.approx(0.0)
++
++
++def test_a_300m_climb_in_one_metre_steps_counts_as_300m(north):
++    summary = summarise(north(*range(1000, 1301)))
++    assert summary.gain_m == pytest.approx(300.0)
++
++
++def test_threshold_is_passed_through(north):
++    # With a 3 m threshold the 4 m rise from 0 counts once; the 2 m after it does not.
++    track = north(0, 2, 4, 6)
++    assert summarise(track).gain_m == pytest.approx(4.0)
++    assert summarise(track, threshold=0).gain_m == pytest.approx(6.0)
++    assert summarise(track, threshold=10).gain_m == pytest.approx(0.0)
++
++
++def test_negative_threshold_is_an_error(north):
++    with pytest.raises(ValueError):
++        summarise(north(0, 10), threshold=-1)
++
++
++def test_steepest_grade_is_taken_from_the_steepest_leg(north):
++    # Legs climb 1 m then 20 m; the steeper 20 m leg sets the grade.
++    summary = summarise(north(1000, 1001, 1021))
++    assert summary.steepest_pct == pytest.approx(18.0)
++
++
++# --- summarise: walking time ---------------------------------------------------
++
++
++def test_time_is_naismith_on_the_summary_distance_and_gain(north):
++    track = north(1000, 1020, 1040)
++    summary = summarise(track)
++    assert summary.hours == pytest.approx(track.length_km() / 5 + 40 / 600, rel=1e-9)
++
++
++def test_fitness_divides_the_time(north):
++    track = north(1000, 1020, 1040)
++    average = summarise(track).hours
++    assert summarise(track, fitness=1.25).hours == pytest.approx(average / 1.25)
++
++
++@pytest.mark.parametrize("fitness", [0, -1])
++def test_non_positive_fitness_is_an_error(north, fitness):
++    with pytest.raises(ValueError):
++        summarise(north(0, 10), fitness=fitness)
++
++
++# --- summarise: heading ----------------------------------------------------------
++
++
++@pytest.mark.parametrize(
++    ("end", "expected"),
++    [
++        ((0.01, 0.0), "N"),
++        ((0.01, 0.01), "NE"),
++        ((0.0, 0.01), "E"),
++        ((-0.01, 0.01), "SE"),
++        ((-0.01, 0.0), "S"),
++        ((-0.01, -0.01), "SW"),
++        ((0.0, -0.01), "W"),
++        ((0.01, -0.01), "NW"),
++    ],
++)
++def test_heading_is_the_compass_point_from_start_to_finish(make_track, end, expected):
++    assert summarise(make_track((0, 0, 0), (*end, 0))).heading == expected
++
++
++def test_finish_back_at_the_start_is_a_loop(make_track):
++    track = make_track((0, 0, 100), (0.01, 0, 100), (0, 0, 100))
++    assert summarise(track).heading == "loop"
++
++
++@pytest.mark.parametrize(("lat", "expected"), [(0.0008, "loop"), (0.0010, "N")])
++def test_loop_radius_is_100m(make_track, lat, expected):
++    # 0.0008 degrees is about 89 m and 0.0010 degrees about 111 m.
++    assert summarise(make_track((0, 0, 100), (lat, 0, 100))).heading == expected
++
++
++# --- format_summary --------------------------------------------------------------
++
++
++def test_format_shows_the_name_on_the_first_line():
++    text = format_summary(make_summary(name="Seven Rila Lakes"))
++    assert text.splitlines()[0] == "Seven Rila Lakes"
++
++
++def test_format_values():
++    summary = make_summary(
++        length_km=12.3,
++        gain_m=512.4,
++        loss_m=498.6,
++        lowest_m=1100.2,
++        highest_m=2190.7,
++        steepest_pct=23.4,
++        hours=5 + 7 / 60,
++        heading="NE",
++    )
++    fields = parse_lines(format_summary(summary))
++    assert fields["distance"] == "12.3 km"
++    assert fields["ascent"].startswith("+512 m / -499 m")
++    assert fields["altitude"] == "1100-2191 m"
++    assert fields["steepest"] == "23.4%"
++    assert fields["time"] == "5h 07m"
++    assert fields["heading"] == "NE"
++
++
++@pytest.mark.parametrize(
++    ("hours", "expected"),
++    [
++        (0.75, "0h 45m"),
++        (5 + 7 / 60, "5h 07m"),
++        (12.0, "12h 00m"),
++        (0.5, "0h 30m"),
++        # 59.6 minutes rounds to 60, which carries into the hours.
++        (59.6 / 60, "1h 00m"),
++    ],
++)
++def test_durations_are_rounded_to_the_nearest_minute(hours, expected):
++    assert parse_lines(format_summary(make_summary(hours=hours)))["time"] == expected
++
++
++# --- end to end ------------------------------------------------------------------
++
++
++def test_end_to_end_from_a_track_file(write_track):
++    path = write_track(
++        "# name: Seven Rila Lakes\n"
++        "# units: m\n"
++        "lat,lon,ele\n"
++        "42.2031,23.3205,2140\n"
++        "42.2049,23.3188,2196\n"
++    )
++    text = format_summary(summarise(load_track(path)))
++    assert text.splitlines()[0] == "Seven Rila Lakes"
++    fields = parse_lines(text)
++    assert fields["altitude"] == "2140-2196 m"
++    assert fields["ascent"].startswith("+56 m")
++    assert fields["heading"] == "NW"

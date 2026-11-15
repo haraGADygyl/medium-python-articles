@@ -1,0 +1,10 @@
+The cause is in `pace.leg_hours` (`src/trailhead/pace.py`), which `plan` uses to time each leg: it charged every leg for its raw rise, so each small upward wobble of GPS noise added climbing time. `summary` uses the 3 m threshold rule, which ignores that jitter, so on a noisy track the plan came out longer.
+
+The fix makes `leg_hours` take each leg's climb from `elevation.counted_changes`, the same rule the summary uses, as the README describes. The days of a plan now add up to the summary time for the same track and fitness.
+
+I added a regression test in `tests/test_plan.py` with a jittery climbing track; it fails on the old code and passes now. The full suite, `ruff check` and `mypy` pass. I did not have the user's GPS file, so the 9h 40m vs 7h 05m case itself is not reproduced. Nothing is committed.
+
+Two things you might trip over:
+
+- **Rounding:** the displayed day times can still differ from the summary by a minute or so in total, because each day is rounded to 0.01 h and then to the minute.
+- **`summary --threshold`:** `plan` has no such option and always uses the default 3 m, so a summary run with a custom threshold will not match the plan. That matches the README's wording, so I left it.

@@ -1,0 +1,13 @@
+`Track.leg_lengths_km()` now caches its result, so a summary computes each leg's distance once. The full suite passes (48 tests), including a new one for the caching.
+
+The README says a `Track` is mutable and its lengths "always reflect the current points", so I couldn't cache with a plain flag. The cache keeps a tuple snapshot of the points and compares it on every call. If you append, replace or edit any point, it recomputes. The comparison is cheap next to the haversine maths, and `Point` is frozen, so the snapshot can't change underneath it.
+
+The method also returns a copy of the cached list, so a caller who mutates the result can't corrupt the cache. I stored the cache as a hidden dataclass field (`init=False`, `repr=False`, `compare=False`). `cached_property` doesn't work with `slots=True`, so a field was the simplest option.
+
+The new test in `tests/test_track.py` does four checks:
+- It counts `haversine_km` calls and confirms two legs cost exactly two calls across repeated lookups and `length_km()`.
+- It confirms that mutating the returned list doesn't affect later results.
+- It confirms that an appended point is picked up.
+- It confirms that a replaced point is picked up.
+
+The change itself is in `src/trailhead/track.py`.

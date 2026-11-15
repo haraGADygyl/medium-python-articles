@@ -1,0 +1,15 @@
+I added `tests/test_report.py` with 39 tests, and nothing under `src/` changed. The full suite passes (84 tests), and `ruff check` and `ruff format` are clean on the new file.
+
+The tests cover `summarise` and `format_summary` as the README and docstrings describe them:
+
+- **Summary fields:** name, ascent and descent, highest and lowest elevation, and length rounded to 0.1 km.
+- **Walking time:** it matches Naismith's rule, is calculated from the unrounded length, and `fitness` divides it. Zero or negative fitness raises `ValueError`.
+- **Threshold:** the default 3 m jitter filter, the `threshold` argument being passed through, a negative threshold raising `ValueError`, and a long climb in small steps still counting.
+- **Steepest grade:** reported in percent, for downhill as well as uphill.
+- **Heading:** all eight compass points, `loop` when the finish is within 0.1 km of the start, and a compass point just beyond 0.1 km.
+- **`format_summary`:** the exact seven-line layout, the `5h 07m` / `0h 45m` / `12h 00m` duration format with rounding across the hour, and rounding of the other numbers.
+- **`Summary`:** it is frozen.
+
+I found no bugs in `report.py`. One test failed at first because I expected 100 m of gain from a 100 m climb in 1 m steps. The README's rule gives 99 m, because the last 1 m never reaches the 3 m threshold. The test now expects 99 m.
+
+Untracked dotfiles such as `.bashrc` and `.claude/` also show in `git status`. They were already in the working directory and aren't mine.

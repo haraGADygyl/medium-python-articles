@@ -1,0 +1,9 @@
+The bug is fixed. The reported file now parses to a highest point of 4302.3 m (14,115 ft), not 14115 m.
+
+**Cause:** In `src/trailhead/track.py`, `parse_track` applied the units scale to each point as its line was read. The `# units: ft` line sat after the points, so the three points were read while the scale was still 1.0 and kept their raw feet values. The README says settings apply to the whole track wherever they appear, so the parser did not match its own spec.
+
+**Fix:** The parser now collects raw coordinates and elevations, reads the whole file, and only then converts elevations using the final units setting. `# units: ft` works before or after the points.
+
+**Test:** I added `test_units_after_the_points_apply_to_all_points` to `tests/test_track.py`. The full suite passes (48 tests). I did not run the new test against the old code, so I haven't seen it fail before the fix. The reported file's elevations come out as 2042.2, 2987.0 and 4302.3 m.
+
+I did not commit the change.
