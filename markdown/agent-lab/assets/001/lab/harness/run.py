@@ -15,6 +15,7 @@ import json
 import random
 import shutil
 import subprocess
+import sys
 import time
 from collections import Counter
 
@@ -39,6 +40,11 @@ DISALLOWED = ["WebFetch", "WebSearch", "CronCreate", "CronDelete", "CronList", "
               "ListAgents", "Monitor", "EnterWorktree", "ExitWorktree", "SendMessage",
               "PushNotification", "RemoteTrigger"]
 SEED = 20261114
+# Claude Code's sandbox (bubblewrap + socat on Linux): Bash runs without permission
+# prompts, writes are confined to the working copy, and the network is blocked. Without
+# it, Claude Code's safety checks refuse subshells and "cd ... && git" whatever the
+# allowlist says. The allowlist above still applies to non-Bash tools.
+SANDBOX_SETTINGS = {"sandbox": {"enabled": True, "autoAllowBashIfSandboxed": True}}
 
 
 def plan(models, task_ids, tiers, repeats) -> list[tuple]:
@@ -86,13 +92,16 @@ def summarise_transcript(events: list[dict]) -> dict:
     }
 
 
-def run_one(run_id: str, model: str, task, repeat: int, max_turns: int, timeout: int) -> dict | None:
+def run_one(run_id: str, model: str, task, repeat: int, max_turns: int, timeout: int,
+            sandbox: bool) -> dict | None:
     work = WORK_ROOT / run_id
     build_start(work, task)
     cmd = ["claude", "-p", "--output-format", "stream-json", "--verbose",
            "--model", model, "--setting-sources", "project,local", "--strict-mcp-config",
            "--permission-mode", "acceptEdits", "--max-turns", str(max_turns),
            "--allowedTools", *ALLOWED, "--disallowedTools", *DISALLOWED]
+    if sandbox:
+        cmd += ["--settings", json.dumps(SANDBOX_SETTINGS)]
     started = time.time()
     try:
         done = subprocess.run(cmd, input=task.prompt, cwd=work, env=tool_env(),
@@ -105,6 +114,8 @@ def run_one(run_id: str, model: str, task, repeat: int, max_turns: int, timeout:
     info = summarise_transcript(events)
 
     finished_normally = info["subtype"] in ("success", "error_max_turns") or code == -1
+    if sandbox and "Sandbox disabled" in stderr:
+        finished_normally = False  # it would have run unsandboxed: not the lab's condition
     if not finished_normally:
         aborted = RESULTS / "_aborted" / f"{run_id}-{int(started)}"
         aborted.mkdir(parents=True, exist_ok=True)
@@ -123,7 +134,7 @@ def run_one(run_id: str, model: str, task, repeat: int, max_turns: int, timeout:
     (out / "diff.patch").write_text(git(work, "diff", "--cached", "HEAD"))
     (out / "final.txt").write_text(info.pop("final_text"))
     meta = {"run_id": run_id, "task": task.id, "tier": task.tier, "baseline": task.baseline,
-            "repeat": repeat,
+            "repeat": repeat, "sandbox": sandbox,
             "model_alias": model, "prompt": task.prompt, "harness_timeout": code == -1,
             "wall_s": round(time.time() - started, 1), **info, "grade": verdict}
     (out / "meta.json").write_text(json.dumps(meta, indent=2))
@@ -140,8 +151,14 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=10, help="new runs in this batch")
     parser.add_argument("--max-turns", type=int, default=40)
     parser.add_argument("--timeout", type=int, default=1200, help="seconds per run")
+    parser.add_argument("--no-sandbox", action="store_true", help="run without Claude Code's sandbox")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+    sandbox = not args.no_sandbox
+    missing = [tool for tool in ("bwrap", "socat") if sandbox and not shutil.which(tool)]
+    if missing and not args.dry_run:
+        sys.exit(f"sandbox needs {', '.join(missing)} (apt install bubblewrap socat), "
+                 "or pass --no-sandbox")
 
     todo = [p for p in plan(args.models, args.tasks, args.tiers, args.repeats)
             if not (RESULTS / p[0] / "meta.json").exists()]
@@ -152,7 +169,7 @@ def main() -> None:
         return
     for run_id, model, task, repeat in todo[:args.limit]:
         print(f"{run_id} ...", flush=True)
-        meta = run_one(run_id, model, task, repeat, args.max_turns, args.timeout)
+        meta = run_one(run_id, model, task, repeat, args.max_turns, args.timeout, sandbox)
         if meta is None:
             print("stopping: fix the cause (or wait for the usage window) and rerun; "
                   "finished runs are kept")
