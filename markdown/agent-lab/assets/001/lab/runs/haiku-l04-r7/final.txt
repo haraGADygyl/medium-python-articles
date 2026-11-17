@@ -1,0 +1,11 @@
+`mypy src/` now passes with no errors (strict mode, config unchanged, no `# type: ignore`, `cast`, or `Any`). ruff passes and all 48 pytest tests pass.
+
+The errors came from `Point.ele` being `float | None` (a lost GPS fix), while the elevation helpers assumed `float`. I made the helpers handle missing elevations instead of hiding them:
+
+- **`counted_changes`** (`src/trailhead/elevation.py`) now accepts `Sequence[float | None]`. A missing elevation adds 0 for its leg, and the next known elevation is measured from the last known one. `gain_and_loss` takes the same type. This fixes the errors in `pace.py` and `report.py` without changing those files.
+- **`highest_and_lowest`** uses only the known elevations. If a track has none, it raises `ValueError`. Previously a `None` would have crashed `max`/`min`.
+- **`steepest_grade`** skips a leg when either end has no elevation, the same way it already skips zero-length legs.
+
+Behaviour is unchanged for tracks with full elevations. For tracks with gaps, the old code crashed with a `TypeError`, and the new code produces a summary. A quick check on a track with one missing elevation gave gain 20 m, loss 0 m, highest 120 m, lowest 100 m.
+
+Decision for you: for a track with no elevations at all, I chose a plain `ValueError`. If you'd rather it be a `TrackError` (the track-specific error the CLI handles), that is a one-line change.

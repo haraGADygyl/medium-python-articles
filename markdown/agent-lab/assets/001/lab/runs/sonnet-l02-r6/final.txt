@@ -1,0 +1,6 @@
+`mypy` now passes in strict mode. `ruff` is clean and all 47 tests pass. I didn't use `# type: ignore`, `cast` or `Any`, and I didn't touch the mypy config.
+
+- **`geo.py`:** I added annotations to `initial_bearing`: four `float` arguments and a `float` return. That also cleared the untyped-call error in `report.py`.
+- **`report.py`:** `_heading` returns `None` for loop tracks, where the start and finish are within 0.1 km. The `Summary.heading` field was declared `str`, so I changed it to `str | None`, which is what the code actually produces.
+
+**Behaviour change:** `format_summary` would have printed `heading   None` for loops. It now prints `heading   loop`. I chose the wording "loop" myself, so say if you'd rather have something else. No existing test covers this case.

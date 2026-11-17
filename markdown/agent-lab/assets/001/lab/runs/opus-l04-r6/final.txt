@@ -1,0 +1,14 @@
+`mypy` now passes in strict mode. `ruff check` is clean and all 48 tests pass. I didn't use any `# type: ignore`, `cast` or `Any`, and the mypy config is unchanged.
+
+**What was wrong:** `Point.ele` is `float | None` (empty when the GPS lost the elevation), but four places passed it straight into code that needs a `float`. A track with a gap in its elevations would have crashed in the summary and in the day plan.
+
+**The fix:** The README already says what a missing elevation should become: the value of the nearest earlier point that has one, or if there isn't one, the nearest later point. I added a `Track.elevations()` method in `src/trailhead/track.py` that does exactly this and returns `list[float]`. All four places now use it:
+- `elevation.highest_and_lowest` and `elevation.steepest_grade`
+- `pace.leg_hours`
+- `report.summarise`
+
+A smoke test with the elevations `[gap, 100, gap, 130]` gave the expected summary: +30 m ascent, altitude 100–130 m, steepest grade 27.0%.
+
+**A case the README doesn't cover:** if a track has no elevations at all, there's nothing to fill the gaps from. I made that a `TrackError("the track has no elevations")`. I also moved the summary and plan steps in `cli.py` inside the existing `try` block, so this prints `trailhead: the track has no elevations` and exits with code 1 instead of showing a traceback. If you'd rather reject such files when they're read in, or treat all the elevations as 0, that's a small change.
+
+I didn't add tests for the gap-filling. A test for `Track.elevations()` would be worth adding if you want this behaviour locked in.

@@ -1,0 +1,14 @@
+`mypy` passes now, with no `# type: ignore`, `cast`, `Any` or config changes. `ruff check` is clean and all 48 tests pass.
+
+**Cause:** `Point.ele` is `float | None`, because a point can be missing its elevation where the GPS lost it. Four places used it as a plain `float` anyway: highest/lowest, steepest grade, walking time per leg, and ascent/descent in the summary. Those are real bugs, not just typing noise: a track with a gap would crash with a `TypeError`.
+
+**Fix:** The README already says what a missing elevation should be: the nearest earlier point that has one, or the nearest later point if there isn't one. I added `Track.elevations()` in `src/trailhead/track.py`, which returns every point's elevation as `list[float]` with gaps filled by that rule. All four places now use it:
+- `elevation.py`: `highest_and_lowest` and `steepest_grade`
+- `pace.py`: `leg_hours` (day plans use this too)
+- `report.py`: `summarise`
+
+I checked it by hand on a track with a missing elevation at the start and one in the middle. `[None, 100, None, 130]` fills to `[100, 100, 100, 130]` and the summary comes out right.
+
+**Decision for you:** the README doesn't say what to do when no point has an elevation. `parse_track` still accepts such a track, but `elevations()` raises `TrackError("the track has no elevations")` when anything needs elevations. If you'd rather reject it while parsing, or treat it as flat, that's a small change.
+
+The existing tests don't cover missing elevations in the summary or plan, so adding one would be worthwhile.

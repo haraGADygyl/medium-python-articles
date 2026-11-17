@@ -1,0 +1,10 @@
+`mypy` now passes with no errors; `ruff check` is clean and all 48 existing tests still pass.
+
+The errors all came from `Point.ele` being `float | None` (the GPS can lose elevation) while the elevation maths assumed plain floats. I fixed this with behaviour rather than annotations, following the rule the README already states: a point with no elevation takes that of the nearest earlier point that has one, or else the nearest later one.
+
+- **New method:** `Track.elevations()` in `src/trailhead/track.py` returns the gap-filled list of floats. `Point.ele` itself still stays `None`, as the README and `test_track.py` require.
+- **Callers switched to it:** `highest_and_lowest` and `steepest_grade` in `elevation.py`, `leg_hours` in `pace.py`, and `summarise` in `report.py`.
+
+A spot check on a track with gaps at the start and in the middle gave the filled values the README describes. I did not add tests for the new method.
+
+One case the README doesn't cover: a track where no point has an elevation. I made `Track.elevations()` raise `TrackError("the track has no elevations")`, so summary and plan fail on such a track instead of reporting an invented altitude of 0. If you'd rather treat such tracks as flat, it's a one-line change — say if you want it.

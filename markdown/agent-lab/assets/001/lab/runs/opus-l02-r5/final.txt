@@ -1,0 +1,9 @@
+`mypy` now passes with no errors. The three errors had two causes, and one of them was a real bug.
+
+1. **`src/trailhead/geo.py:18`**: `initial_bearing` had no type annotations, which also caused the "untyped call" error in `report.py`. It's now `(lat1: float, lon1: float, lat2: float, lon2: float) -> float`.
+
+2. **`src/trailhead/report.py:53`**: `_heading` returned `None` for loop tracks, but `Summary.heading` is a `str`. Making the field optional would have silenced mypy but left the bug in place: a loop's summary would have printed `heading   None`. The README (lines 62–63) says the heading should be `loop` when the finish is within 0.1 km of the start. So `_heading` now returns `"loop"` and is typed `-> str`.
+
+I didn't use `# type: ignore`, `cast` or `Any`, and the mypy config is unchanged. The 47 tests pass and `ruff` is clean. I also ran a loop track by hand and its summary now prints `heading   loop`.
+
+No test covers the loop case yet; I can add one to `tests/test_report.py` if you like.

@@ -1,0 +1,9 @@
+`mypy` now passes on `src/` in strict mode, with no `# type: ignore`, `cast`, `Any`, or config changes. The test suite (47 tests) and ruff also pass.
+
+There were three errors, and I fixed each one at its source:
+
+1. **`src/trailhead/geo.py:18`**: `initial_bearing` had no type annotations. I added `float` for the four parameters and a `-> float` return type. The body already works on floats.
+2. **`src/trailhead/report.py:35`**: this was the "untyped call" error. It went away once `initial_bearing` was annotated.
+3. **`src/trailhead/report.py:53`**: `_heading` returns `str | None`, which is `None` for loop tracks, but `Summary.heading` was declared as `str`. I changed the field to `str | None`. The existing `format_summary` already prints the value with an f-string, so loop output is unchanged.
+
+I haven't committed anything.

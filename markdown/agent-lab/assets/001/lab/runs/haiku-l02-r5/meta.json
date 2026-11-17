@@ -1,0 +1,104 @@
+{
+  "run_id": "haiku-l02-r5",
+  "task": "l02",
+  "tier": "lint",
+  "baseline": false,
+  "repeat": 5,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "harness_timeout": false,
+  "wall_s": 18.0,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.326",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 7,
+  "duration_ms": 14878,
+  "duration_api_ms": 13063,
+  "api_equivalent_usd": 0.00504558,
+  "usage": {
+    "input_tokens": 10,
+    "cache_creation_input_tokens": 14659,
+    "cache_read_input_tokens": 110678,
+    "output_tokens": 2012,
+    "output_tokens_details": {
+      "thinking_tokens": 293
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 14659,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 304,
+        "cache_read_input_tokens": 26285,
+        "cache_creation_input_tokens": 1224,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 1224
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 10,
+      "outputTokens": 2012,
+      "cacheReadInputTokens": 110678,
+      "cacheCreationInputTokens": 14659,
+      "webSearchRequests": 0,
+      "costUSD": 0.00504558,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 293,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 14659,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 4,
+    "Edit": 2
+  },
+  "bash_commands": [
+    "cat pyproject.toml && ls -R src | head -50 && (mypy src 2>&1 | tail -60)",
+    "cat -n src/trailhead/geo.py && echo ---- && cat -n src/trailhead/report.py",
+    "grep -rn \"heading\\|initial_bearing\" --include=*.py . ; grep -rn \"heading\" README* 2>/dev/null | head",
+    "mypy src; echo \"mypy exit: $?\"; python -m pytest -q 2>&1 | tail -5; echo \"pytest exit: $?\""
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "fail",
+    "reasons": [
+      "hidden or regression tests fail"
+    ],
+    "tests_pass": false,
+    "tests_output_tail": "  where <built-in method endswith of str object at 0x7a1ee3bf16b0> = 'Lake Circuit\\n  distance  2.2 km\\n  ascent    +100 m / -100 m\\n  altitude  1000-1100 m\\n  steepest  9.3%\\n  time      0h 36m\\n  heading   None'.endswith\nE        +      where 'Lake Circuit\\n  distance  2.2 km\\n  ascent    +100 m / -100 m\\n  altitude  1000-1100 m\\n  steepest  9.3%\\n  time      0h 36m\\n  heading   None' = format_summary(Summary(name='Lake Circuit', length_km=2.2, gain_m=100.0, loss_m=100.0, highest_m=1100, lowest_m=1000, steepest_pct=9.3, hours=0.605061677928428, heading=None))\n\ntests/test_hidden.py:14: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_hidden.py::test_loop_heading_is_loop - AssertionError: asse...\n1 failed, 49 passed in 0.09s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py",
+      "M src/trailhead/report.py"
+    ],
+    "lines_added": 2,
+    "lines_removed": 2,
+    "own_suite_pass_as_left": true
+  }
+}

@@ -1,0 +1,18 @@
+`mypy` now passes with no errors in `src/`. I didn't add any `# type: ignore`, `cast`, `Any`, or config changes.
+
+**The cause:** `Point.ele` is `float | None`, because the README says an empty elevation field means the GPS lost it. Four callers used the raw values as if they were always floats.
+
+**The fix:** I added `Track.elevations()` in `src/trailhead/track.py`. It implements the rule the README already states for gaps: a missing elevation takes the nearest earlier known value, or the nearest later one if there is none before it. The callers now use it:
+- `elevation.py`: `highest_and_lowest` and `steepest_grade`
+- `pace.py`: `leg_hours`
+- `report.py`: `summarise`
+
+**One choice you should check:** if no point in a track has an elevation, `elevations()` raises `TrackError`. The README doesn't cover this case, and the type checker needs a float to come back. The alternative would be to reject such tracks at parse time, which I didn't do.
+
+**Verification:**
+- `mypy`: no issues in 9 source files
+- `pytest`: 48 passed
+- `ruff check src tests`: all checks passed
+- A quick manual check on a track with gaps gave the expected results: the gaps took the README's fill values, and an all-empty track raised `TrackError`.
+
+I haven't committed anything. The changes are in the working tree.

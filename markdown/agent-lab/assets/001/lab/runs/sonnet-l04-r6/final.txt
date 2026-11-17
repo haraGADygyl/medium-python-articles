@@ -1,0 +1,9 @@
+`mypy` now passes on `src/`, and all 48 existing tests pass. I used no `# type: ignore`, `cast` or `Any`, and I didn't touch the mypy configuration. The cause was that `Point.ele` is `float | None` (the GPS can lose elevation), but the elevation code assumed it was always a `float`. All changes are in `src/trailhead/elevation.py`:
+
+- **`counted_changes` and `gain_and_loss`:** both now accept `Sequence[float | None]`. A leg with a missing elevation counts as 0 and leaves the reference elevation unchanged. The next known elevation is compared against that reference, so `pace.py` and `report.py` type-check without edits.
+- **`steepest_grade`:** it skips any leg where either end has no elevation.
+- **`highest_and_lowest`:** it ignores missing elevations. If a track has none at all, it raises `TrackError("the track has no elevation data")`. I chose `TrackError` because `cli.py` already catches it. It's a `ValueError` subclass, so it is consistent with the other error handling.
+
+The all-missing case is a behaviour choice you may want to change: a track with no elevation data now fails in `summarise` instead of producing a summary. Making `highest_m` and `lowest_m` optional on `Summary` would avoid that, but it changes the public output format, so I left it.
+
+I didn't add tests for the missing-elevation paths.

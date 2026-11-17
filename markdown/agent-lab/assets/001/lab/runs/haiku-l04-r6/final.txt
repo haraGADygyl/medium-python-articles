@@ -1,0 +1,12 @@
+`mypy` now passes on `src/` with no `# type: ignore`, `cast`, `Any`, or config changes. pytest (48 tests) and ruff also pass.
+
+The errors all came from `Point.ele` being `float | None`. Rather than narrowing each call site, I found that the README already defines what a missing elevation should mean: it takes the nearest earlier known elevation, or the nearest later one at the start of the track. The code never implemented that, so the `None` arithmetic was a real bug. I fixed it that way:
+
+- **`src/trailhead/track.py`**: added `Track.elevations()`, which returns a `list[float]` with the gaps filled per the README.
+- **`elevation.py`**, **`pace.py`**, **`report.py`**: use `track.elevations()` instead of reading `point.ele` directly. This covers `highest_and_lowest`, `steepest_grade`, `leg_hours` and `summarise`.
+
+I checked a track with gaps through the CLI: elevations `[100, ?, 160]`-style gaps fill correctly and the summary gives +60 m ascent.
+
+One decision for you: a track where no point has an elevation now raises `TrackError("no point has an elevation")`. The CLI only catches `TrackError` around parsing, so this case currently prints a traceback instead of a clean message. Before this change it also crashed, so I didn't widen the CLI's error handling. If you want a clean message, the check could move into `parse_track`, or the CLI could catch the error around `summarise` too.
+
+I haven't committed anything. The working tree also has untracked dotfiles (`.bashrc`, `.claude/`, etc.) that were already there and are not part of this change.

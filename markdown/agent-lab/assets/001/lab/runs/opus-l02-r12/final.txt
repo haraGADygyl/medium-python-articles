@@ -1,0 +1,7 @@
+mypy now passes in strict mode. All 48 tests and ruff pass too.
+
+- **`src/trailhead/geo.py`**: `initial_bearing` had no type annotations, so I added `float` types for its four arguments and its return value. That fixed two of the errors: the missing annotation and the call to an untyped function in `report.py`.
+- **`src/trailhead/report.py`**: the third error pointed to a real bug. `_heading` returned `None` for loop tracks, but `Summary.heading` is declared as `str`, and the README says loops show `loop`. As written, a loop's summary would have printed `heading   None`. `_heading` now returns `"loop"` in that case and is typed `-> str`.
+- **`tests/test_report.py`**: I added a test for a track that finishes near its start, checking that the heading is `"loop"`. Nothing tested this case before.
+
+No `# type: ignore`, `cast` or `Any` was used, and the mypy configuration is unchanged.

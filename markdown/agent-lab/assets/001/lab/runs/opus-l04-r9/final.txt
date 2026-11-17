@@ -1,0 +1,11 @@
+mypy now passes in strict mode, with no `# type: ignore`, `cast`, `Any` or config changes. `ruff check` is clean and all 48 tests pass.
+
+**These errors were real bugs, not just missing annotations.** A track can have points with no elevation (`ele=None`), and the README says how to handle them: use the elevation of the nearest earlier point that has one, or the nearest later one if there's none earlier. The code never did this. It passed the `None` values straight into the ascent, high/low, steepest-grade and walking-time calculations, so any track with a gap would have crashed with a `TypeError`.
+
+**The fix:**
+- **`src/trailhead/track.py`**: added `Track.elevations()`, which returns one `float` per point with the gaps filled in as the README describes.
+- **`elevation.py`, `pace.py`, `report.py`**: these now call `track.elevations()` instead of reading `point.ele` directly. `Point.ele` itself is still `float | None`, as the README and `test_missing_elevation_is_none` expect.
+
+**One case the README doesn't cover:** a track where *no* point has an elevation. I made `elevations()` raise `TrackError("no point has an elevation")` for that. I also changed `cli.py` so the summary and plan steps are inside the existing `TrackError` handler, which means the CLI prints `trailhead: no point has an elevation` and exits with 1 instead of showing a traceback. Loading such a track still works, so distance-only use is unaffected. If you'd prefer to reject these tracks when they're parsed instead, that's a small change.
+
+I checked both cases by hand: a track with gaps at the start and in the middle fills to `[100, 100, 100, 130]` and summarises correctly, and the no-elevation case gives the error above. I didn't add tests for either, though. I can add some to `test_track.py` and `test_report.py` if you want.

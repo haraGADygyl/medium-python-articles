@@ -1,0 +1,8 @@
+`mypy` now passes on `src/` with strict mode, and the existing 47 tests and ruff still pass. I made three small edits, with no `# type: ignore`, `cast`, `Any`, or config changes.
+
+- **`src/trailhead/geo.py:18`**: `initial_bearing` had no annotations. I added `lat1: float, lon1: float, lat2: float, lon2: float` parameters and a `-> float` return type. This also fixes the matching `no-untyped-call` error in `report.py`.
+- **`src/trailhead/report.py:53`**: `Summary.heading` was declared `str`, but `_heading()` returns `None` for loop tracks (start and finish within 0.1 km). I changed the field to `str | None`, which matches what the code actually produces.
+
+One thing to be aware of: `format_summary` prints `heading   None` for loop tracks. That was already the behaviour before my change, since the `None` was flowing through at runtime. The type fix makes it visible to mypy but does not change the output. If you'd rather loop tracks show something else, such as omitting the line or printing "loop", that is a separate behaviour change and I haven't made it.
+
+I haven't committed anything.

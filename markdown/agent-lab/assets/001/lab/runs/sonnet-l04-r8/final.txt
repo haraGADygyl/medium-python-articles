@@ -1,0 +1,9 @@
+`mypy` now passes with no issues, and all 48 tests pass. I only changed `src/trailhead/elevation.py`, with no `# type: ignore`, `cast`, `Any` or config changes.
+
+The root cause was that `Point.ele` is `float | None`, but the elevation code assumed a plain `float`. That also fixed the errors in `pace.py` and `report.py`, since they pass those values into the elevation functions. Before this, a track with a missing elevation would have crashed at runtime. The changes below decide what happens instead:
+
+- **`counted_changes` and `gain_and_loss`:** they accept `float | None` elevations. A leg that ends at a missing elevation counts 0, and the next known elevation is compared with the last counted one. It still returns one value per leg, which `pace.leg_hours` relies on.
+- **`highest_and_lowest`:** it ignores missing elevations. It raises `ValueError("track has no elevation data")` if none are known, because `Summary` needs real numbers.
+- **`steepest_grade`:** it skips legs where either end has no elevation.
+
+Those behaviours are my choice, since the task didn't specify any. If you'd rather treat a missing elevation as an error, or interpolate across the gap, say so and I'll change it. I didn't add tests for the missing-elevation paths.

@@ -1,0 +1,8 @@
+`mypy` now passes cleanly, with `ruff` and all 47 tests also green. One of the fixes changes runtime behaviour, described below.
+
+- **`src/trailhead/geo.py`**: `initial_bearing` had no annotations; it now takes four `float`s and returns `float`. This also cleared the untyped-call error in `report.py`.
+- **`src/trailhead/report.py`**: `_heading` returned `None` for a loop track, which clashed with `Summary.heading: str`. It now returns `"loop"` and is typed `-> str`.
+
+The behaviour change: the README says the heading is `loop` when the finish is within 0.1 km of the start, but the code was returning `None`, so the summary printed `heading   None`. I fixed the value to match the README rather than widening the field to `str | None`, which would have kept the wrong output.
+
+No test covers the loop case, so that path is checked only by mypy and by reading the code. Nothing is committed.

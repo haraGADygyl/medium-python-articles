@@ -1,0 +1,8 @@
+`mypy` now passes with no errors. The tests (47 passed) and `ruff` also pass.
+
+I made two changes:
+
+1. **`src/trailhead/geo.py`**: `initial_bearing` had no type annotations. I added `float` types to its four arguments and its return value. That clears both the missing-annotation error and the related error where `report.py` calls it.
+2. **`src/trailhead/report.py`**: This error was hiding a real bug. When a track finishes within 0.1 km of where it starts, `_heading` returned `None`, so the summary would have printed `heading   None`. The README says it should show `loop` in that case. It now returns `"loop"`, so its return type is plain `str`, which matches the `heading: str` field in `Summary`.
+
+The existing tests only cover a track that goes somewhere (heading `NE`), so nothing checks the `loop` output yet. Adding a test for a round-trip track would cover it.

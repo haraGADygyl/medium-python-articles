@@ -1,0 +1,121 @@
+{
+  "run_id": "fable-l04-r6",
+  "task": "l04",
+  "tier": "lint",
+  "baseline": false,
+  "repeat": 6,
+  "sandbox": true,
+  "model_alias": "fable",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "harness_timeout": false,
+  "wall_s": 62.9,
+  "model_id": "claude-fable-5-2",
+  "claude_code_version": "2.1.326",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 9,
+  "duration_ms": 60127,
+  "duration_api_ms": 57792,
+  "api_equivalent_usd": 0.6419875999999999,
+  "usage": {
+    "input_tokens": 18,
+    "cache_creation_input_tokens": 24188,
+    "cache_read_input_tokens": 266378,
+    "output_tokens": 5039,
+    "output_tokens_details": {
+      "thinking_tokens": 495
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 24188,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 460,
+        "cache_read_input_tokens": 36560,
+        "cache_creation_input_tokens": 478,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 478
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-fable-5-2": {
+      "inputTokens": 18,
+      "outputTokens": 5039,
+      "cacheReadInputTokens": 266378,
+      "cacheCreationInputTokens": 24188,
+      "webSearchRequests": 0,
+      "costUSD": 0.6419875999999999,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 495,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 24188,
+      "canonicalModel": "claude-fable-5-2",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 8
+  },
+  "bash_commands": [
+    "mypy 2>&1 | tail -40; git ls-files; cat pyproject.toml",
+    "cd src/trailhead; cat -n track.py elevation.py pace.py report.py; grep -rn \"elevation\\|None\" geo.py plan.py cli.py; cat ../../README.md; python -m pytest -q ../.. 2>&1 | tail -5",
+    "cat cli.py; grep -rn \"None\\|ele\" ../../tests | head -30",
+    "cd ../.. && python - <<'EOF'\nimport re, pathlib\np = pathlib.Path(\"src/trailhead/track.py\"); s = p.read_text()\ns = s.replace('''    def length_km(self) -> float:\n        return sum(self.leg_lengths_km())\n''', '''    def length_km(self) -> float:\n        return sum(self.leg_lengths_km())\n\n    def elevations(self) -> list[float]:\n        \"\"\"Elevation of every point in metres, with the gaps filled in.\n\n        A point without an elevation takes that of the nearest earlier point that\n        has one or, if there is none, of the nearest later point. A track with no\n        elevations at all is a `TrackError`.\n        \"\"\"\n        first = next((p.ele for p in self.points if p.ele is not None), None)\n        if first is None:\n            raise TrackError(\"the track has no elevations\")\n        filled: list[float] = []\n        last = first\n        for point in self.points:\n            if point.ele is not None:\n                last = point.ele\n            filled.append(last)\n        return filled\n''')\np.write_text(s)\n\np = pathlib.Path(\"src/trailhead/elevation.py\"); s = p.read_text()\ns = s.replace(\"elevations = [point.ele for point in track.points]\", \"elevations = track.elevations()\")\ns = s.replace('''    for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):\n        if km == 0:\n            continue\n        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000) * 100)''',\n'''    for (a, b), km in zip(pairwise(track.elevations()), track.leg_lengths_km(), strict=True):\n        if km == 0:\n            continue\n        steepest = max(steepest, abs(b - a) / (km * 1000) * 100)''')\np.write_text(s)\n\np = pathlib.Path(\"src/trailhead/pace.py\"); s = p.read_text()\ns = s.replace(\"counted_changes([p.ele for p in track.points])\", \"counted_changes(track.elevations())\")\np.write_text(s)\n\np = pathlib.Path(\"src/trailhead/report.py\"); s = p.read_text()\ns = s.replace(\"gain_and_loss([point.ele for point in track.points], threshold)\", \"gain_and_loss(track.elevations(), threshold)\")\np.write_text(s)\n\np = pathlib.Path(\"src/trailhead/cli.py\"); s = p.read_text()\ns = s.replace('''    try:\n        track = load_track(args.file)\n    except (OSError, TrackError) as exc:\n        print(f\"trailhead: {exc}\", file=sys.stderr)\n        return 1\n    if args.command == \"summary\":\n        print(format_summary(summarise(track, args.fitness, args.threshold)))\n    else:\n        for line in describe_plan(split_days(track, args.max_hours, args.fitness)):\n            print(line)\n    return 0''', '''    try:\n        track = load_track(args.file)\n        if args.command == \"summary\":\n            lines = [format_summary(summarise(track, args.fitness, args.threshold))]\n        else:\n            lines = describe_plan(split_days(track, args.max_hours, args.fitness))\n    except (OSError, TrackError) as exc:\n        print(f\"trailhead: {exc}\", file=sys.stderr)\n        return 1\n    for line in lines:\n        print(line)\n    return 0''')\np.write_text(s)\nEOF\nmypy; ruff check; python -m pytest -q | tail -2\nd=$TMPDIR/t; mkdir -p $d\nprintf 'lat,lon,ele\\n0,0,\\n0,0.01,100\\n0,0.02,\\n0,0.03,130\\n' > $d/a.csv\nprintf 'lat,lon,ele\\n0,0,\\n0,0.01,\\n' > $d/b.csv\nfor f in a b; do for c in summary plan; do PYTHONPATH=src python -m trailhead $c $d/$f.csv; echo \"rc=$?\"; done; done; git status --short",
+    "cd ../.. && python - <<'EOF'\nimport pathlib\np = pathlib.Path(\"src/trailhead/track.py\"); s = p.read_text()\ns = s.replace('''    def length_km(self) -> float:\n        return sum(self.leg_lengths_km())\n''', '''    def length_km(self) -> float:\n        return sum(self.leg_lengths_km())\n\n    def elevations(self) -> list[float]:\n        \"\"\"Elevation of every point in metres, with the gaps filled in.\n\n        A point without an elevation takes that of the nearest earlier point that\n        has one or, if there is none, of the nearest later point. A track with no\n        elevations at all is a `TrackError`.\n        \"\"\"\n        first = next((p.ele for p in self.points if p.ele is not None), None)\n        if first is None:\n            raise TrackError(\"the track has no elevations\")\n        filled: list[float] = []\n        last = first\n        for point in self.points:\n            if point.ele is not None:\n                last = point.ele\n            filled.append(last)\n        return filled\n''')\np.write_text(s)\n\np = pathlib.Path(\"src/trailhead/elevation.py\"); s = p.read_text()\ns = s.replace(\"elevations = [point.ele for point in track.points]\", \"elevations = track.elevations()\")\ns = s.replace('''    for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):\n        if km == 0:\n            continue\n        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000) * 100)''',\n'''    for (a, b), km in zip(pairwise(track.elevations()), track.leg_lengths_km(), strict=True):\n        if km == 0:\n            continue\n        steepest = max(steepest, abs(b - a) / (km * 1000) * 100)''')\np.write_text(s)\n\np = pathlib.Path(\"src/trailhead/pace.py\"); s = p.read_text()\ns = s.replace(\"counted_changes([p.ele for p in track.points])\", \"counted_changes(track.elevations())\")\np.write_text(s)\n\np = pathlib.Path(\"src/trailhead/report.py\"); s = p.read_text()\ns = s.replace(\"gain_and_loss([point.ele for point in track.points], threshold)\", \"gain_and_loss(track.elevations(), threshold)\")\np.write_text(s)\n\np = pathlib.Path(\"src/trailhead/cli.py\"); s = p.read_text()\ns = s.replace('''    try:\n        track = load_track(args.file)\n    except (OSError, TrackError) as exc:\n        print(f\"trailhead: {exc}\", file=sys.stderr)\n        return 1\n    if args.command == \"summary\":\n        print(format_summary(summarise(track, args.fitness, args.threshold)))\n    else:\n        for line in describe_plan(split_days(track, args.max_hours, args.fitness)):\n            print(line)\n    return 0''', '''    try:\n        track = load_track(args.file)\n        if args.command == \"summary\":\n            lines = [format_summary(summarise(track, args.fitness, args.threshold))]\n        else:\n            lines = describe_plan(split_days(track, args.max_hours, args.fitness))\n    except (OSError, TrackError) as exc:\n        print(f\"trailhead: {exc}\", file=sys.stderr)\n        return 1\n    for line in lines:\n        print(line)\n    return 0''')\np.write_text(s)\nEOF\nmypy; ruff check; python -m pytest -q | tail -2; git status --short",
+    "mkdir -p \"$TMPDIR/t\" && cd \"$TMPDIR/t\" && printf 'lat,lon,ele\\n0,0,\\n0,0.01,100\\n0,0.02,\\n0,0.03,130\\n' > a.csv && printf 'lat,lon,ele\\n0,0,\\n0,0.01,\\n' > b.csv; export PYTHONPATH=\"$OLDPWD/src\"; python -m trailhead summary a.csv; python -m trailhead plan a.csv; python -m trailhead summary b.csv; echo \"rc=$?\"; python -m trailhead plan b.csv; echo \"rc=$?\"",
+    "mkdir -p tmp_smoke && printf 'lat,lon,ele\\n0,0,\\n0,0.01,100\\n0,0.02,\\n0,0.03,130\\n' > tmp_smoke/a.csv && printf 'lat,lon,ele\\n0,0,\\n0,0.01,\\n' > tmp_smoke/b.csv; cd src; python -m trailhead summary ../tmp_smoke/a.csv; python -m trailhead plan ../tmp_smoke/a.csv; python -m trailhead summary ../tmp_smoke/b.csv; echo \"rc=$?\"; python -m trailhead plan ../tmp_smoke/b.csv; echo \"rc=$?\"; cd ..; rm -r tmp_smoke",
+    "mkdir -p tmp_smoke && printf 'lat,lon,ele\\n0,0,\\n0,0.01,100\\n0,0.02,\\n0,0.03,130\\n' > tmp_smoke/a.csv && printf 'lat,lon,ele\\n0,0,\\n0,0.01,\\n' > tmp_smoke/b.csv; PYTHONPATH=src python -m trailhead summary tmp_smoke/a.csv; PYTHONPATH=src python -m trailhead plan tmp_smoke/a.csv; PYTHONPATH=src python -m trailhead summary tmp_smoke/b.csv; echo \"rc=$?\"; PYTHONPATH=src python -m trailhead plan tmp_smoke/b.csv; echo \"rc=$?\"; rm -r tmp_smoke"
+  ],
+  "permission_denials": [
+    {
+      "command": "cd ../.. && python - <<'EOF'\nimport re, pathlib\np = pathlib.Path(\"src/trailhead/track.py\"); s = p.read_text()\ns = s.replace('''    def length_km(self) -> float:\n        return sum(self.leg_lengths_km())\n''', '''    def length_km(self) -> float:\n        return sum(self.leg_lengths_km())\n\n    def elevations(self) -> list[float]:\n        \"\"\"Elevation of every point in metres, with the gaps filled in.\n\n        A point without an elevation takes that of the nearest earlier point that\n        has one or, if there is none, of the nearest later point. A track with no\n        elevations at all is a `TrackError`.\n        \"\"\"\n        first = next((p.ele for p in self.points if p.ele is not None), None)\n        if first is None:\n            raise TrackError(\"the track has no elevations\")\n        filled: list[float] = []\n        last = first\n        for point in self.points:\n            if point.ele is not None:\n                last = point.ele\n            filled.append(last)\n        return filled\n''')\np.write_text(s)\n\np = pathlib.Path(\"src/trailhead/elevation.py\"); s = p.read_text()\ns = s.replace(\"elevations = [point.ele for point in track.points]\", \"elevations = track.elevations()\")\ns = s.replace('''    for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):\n        if km == 0:\n            continue\n        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000) * 100)''',\n'''    for (a, b), km in zip(pairwise(track.elevations()), track.leg_lengths_km(), strict=True):\n        if km == 0:\n            continue\n        steepest = max(steepest, abs(b - a) / (km * 1000) * 100)''')\np.write_text(s)\n\np = pathlib.Path(\"src/trailhead/pace.py\"); s = p.read_text()\ns = s.replace(\"counted_changes([p.ele for p in track.points])\", \"counted_changes(track.elevations())\")\np.write_text(s)\n\np = pathlib.Path(\"src/trailhead/report.py\"); s = p.read_text()\ns = s.replace(\"gain_and_loss([point.ele for point in track.points], threshold)\", \"gain_and_loss(track.elevations(), threshold)\")\np.write_text(s)\n\np = pathlib.Path(\"src/trailhead/cli.py\"); s = p.read_text()\ns = s.replace('''    try:\n        track = load_track(args.file)\n    except (OSError, TrackError) as exc:\n        print(f\"trailhead: {exc}\", file=sys.stderr)\n        return 1\n    if args.command == \"summary\":\n        print(format_summary(summarise(track, args.fitness, args.threshold)))\n    else:\n        for line in describe_plan(split_days(track, args.max_hours, args.fitness)):\n            print(line)\n    return 0''', '''    try:\n        track = load_track(args.file)\n        if args.command == \"summary\":\n            lines = [format_summary(summarise(track, args.fitness, args.threshold))]\n        else:\n            lines = describe_plan(split_days(track, args.max_hours, args.fitness))\n    except (OSError, TrackError) as exc:\n        print(f\"trailhead: {exc}\", file=sys.stderr)\n        return 1\n    for line in lines:\n        print(line)\n    return 0''')\np.write_text(s)\nEOF\nmypy; ruff check; python -m pytest -q | tail -2\nd=$TMPDIR/t; mkdir -p $d\nprintf 'lat,lon,ele\\n0,0,\\n0,0.01,100\\n0,0.02,\\n0,0.03,130\\n' > $d/a.csv\nprintf 'lat,lon,ele\\n0,0,\\n0,0.01,\\n' > $d/b.csv\nfor f in a b; do for c in summary plan; do PYTHONPATH=src python -m trailhead $c $d/$f.csv; echo \"rc=$?\"; done; done; git status --short",
+      "description": "Apply fixes, then run mypy, ruff, tests and CLI smoke checks"
+    },
+    {
+      "command": "mkdir -p \"$TMPDIR/t\" && cd \"$TMPDIR/t\" && printf 'lat,lon,ele\\n0,0,\\n0,0.01,100\\n0,0.02,\\n0,0.03,130\\n' > a.csv && printf 'lat,lon,ele\\n0,0,\\n0,0.01,\\n' > b.csv; export PYTHONPATH=\"$OLDPWD/src\"; python -m trailhead summary a.csv; python -m trailhead plan a.csv; python -m trailhead summary b.csv; echo \"rc=$?\"; python -m trailhead plan b.csv; echo \"rc=$?\"",
+      "description": "Smoke test CLI with missing elevations"
+    },
+    {
+      "command": "mkdir -p tmp_smoke && printf 'lat,lon,ele\\n0,0,\\n0,0.01,100\\n0,0.02,\\n0,0.03,130\\n' > tmp_smoke/a.csv && printf 'lat,lon,ele\\n0,0,\\n0,0.01,\\n' > tmp_smoke/b.csv; cd src; python -m trailhead summary ../tmp_smoke/a.csv; python -m trailhead plan ../tmp_smoke/a.csv; python -m trailhead summary ../tmp_smoke/b.csv; echo \"rc=$?\"; python -m trailhead plan ../tmp_smoke/b.csv; echo \"rc=$?\"; cd ..; rm -r tmp_smoke",
+      "description": "Smoke test CLI with missing elevations"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/cli.py",
+      "M src/trailhead/elevation.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/report.py",
+      "M src/trailhead/track.py"
+    ],
+    "lines_added": 29,
+    "lines_removed": 10,
+    "own_suite_pass_as_left": true
+  }
+}

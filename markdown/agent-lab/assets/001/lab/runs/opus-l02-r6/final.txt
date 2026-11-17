@@ -1,0 +1,9 @@
+mypy strict now passes with no errors. I didn't use `# type: ignore`, `cast` or `Any`, and the mypy config is unchanged. pytest (48 passed) and ruff also pass.
+
+**What I changed:**
+
+1. **`src/trailhead/geo.py:18`**: `initial_bearing` had no type hints. I added `float` to its four arguments and its return value. This fixed two errors: the missing annotation, and the "untyped call" error it caused in `report.py`.
+
+2. **`src/trailhead/report.py`**: the third error pointed at a real bug. When a track ends within 0.1 km of where it starts (a loop), `_heading` returned `None`, so the summary printed `heading   None`. The README says it should print `loop`. `_heading` now returns `"loop"` in that case, and its return type is `str`.
+
+I also added a test in `tests/test_report.py` that checks a loop track shows `heading   loop`. Nothing is committed.

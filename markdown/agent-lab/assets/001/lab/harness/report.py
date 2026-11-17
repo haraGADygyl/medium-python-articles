@@ -28,10 +28,16 @@ def tokens(run: dict) -> int:
                                                 "cache_read_input_tokens"))
 
 
+GRID_REPEATS = 4
+EXTENDED = ("l02", "l04")  # run to 12 repeats after the grid, reported separately
+
+
 def build() -> str:
-    runs = load_runs()
+    every = load_runs()
+    runs = [r for r in every if r["repeat"] <= GRID_REPEATS]
     models = [m for m in MODELS if any(r["model_alias"] == m for r in runs)]
-    lines = [f"{len(runs)} graded runs", ""]
+    lines = [f"{len(runs)} graded grid runs (repeats 1-{GRID_REPEATS}); "
+             f"{len(every) - len(runs)} extension runs", ""]
 
     lines.append("Passes by tier (passed / runs)")
     lines.append(f"{'tier':<18}" + "".join(f"{m:>10}" for m in models))
@@ -61,6 +67,16 @@ def build() -> str:
     for task in sorted({run["task"] for run in runs}):
         lines.append(f"{task:<6}" + "".join(
             f"{f'{sum(by_task[(task, m)])}/{len(by_task[(task, m)])}':>10}" for m in models))
+
+    lines += ["", "Extended to 12 repeats (repeats 5-12 on a later Claude Code patch release)"]
+    lines.append(f"{'task':<6}" + "".join(f"{m:>10}" for m in models) + "   versions")
+    for task in EXTENDED:
+        cells_ext = []
+        for model in models:
+            mine = [r for r in every if r["task"] == task and r["model_alias"] == model]
+            cells_ext.append(f"{sum(r['grade']['outcome'] == 'pass' for r in mine)}/{len(mine)}")
+        versions = sorted({r.get("claude_code_version") or "?" for r in every if r["task"] == task})
+        lines.append(f"{task:<6}" + "".join(f"{c:>10}" for c in cells_ext) + "   " + ", ".join(versions))
 
     lines += ["", "Mutants killed by the agent's tests (tests tier, total kills / total mutants)"]
     for model in models:
@@ -94,8 +110,8 @@ def build() -> str:
     lines += ["", f"Runs with refused tool calls: {len(denied)}"]
     lines += [f"  {run_id}: {count}" for run_id, count in denied]
 
-    ids = sorted({r.get("model_id") or "?" for r in runs})
-    versions = sorted({r.get("claude_code_version") or "?" for r in runs})
+    ids = sorted({r.get("model_id") or "?" for r in every})
+    versions = sorted({r.get("claude_code_version") or "?" for r in every})
     lines += ["", f"Model ids: {', '.join(ids)}", f"Claude Code: {', '.join(versions)}",
               "Costs are Claude Code's API-equivalent estimates: equivalent, not billed."]
     return "\n".join(lines)

@@ -1,0 +1,120 @@
+diff --git a/README.md b/README.md
+index 7aa467d..14b80db 100644
+--- a/README.md
++++ b/README.md
+@@ -35,7 +35,7 @@ lat,lon,ele
+   descent, highest and lowest, steepest grade and walking time) it takes the elevation
+   of the nearest earlier point that has one or, if there is none, of the nearest later
+   point.
+-- A track needs at least two points.
++- A track needs at least two points, and at least one of them must have an elevation.
+ - Problems raise `TrackError` (a `ValueError`). When the problem is on a line, the
+   message starts with `line N:`, where N counts every line in the file from 1,
+   comments and blank lines included.
+diff --git a/src/trailhead/elevation.py b/src/trailhead/elevation.py
+index 38ee915..f277f06 100644
+--- a/src/trailhead/elevation.py
++++ b/src/trailhead/elevation.py
+@@ -48,7 +48,7 @@ def gain_and_loss(
+ 
+ def highest_and_lowest(track: Track) -> tuple[float, float]:
+     """Highest and lowest elevation on the track, in metres."""
+-    elevations = [point.ele for point in track.points]
++    elevations = track.elevations()
+     return max(elevations), min(elevations)
+ 
+ 
+@@ -59,8 +59,9 @@ def steepest_grade(track: Track) -> float:
+     zero length (repeated points) are skipped.
+     """
+     steepest = 0.0
+-    for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):
++    legs = pairwise(track.elevations())
++    for (a, b), km in zip(legs, track.leg_lengths_km(), strict=True):
+         if km == 0:
+             continue
+-        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000) * 100)
++        steepest = max(steepest, abs(b - a) / (km * 1000) * 100)
+     return round(steepest, 1)
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index d2fe23c..27885d2 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -38,7 +38,7 @@ def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:
+     (`elevation.counted_changes` with the default threshold), so the legs of a
+     track add up to its summary time.
+     """
+-    climbs = [max(change, 0.0) for change in counted_changes([p.ele for p in track.points])]
++    climbs = [max(change, 0.0) for change in counted_changes(track.elevations())]
+     return [
+         naismith_hours(km, climb, fitness)
+         for km, climb in zip(track.leg_lengths_km(), climbs, strict=True)
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 9c7e1a7..df6cf94 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -38,7 +38,7 @@ def _heading(track: Track) -> str:
+ def summarise(
+     track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M
+ ) -> Summary:
+-    gain, loss = gain_and_loss([point.ele for point in track.points], threshold)
++    gain, loss = gain_and_loss(track.elevations(), threshold)
+     highest, lowest = highest_and_lowest(track)
+     length = track.length_km()
+     return Summary(
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index 48670aa..5f7ffcd 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -33,6 +33,24 @@ class Track:
+     def length_km(self) -> float:
+         return sum(self.leg_lengths_km())
+ 
++    def elevations(self) -> list[float]:
++        """Elevation of every point in metres, with gaps filled.
++
++        A point without an elevation takes that of the nearest earlier point that
++        has one or, if there is none, of the nearest later point. Raises
++        `TrackError` if no point has an elevation.
++        """
++        known = [point.ele for point in self.points if point.ele is not None]
++        if not known:
++            raise TrackError("no point has an elevation")
++        last = known[0]
++        filled: list[float] = []
++        for point in self.points:
++            if point.ele is not None:
++                last = point.ele
++            filled.append(last)
++        return filled
++
+ 
+ def parse_track(text: str, default_name: str | None = None) -> Track:
+     """Parse a track; see the README for the format."""
+@@ -62,6 +80,8 @@ def parse_track(text: str, default_name: str | None = None) -> Track:
+         points.append(_parse_point(line, number))
+     if len(points) < 2:
+         raise TrackError("a track needs at least two points")
++    if all(point.ele is None for point in points):
++        raise TrackError("no point has an elevation")
+     if scale != 1.0:
+         points = [
+             Point(p.lat, p.lon, None if p.ele is None else p.ele * scale) for p in points
+diff --git a/tests/test_track.py b/tests/test_track.py
+index 978ce36..0cb4287 100644
+--- a/tests/test_track.py
++++ b/tests/test_track.py
+@@ -65,3 +65,13 @@ def test_track_length_is_the_sum_of_legs(make_track):
+     track = make_track((0, 0, 0), (0, 0.01, 0), (0, 0.03, 0))
+     assert track.leg_lengths_km() == pytest.approx([1.11195, 2.2239], abs=1e-3)
+     assert track.length_km() == pytest.approx(3.33585, abs=1e-3)
++
++
++def test_missing_elevations_take_the_nearest_earlier_then_later_one():
++    track = parse_track("lat,lon,ele\n0,0,\n0,0.01,\n0,0.02,120\n0,0.03,\n0,0.04,90\n")
++    assert track.elevations() == [120, 120, 120, 120, 90]
++
++
++def test_a_track_without_any_elevation_is_rejected():
++    with pytest.raises(TrackError, match="no point has an elevation"):
++        parse_track("lat,lon,ele\n0,0,\n0,0.01,\n")

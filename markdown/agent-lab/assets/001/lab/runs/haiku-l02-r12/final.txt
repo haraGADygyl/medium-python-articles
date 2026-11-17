@@ -1,0 +1,8 @@
+`mypy` now passes: `Success: no issues found in 9 source files`. The test suite still passes (47 tests).
+
+Three errors in `src/` were fixed with two edits:
+
+- **`src/trailhead/geo.py:18`**: `initial_bearing` had no type annotations. It now takes four `float` arguments and returns `float`.
+- **`src/trailhead/report.py:53`**: `Summary.heading` was declared `str`, but `_heading()` returns `None` for loop tracks. I changed the field to `str | None`. The declared type now matches what the code already does, and the output is unchanged.
+
+No `# type: ignore`, `cast`, `Any`, or config changes were used.

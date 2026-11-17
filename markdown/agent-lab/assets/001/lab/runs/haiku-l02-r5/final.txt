@@ -1,0 +1,8 @@
+`mypy` now passes on `src/` in strict mode, and the 47 tests still pass.
+
+I made three edits, none of which use `# type: ignore`, `cast`, `Any`, or config changes:
+
+- **`src/trailhead/geo.py:18`**: `initial_bearing` had no annotations. I typed its parameters as `float` and its return as `float`. This also fixed the "untyped call" error in `report.py`.
+- **`src/trailhead/report.py:28`**: `Summary.heading` is now `str | None`. `_heading` already returns `None` for loop tracks (start and finish within 100 m), so the annotation was wrong, not the code.
+
+One thing to be aware of: for loop tracks, the report still prints `heading   None`, since I kept the runtime output unchanged. If you'd prefer something like `heading   loop`, that's a small change in `format_summary`, but it changes output, so I didn't make it.

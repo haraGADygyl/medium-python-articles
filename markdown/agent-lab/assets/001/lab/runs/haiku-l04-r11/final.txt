@@ -1,0 +1,11 @@
+`mypy` now passes on `src/` (`Success: no issues found in 9 source files`). The 48 pytest tests still pass and `ruff` is clean. `src/` has no `# type: ignore`, `cast`, or `Any`, and the mypy config is unchanged.
+
+The 8 errors all came from `Point.ele` being `float | None`, since `track.py` uses `None` for a lost GPS fix. I made the elevation helpers handle that case explicitly instead of suppressing the errors. The changes are in `src/trailhead/elevation.py`:
+
+- **`counted_changes`** and **`gain_and_loss`** accept `Sequence[float | None]`. A `None` counts as no change on the legs it touches. The next known elevation is compared with the last counted one, so a gap doesn't lose a climb. This also fixes the errors in `pace.py` and `report.py`, which pass the same list.
+- **`highest_and_lowest`** ignores missing elevations. If the track has none at all, it raises `ValueError("track has no elevation data")`. Before, `max` on an empty list raised a less clear error.
+- **`steepest_grade`** skips any leg where either endpoint has no elevation, alongside the existing zero-length skip.
+
+The `None` handling is a behaviour choice you may want to check. A spot-check gave `counted_changes([None, 100, None, 110, 120, None])` → `[0.0, 0.0, 10, 10, 0.0]`, which is one value per leg, and `gain_and_loss([100, None, 120, None, 90])` → `(20.0, 30.0)`. No existing test covers `None` in these helpers, so I didn't add one.
+
+I haven't committed anything.

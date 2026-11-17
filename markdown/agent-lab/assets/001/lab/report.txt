@@ -1,4 +1,4 @@
-240 graded runs
+240 graded grid runs (repeats 1-4); 64 extension runs
 
 Passes by tier (passed / runs)
 tier                   haiku    sonnet      opus     fable
@@ -28,6 +28,11 @@ r05          4/4       4/4       4/4       4/4
 t02          4/4       4/4       4/4       4/4
 t04          4/4       4/4       4/4       4/4
 t05          3/4       4/4       4/4       4/4
+
+Extended to 12 repeats (repeats 5-12 on a later Claude Code patch release)
+task       haiku    sonnet      opus     fable   versions
+l02         0/12      4/12     12/12     12/12   2.1.325, 2.1.326
+l04         8/12      4/12     12/12     12/12   2.1.325, 2.1.326
 
 Mutants killed by the agent's tests (tests tier, total kills / total mutants)
   haiku    90/96
@@ -102,5 +107,5 @@ Runs with refused tool calls: 52
   sonnet-t05-r4: 1
 
 Model ids: claude-fable-5-2, claude-haiku-5-5, claude-opus-5-5, claude-sonnet-5-5
-Claude Code: 2.1.325
+Claude Code: 2.1.325, 2.1.326
 Costs are Claude Code's API-equivalent estimates: equivalent, not billed.

@@ -1,0 +1,6 @@
+`mypy` now passes in strict mode, and the 47 tests and `ruff check` are clean too.
+
+- **`src/trailhead/geo.py`**: `initial_bearing` had no annotations; it now takes four `float`s and returns `float`. That cleared two of the three errors.
+- **`src/trailhead/report.py`**: `_heading` returned `None` for a loop track, while `Summary.heading` is a `str`. It now returns `"loop"` and is typed `-> str`.
+
+The second fix is a behaviour change: the type error was flagging a real bug. The README says the heading is `loop` when the finish is within 0.1 km of the start, but the summary was printing `heading   None`. I followed the README rather than widening the field to `str | None`. No test covers the loop case, so that path is unexercised.

@@ -1,0 +1,14 @@
+`mypy` now passes in strict mode, without `# type: ignore`, `cast`, `Any` or config changes. All 50 tests pass and `ruff` is clean.
+
+**Cause:** `Point.ele` is `float | None`, because the elevation is `None` where the GPS lost it. But four places read `point.ele` as if it were always a float, and those were the 8 errors:
+- `highest_and_lowest` and `steepest_grade` in `elevation.py`
+- `leg_hours` in `pace.py`
+- `summarise` in `report.py`
+
+At runtime, a track with a missing elevation would have crashed with a `TypeError` in those places.
+
+**Fix:** the README already says what a missing elevation should mean: use the nearest earlier point that has one, or if there is none, the nearest later one. I added one method that does this, `Track.elevations() -> list[float]` in `src/trailhead/track.py`, and changed the four places above to call it. So the type errors are fixed by actually handling missing elevations as documented, not by hiding them.
+
+**One decision for you:** the README doesn't cover a track where no point has an elevation. I made `Track.elevations()` raise `TrackError("the track has no elevations")` in that case, rather than crash or make up a value. Tell me if you'd prefer something else, such as treating it as 0 m or rejecting the track when it's parsed.
+
+I also added two tests to `tests/test_track.py`: one for filling the gaps and one for the no-elevation error.

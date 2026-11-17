@@ -1,0 +1,13 @@
+`mypy src/` now passes with no `# type: ignore`, `cast`, `Any`, or config changes. All 48 tests pass, and `ruff check src` is clean.
+
+The errors came from `Point.ele` being `float | None`, since a GPS fix can be lost. I chose to treat a missing elevation as "no information" rather than zero:
+
+- **`counted_changes`** (`elevation.py`) now accepts `Sequence[float | None]`. A missing point adds 0 to the legs that reach it and is not used as the reference, so the next known elevation is compared with the last known one. Because it still returns one value per leg, `pace.leg_hours` stays aligned with the track's legs. `gain_and_loss` picks this up through the same signature.
+- **`highest_and_lowest`** ignores points with no elevation.
+- **`steepest_grade`** skips any leg with a missing elevation at either end, in the same way it already skips zero-length legs.
+
+Spot checks: `[100, None, 150, 120]` gives ascent 50 and descent 30, the same as dropping the missing point.
+
+Two things to be aware of:
+- A track with no known elevations at all now fails in `max()` with a `ValueError`, where it used to fail with a `TypeError`. I didn't add a clearer message.
+- The new `None` behaviour has no tests of its own. The existing suite only covers float elevations, so you may want a test for a track with a gap.

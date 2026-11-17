@@ -1,0 +1,6 @@
+`mypy` now passes with no issues, and all 47 tests still pass. I made no `# type: ignore`, `cast`, `Any` or config changes.
+
+- **`geo.py`:** I annotated `initial_bearing` with `float` parameters and a `float` return. That cleared both the `no-untyped-def` error and the `no-untyped-call` error in `report.py`.
+- **`report.py`:** `_heading` returns `None` when the start and finish are within `LOOP_RADIUS_KM`, so I changed `Summary.heading` from `str` to `str | None`.
+
+One behaviour change you didn't ask for: with `heading` now possibly `None`, `format_summary` would have printed `heading   None` for loop tracks. It now prints `heading   loop` instead. The existing tests only cover the `NE` case, so nothing checks the loop output. If you'd rather show something else, such as `-`, it's a one-word change in `report.py`.

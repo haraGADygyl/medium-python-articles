@@ -1,0 +1,79 @@
+diff --git a/src/trailhead/elevation.py b/src/trailhead/elevation.py
+index 38ee915..f5c6a7e 100644
+--- a/src/trailhead/elevation.py
++++ b/src/trailhead/elevation.py
+@@ -48,7 +48,7 @@ def gain_and_loss(
+ 
+ def highest_and_lowest(track: Track) -> tuple[float, float]:
+     """Highest and lowest elevation on the track, in metres."""
+-    elevations = [point.ele for point in track.points]
++    elevations = track.elevations()
+     return max(elevations), min(elevations)
+ 
+ 
+@@ -59,8 +59,9 @@ def steepest_grade(track: Track) -> float:
+     zero length (repeated points) are skipped.
+     """
+     steepest = 0.0
+-    for (a, b), km in zip(pairwise(track.points), track.leg_lengths_km(), strict=True):
++    elevations = track.elevations()
++    for (a, b), km in zip(pairwise(elevations), track.leg_lengths_km(), strict=True):
+         if km == 0:
+             continue
+-        steepest = max(steepest, abs(b.ele - a.ele) / (km * 1000) * 100)
++        steepest = max(steepest, abs(b - a) / (km * 1000) * 100)
+     return round(steepest, 1)
+diff --git a/src/trailhead/pace.py b/src/trailhead/pace.py
+index d2fe23c..27885d2 100644
+--- a/src/trailhead/pace.py
++++ b/src/trailhead/pace.py
+@@ -38,7 +38,7 @@ def leg_hours(track: Track, fitness: float = 1.0) -> list[float]:
+     (`elevation.counted_changes` with the default threshold), so the legs of a
+     track add up to its summary time.
+     """
+-    climbs = [max(change, 0.0) for change in counted_changes([p.ele for p in track.points])]
++    climbs = [max(change, 0.0) for change in counted_changes(track.elevations())]
+     return [
+         naismith_hours(km, climb, fitness)
+         for km, climb in zip(track.leg_lengths_km(), climbs, strict=True)
+diff --git a/src/trailhead/report.py b/src/trailhead/report.py
+index 9c7e1a7..df6cf94 100644
+--- a/src/trailhead/report.py
++++ b/src/trailhead/report.py
+@@ -38,7 +38,7 @@ def _heading(track: Track) -> str:
+ def summarise(
+     track: Track, fitness: float = 1.0, threshold: float = DEFAULT_THRESHOLD_M
+ ) -> Summary:
+-    gain, loss = gain_and_loss([point.ele for point in track.points], threshold)
++    gain, loss = gain_and_loss(track.elevations(), threshold)
+     highest, lowest = highest_and_lowest(track)
+     length = track.length_km()
+     return Summary(
+diff --git a/src/trailhead/track.py b/src/trailhead/track.py
+index 48670aa..571196a 100644
+--- a/src/trailhead/track.py
++++ b/src/trailhead/track.py
+@@ -33,6 +33,23 @@ class Track:
+     def length_km(self) -> float:
+         return sum(self.leg_lengths_km())
+ 
++    def elevations(self) -> list[float]:
++        """Elevation of every point in metres, with gaps filled as the README describes.
++
++        A point without an elevation takes the elevation of the nearest earlier point
++        that has one or, if there is none, of the nearest later point.
++        """
++        known = [point.ele for point in self.points if point.ele is not None]
++        if not known:
++            raise TrackError("no point in the track has an elevation")
++        filled: list[float] = []
++        last = known[0]
++        for point in self.points:
++            if point.ele is not None:
++                last = point.ele
++            filled.append(last)
++        return filled
++
+ 
+ def parse_track(text: str, default_name: str | None = None) -> Track:
+     """Parse a track; see the README for the format."""

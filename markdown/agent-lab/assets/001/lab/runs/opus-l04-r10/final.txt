@@ -1,0 +1,12 @@
+`mypy` now passes with no errors. I didn't use `# type: ignore`, `cast` or `Any`, and didn't touch the config. The 48 tests and `ruff` also pass.
+
+**What was wrong:** `Point.ele` is `float | None` because a point can have no elevation where the GPS lost it. Four places used it as if it were always a number: highest/lowest, steepest grade, leg times and the summary's ascent. This was a real bug, not just a typing problem: any track with an empty elevation would have crashed with a `TypeError`.
+
+**Fix:** the README already says how a gap should be treated: use the elevation of the nearest earlier point that has one, or the nearest later point if there's no earlier one. I added `Track.elevations()` in `src/trailhead/track.py`, which returns one `float` per point using that rule. The four places now call it:
+- `elevation.py`: `highest_and_lowest` and `steepest_grade`
+- `pace.py`: `leg_hours`
+- `report.py`: `summarise`
+
+I checked it on a track with gaps at the start and in the middle. The elevations filled in as `[100, 100, 100, 200]` and the summary printed correctly.
+
+**Decision for you:** the README doesn't cover a track where *no* point has an elevation. I made `elevations()` raise `TrackError("the track has no elevation data")` in that case. So such a file still loads and works for distance, but summarising or planning it gives a clean error instead of a crash. If you'd rather reject those files when they're read, or treat them as flat, it's a small change.

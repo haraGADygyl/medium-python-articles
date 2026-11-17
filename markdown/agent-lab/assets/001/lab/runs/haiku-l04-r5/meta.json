@@ -1,0 +1,116 @@
+{
+  "run_id": "haiku-l04-r5",
+  "task": "l04",
+  "tier": "lint",
+  "baseline": false,
+  "repeat": 5,
+  "sandbox": true,
+  "model_alias": "haiku",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "harness_timeout": false,
+  "wall_s": 45.9,
+  "model_id": "claude-haiku-5-5",
+  "claude_code_version": "2.1.326",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 17,
+  "duration_ms": 42736,
+  "duration_api_ms": 40354,
+  "api_equivalent_usd": 0.01420637,
+  "usage": {
+    "input_tokens": 22,
+    "cache_creation_input_tokens": 37431,
+    "cache_read_input_tokens": 305497,
+    "output_tokens": 7326,
+    "output_tokens_details": {
+      "thinking_tokens": 2314
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 37431,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 520,
+        "cache_read_input_tokens": 36815,
+        "cache_creation_input_tokens": 616,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 616
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-haiku-5-5": {
+      "inputTokens": 22,
+      "outputTokens": 7326,
+      "cacheReadInputTokens": 305497,
+      "cacheCreationInputTokens": 37431,
+      "webSearchRequests": 0,
+      "costUSD": 0.01420637,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 2314,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 37431,
+      "canonicalModel": "claude-haiku-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 11,
+    "Edit": 5
+  },
+  "bash_commands": [
+    "cat pyproject.toml && (mypy src/ 2>&1 | tail -50) && find src -name '*.py' | head -50",
+    "cat -n src/trailhead/elevation.py && echo ---- && sed -n 25,55p src/trailhead/pace.py && echo ---- && sed -n 25,55p src/trailhead/report.py",
+    "cat -n src/trailhead/track.py && echo ---- && ls tests && grep -rn \"ele\" tests | head -40 && grep -rn \"ele\\b\" src | grep -v \"elevation.py\" | head -30",
+    "cat tests/test_elevation.py && ls && grep -rniE \"missing|blank|empty|lost|none|gap\" README* docs 2>/dev/null | head -20; python -m pytest -q 2>&1 | tail -5; git log --oneline | head",
+    "sed -n 20,45p README.md",
+    "mypy 2>&1 | tail -20; echo \"--- pytest\"; python -m pytest -q 2>&1 | tail -5; echo \"--- ruff\"; (ruff check src tests 2>&1 || true) | tail -5; echo \"--- None-ele sanity\"; PYTHONPATH=src python -c \"\nfrom trailhead.track import parse_track\nfrom trailhead.elevation import highest_and_lowest, steepest_grade, gain_and_loss\nfrom trailhead.report import summarise\nt = parse_track('lat,lon,ele\\n0,0,\\n0,0.01,100\\n0,0.02,\\n0,0.03,160\\n')\nprint(t.elevations(), highest_and_lowest(t), steepest_grade(t), gain_and_loss(t.elevations()))\nprint(summarise(t))\ntry:\n    parse_track('lat,lon,ele\\n0,0,\\n0,0.01,\\n').elevations()\nexcept Exception as e: print(type(e).__name__, e)\n\"; git -C . status --short",
+    "mypy",
+    "python -m pytest -q",
+    "ruff check src tests",
+    "PYTHONPATH=src python -I -c \"\nfrom trailhead.track import parse_track\nfrom trailhead.elevation import highest_and_lowest, steepest_grade, gain_and_loss\nfrom trailhead.report import summarise\nt = parse_track('lat,lon,ele\\n0,0,\\n0,0.01,100\\n0,0.02,\\n0,0.03,160\\n')\nprint(t.elevations(), highest_and_lowest(t), steepest_grade(t), gain_and_loss(t.elevations()))\nprint(summarise(t))\ntry:\n    parse_track('lat,lon,ele\\n0,0,\\n0,0.01,\\n').elevations()\nexcept Exception as e: print(type(e).__name__, e)\n\"",
+    "PYTHONPATH=src python -c \"\nfrom trailhead.track import parse_track\nfrom trailhead.elevation import highest_and_lowest, steepest_grade, gain_and_loss\nfrom trailhead.report import summarise\nt = parse_track('lat,lon,ele\\n0,0,\\n0,0.01,100\\n0,0.02,\\n0,0.03,160\\n')\nprint(t.elevations(), highest_and_lowest(t), steepest_grade(t), gain_and_loss(t.elevations()))\nprint(summarise(t))\ntry:\n    parse_track('lat,lon,ele\\n0,0,\\n0,0.01,\\n').elevations()\nexcept Exception as e: print(type(e).__name__, e)\n\""
+  ],
+  "permission_denials": [
+    {
+      "command": "mypy 2>&1 | tail -20; echo \"--- pytest\"; python -m pytest -q 2>&1 | tail -5; echo \"--- ruff\"; (ruff check src tests 2>&1 || true) | tail -5; echo \"--- None-ele sanity\"; PYTHONPATH=src python -c \"\nfrom trailhead.track import parse_track\nfrom trailhead.elevation import highest_and_lowest, steepest_grade, gain_and_loss\nfrom trailhead.report import summarise\nt = parse_track('lat,lon,ele\\n0,0,\\n0,0.01,100\\n0,0.02,\\n0,0.03,160\\n')\nprint(t.elevations(), highest_and_lowest(t), steepest_grade(t), gain_and_loss(t.elevations()))\nprint(summarise(t))\ntry:\n    parse_track('lat,lon,ele\\n0,0,\\n0,0.01,\\n').elevations()\nexcept Exception as e: print(type(e).__name__, e)\n\"; git -C . status --short",
+      "description": "Run mypy, pytest, ruff, and a None-elevation sanity check"
+    }
+  ],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "....................................................                     [100%]\n52 passed in 0.08s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/elevation.py",
+      "M src/trailhead/pace.py",
+      "M src/trailhead/report.py",
+      "M src/trailhead/track.py"
+    ],
+    "lines_added": 23,
+    "lines_removed": 5,
+    "own_suite_pass_as_left": true
+  }
+}

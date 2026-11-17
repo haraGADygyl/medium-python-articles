@@ -1,0 +1,13 @@
+`mypy` now passes in strict mode with no errors in the 9 source files. I didn't use `# type: ignore`, `cast` or `Any`, or touch the config. `ruff` is clean and all 50 tests pass, including 2 new ones.
+
+**What was wrong:** the type errors were pointing at a real bug. `Point.ele` is `float | None`, because the GPS can drop elevation for a point. The README says such a point should take the elevation of the nearest earlier point that has one, or, if there is none, the nearest later point. The code ignored that and passed `None` straight into `max`, `min` and subtraction. Any track with a blank elevation would have crashed the summary or plan.
+
+**The fix:**
+- **`src/trailhead/track.py`**: added `Track.elevations() -> list[float]`, which fills the gaps as the README describes.
+- **`elevation.py`, `pace.py`, `report.py`**: these now call that method instead of reading `point.ele` directly, so every calculation fills gaps the same way.
+
+**One decision for you to check:** the README doesn't say what happens when no point in the track has an elevation. I made `elevations()` raise `TrackError("no point in the track has an elevation")` rather than make up a value like 0. Loading such a track still works, so its distance is still available.
+
+That error can now come up after the file has loaded. So in `cli.py` I moved the summary and plan work inside the existing error handling. A file with no elevations now prints `trailhead: no point in the track has an elevation` and exits with code 1, instead of showing a traceback.
+
+**Tests:** I added two to `tests/test_track.py`: one for gap filling (earlier point first, later point at the start of the track) and one for a track with no elevations. I also ran the CLI on a track with gaps and got the expected ascent, altitude range and grade.

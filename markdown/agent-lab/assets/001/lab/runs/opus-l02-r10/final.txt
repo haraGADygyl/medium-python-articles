@@ -1,0 +1,9 @@
+mypy strict now passes with no errors. I didn't use `# type: ignore`, `cast` or `Any`, and the mypy config is unchanged. ruff is clean and all 47 tests pass.
+
+There were three errors, with two causes:
+
+1. **`src/trailhead/geo.py:18`**: `initial_bearing` had no type annotations. I added `float` for the four coordinates and the return value. That also cleared the "untyped call" error in `report.py:35`.
+
+2. **`src/trailhead/report.py:53`**: `_heading()` returned `str | None`, but `Summary.heading` is a `str`. This was a real bug, not just a typing problem. For a round trip (finish within 0.1 km of the start), the summary printed `heading   None`. The README says it should print `loop`. I changed `_heading()` to return `"loop"` in that case, rather than allowing `None` in `Summary`. I ran a sample round-trip track and it now prints `heading   loop`.
+
+No existing test covers the round-trip case. I can add one to `tests/test_report.py` if you'd like.

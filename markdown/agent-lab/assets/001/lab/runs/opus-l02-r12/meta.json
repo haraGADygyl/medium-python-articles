@@ -1,0 +1,103 @@
+{
+  "run_id": "opus-l02-r12",
+  "task": "l02",
+  "tier": "lint",
+  "baseline": false,
+  "repeat": 12,
+  "sandbox": true,
+  "model_alias": "opus",
+  "prompt": "`mypy` (strict mode, configured in `pyproject.toml`) reports errors in `src/`. Fix them so that `mypy` passes, without `# type: ignore`, `cast`, `Any`, or changes to the mypy configuration.",
+  "harness_timeout": false,
+  "wall_s": 28.5,
+  "model_id": "claude-opus-5-5",
+  "claude_code_version": "2.1.326",
+  "subtype": "success",
+  "is_error": false,
+  "num_turns": 6,
+  "duration_ms": 25262,
+  "duration_api_ms": 22914,
+  "api_equivalent_usd": 0.1662616,
+  "usage": {
+    "input_tokens": 12,
+    "cache_creation_input_tokens": 13457,
+    "cache_read_input_tokens": 132988,
+    "output_tokens": 1598,
+    "output_tokens_details": {
+      "thinking_tokens": 113
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 13457,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "global",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 324,
+        "cache_read_input_tokens": 25984,
+        "cache_creation_input_tokens": 323,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 323
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard",
+    "fallback_credit": null
+  },
+  "model_usage": {
+    "claude-opus-5-5": {
+      "inputTokens": 12,
+      "outputTokens": 1598,
+      "cacheReadInputTokens": 132988,
+      "cacheCreationInputTokens": 13457,
+      "webSearchRequests": 0,
+      "costUSD": 0.1662616,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 113,
+      "cacheCreationEphemeral5mInputTokens": 0,
+      "cacheCreationEphemeral1hInputTokens": 13457,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "tool_uses": {
+    "Bash": 5
+  },
+  "bash_commands": [
+    "cat pyproject.toml; find src -name '*.py' | head -50; mypy 2>&1 | tail -50",
+    "cat src/trailhead/geo.py src/trailhead/report.py; grep -rn \"heading\\|initial_bearing\\|compass\" src tests | grep -v \"^src/trailhead/geo.py\\|^src/trailhead/report.py\"",
+    "cat tests/test_report.py; grep -rn -i \"loop\\|heading\" README* docs 2>/dev/null | head; grep -rn \"summary\\.\\|Summary\" src | grep -v report.py",
+    "python - <<'EOF'\nimport re,pathlib\np=pathlib.Path(\"src/trailhead/geo.py\"); s=p.read_text()\ns=s.replace(\"def initial_bearing(lat1, lon1, lat2, lon2):\",\"def initial_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:\")\np.write_text(s)\np=pathlib.Path(\"src/trailhead/report.py\"); s=p.read_text()\ns=s.replace(\"def _heading(track: Track) -> str | None:\",\"def _heading(track: Track) -> str:\")\ns=s.replace(\"        return None\\n\",\"        return \\\"loop\\\"\\n\")\np.write_text(s)\nEOF\ngit diff --stat; mypy && python -m pytest -q 2>&1 | tail -3\npython -c \"\nimport sys; sys.path.insert(0,'src')\nfrom trailhead.track import Track\n\" ; grep -n \"def make_track\" -A12 tests/conftest.py",
+    "cat >> tests/test_report.py <<'EOF'\n\n\ndef test_heading_of_a_loop_is_loop(make_track):\n    loop = ((0, 0, 1000), (0.01, 0.01, 1095), (0.0001, 0.0001, 1000))\n    assert summarise(make_track(*loop, name=\"Loop\")).heading == \"loop\"\nEOF\nmypy && python -m pytest -q 2>&1 | tail -1; ruff check . 2>&1 | tail -1"
+  ],
+  "permission_denials": [],
+  "grade": {
+    "outcome": "pass",
+    "reasons": [],
+    "tests_pass": true,
+    "tests_output_tail": "..................................................                       [100%]\n50 passed in 0.08s\n",
+    "checks": {
+      "mypy": true
+    },
+    "suppressions_added": [],
+    "ruff_clean": true,
+    "mypy_clean": true,
+    "changed": [
+      "M src/trailhead/geo.py",
+      "M src/trailhead/report.py",
+      "M tests/test_report.py"
+    ],
+    "lines_added": 8,
+    "lines_removed": 3,
+    "own_suite_pass_as_left": true
+  }
+}

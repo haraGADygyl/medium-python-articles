@@ -1,0 +1,11 @@
+`mypy` now passes with no errors, and the 48 tests and `ruff` pass too. I didn't use `# type: ignore`, `cast` or `Any`, and the mypy configuration is unchanged.
+
+The errors came from `Point.ele` being `float | None`, because the GPS can lose elevation. The old code would have crashed with a `TypeError` on a track with a gap. All the changes are in `src/trailhead/elevation.py`:
+
+- **`counted_changes` and `gain_and_loss`:** both now accept `Sequence[float | None]`. A missing elevation counts as 0 change for its leg and isn't used as a reference point. If the track starts without an elevation, the first known one becomes the reference. The output still has one value per leg, so `pace.leg_hours` still lines up with the leg lengths.
+- **`highest_and_lowest`:** it ignores missing elevations. If none are known, it raises `TrackError("the track has no elevation data")`. The CLI already catches that error.
+- **`steepest_grade`:** it skips any leg where either end has no elevation.
+
+The errors in `pace.py` and `report.py` went away without edits, because they only came from `counted_changes` and `gain_and_loss` having too narrow a type.
+
+How to handle missing elevations was my call, since the code didn't define it. If you'd rather drop those points or treat a track with missing data as an error, say so and I'll change it.

@@ -1,0 +1,10 @@
+`mypy` now passes on `src/` (strict, from `pyproject.toml`, unchanged). The test suite still passes (48 tests), and `ruff check src` is clean.
+
+**The cause:** `Point.ele` is `float | None`, because `None` marks a point where the GPS lost the elevation. Four call sites used those values as plain `float`.
+
+**The fix:** I added `Track.elevations()` in `src/trailhead/track.py`. It returns `list[float]` and raises `TrackError` with the point number if an elevation is missing. The four call sites now use it:
+- `elevation.py`: `highest_and_lowest` and `steepest_grade`
+- `pace.py`: `leg_hours`
+- `report.py`: `summarise`
+
+**Choice for you:** a track with a missing elevation now fails with a clear `TrackError`. Before, it crashed with a `TypeError` from `None` arithmetic, so no working behaviour changed. The alternatives are to skip or interpolate the missing points. Those would change the numbers reported, so I didn't pick one silently. Tell me if you want either.

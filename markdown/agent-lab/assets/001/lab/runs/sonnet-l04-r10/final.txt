@@ -1,0 +1,9 @@
+`mypy` now passes with no issues, and the 48 existing tests still pass. I didn't use `# type: ignore`, `cast` or `Any`, and I didn't touch the mypy config. All edits are in `src/trailhead/elevation.py`.
+
+`Point.ele` is `float | None`, and the elevation code assumed it was always a float. I made the code handle missing elevations instead of hiding the type:
+
+- **`counted_changes` and `gain_and_loss`** now accept `Sequence[float | None]`. A leg with a missing elevation counts as 0, and the next known elevation is compared against the last known one. This keeps one value per leg, which `pace.leg_hours` needs for its strict `zip`. The `pace.py` and `report.py` errors went away because of this signature change.
+- **`highest_and_lowest`** ignores missing elevations. If a track has none at all, it raises `ValueError("track has no elevation data")`.
+- **`steepest_grade`** skips legs where either endpoint has no elevation.
+
+The old code would have crashed with a `TypeError` on a missing elevation. A track with no elevation data at all now raises a `ValueError` from `summarise` instead. If you'd rather it return something like 0 or `None`, that means changing the `Summary` fields.

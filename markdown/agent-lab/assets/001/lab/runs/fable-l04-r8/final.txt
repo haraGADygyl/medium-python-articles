@@ -1,0 +1,12 @@
+`mypy` now passes with no errors, and `ruff check` and the 48 existing tests still pass.
+
+The errors all came from one real gap: `Point.ele` can be `None` where the GPS lost it, but the elevation, pace and report code used it as a plain number, so any track with a missing elevation would have crashed. The README already says what should happen: such a point takes the elevation of the nearest earlier point that has one, or else the nearest later one.
+
+I added a `Track.elevations()` method in `track.py` that does that fill, and switched `elevation.py`, `pace.py` and `report.py` to use it. `Point.ele` itself still keeps `None`, as the README and the existing test require. A quick run on a track with gaps gave `[None, 100, None, 150]` → `[100, 100, 100, 150]` and a sensible summary and plan.
+
+Two things go beyond the README:
+
+- **Track with no elevations at all:** the README doesn't cover this, so `elevations()` raises `TrackError("the track has no elevations")`. Treating it as flat at 0 m would work too, but would print a made-up altitude; say if you'd prefer that.
+- **CLI error handling:** I widened the `try` in `cli.py` so that error prints as `trailhead: the track has no elevations` with exit code 1 instead of a traceback.
+
+I added no tests for the gap filling or the no-elevation error.

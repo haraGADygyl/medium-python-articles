@@ -1,0 +1,12 @@
+`mypy` now passes on `src/` with no `# type: ignore`, `cast`, `Any`, or config changes. The test suite still passes (48/48) and `ruff check` is clean.
+
+The errors all came from `Point.ele` being `float | None`. A GPS-lost elevation is `None`, and the elevation code didn't handle that. The README already specifies what should happen: a missing elevation takes the nearest earlier known elevation, or the nearest later one if there is none before it. I implemented that rule rather than just narrowing the types.
+
+Changes:
+- **`track.py`**: new `Track.elevations() -> list[float]` that fills gaps per the README. It raises `TrackError` if no point has an elevation.
+- **`elevation.py`**: `highest_and_lowest` and `steepest_grade` use `track.elevations()`.
+- **`pace.py`** and **`report.py`**: pass `track.elevations()` instead of the raw optional values.
+
+Behaviour change: before this, a track with any missing elevation crashed with a `TypeError` in `max`/`min` or subtraction. Those tracks now produce results, following the README. A track with no elevations at all now raises a clear `TrackError`. I checked a mixed case by hand: `[None, 100, None, 160]` fills to `[100, 100, 100, 160]`, and the steepest grade is 5.4%.
+
+I haven't committed anything.

@@ -1,0 +1,9 @@
+`mypy` now passes with no errors, and the 48 tests and `ruff` pass too. I didn't use `# type: ignore`, `cast`, `Any` or any config changes.
+
+The root cause was that `Point.ele` is `float | None`, because the GPS can lose elevation, but `src/trailhead/elevation.py` treated it as `float`. The errors in `pace.py` and `report.py` came from passing those values on to it. I fixed it in `elevation.py` and left `pace.py` and `report.py` unchanged:
+
+- **`counted_changes` and `gain_and_loss`**: they now accept `Sequence[float | None]`. A missing elevation counts 0 on its leg, and the last known elevation stays the reference. A climb across a gap is credited at the next known point, and the output still has one value per leg.
+- **`highest_and_lowest`**: it ignores missing elevations. If the track has none at all, it now raises `ValueError("track has no elevation data")`, where before it would have crashed on `max` of an empty list or on `None`. I checked only that `mypy`, the tests and `ruff` pass, not how the CLI handles this new error.
+- **`steepest_grade`**: it skips any leg where either end has no elevation, in the same way it already skips zero-length legs.
+
+I made these behaviour choices myself, because the task only asked for type fixes. Tell me if you want a different rule for gaps.

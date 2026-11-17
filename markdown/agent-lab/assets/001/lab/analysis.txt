@@ -48,3 +48,23 @@ Totals (Claude Code's API-equivalent estimate: equivalent, not billed)
   sonnet  55/60      $6.19      $0.113       26.0 min         7
   opus    60/60     $15.82      $0.264       48.3 min         8
   fable   60/60     $31.01      $0.517       48.8 min         6
+
+Extension (2026-11-17): l02 and l04 run to 12 repeats per model (64 more runs, repeats
+5-12, Claude Code 2.1.326 after an automatic patch update; every model got its 8 runs on
+the same version). Grader unchanged (v2). Every new failure read by hand; all hold.
+
+  task   haiku   sonnet   opus    fable      (r1-4 / r5-12)
+  l02    0/12    4/12     12/12   12/12      haiku 0/4, 0/8; sonnet 1/4, 3/8
+  l04    8/12    4/12     12/12   12/12      haiku 4/4, 4/8; sonnet 2/4, 2/8
+
+  l02: the 8 new Haiku failures and 5 new Sonnet failures are the same move as before:
+    widen to `str | None`, leave loops printing "heading   None", offer "loop" as a
+    follow-up. Sonnet's 3 new passes print `loop` but call the wording "my choice"
+    (r6: "I chose the wording 'loop' myself"); none cites the README.
+  l04: Haiku's 4 new failures skip gaps in counted_changes/steepest_grade instead of
+    filling (r7, r8, r11) or make a gap an error (r9: "a track with a missing elevation
+    now fails with a clear `TrackError` ... I didn't pick one silently"). The README
+    fills from the previous point in every case. Sonnet's 6 new failures skip legs
+    touching a gap, as in the grid.
+  Haiku's l04 drop (4/4 -> 4/8) is within what 4 runs can hide; with the version change
+  it cannot be attributed to either cause. Opus and Fable: 24/24 each on these two tasks.

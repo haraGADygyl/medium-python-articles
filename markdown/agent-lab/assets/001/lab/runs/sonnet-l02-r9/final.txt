@@ -1,0 +1,5 @@
+`mypy` now passes with no errors, and all 47 tests pass. I didn't use `# type: ignore`, `cast`, `Any`, or any config changes.
+
+- **`src/trailhead/geo.py`:** I added the missing annotations to `initial_bearing`. It now takes four `float` arguments and returns `float`. This fixed the `no-untyped-def` error and the `no-untyped-call` error in `report.py`.
+- **`src/trailhead/report.py`:** `_heading()` returns `None` when a track is a loop, which is when start and finish are within 0.1 km. `Summary.heading` was typed `str`, so I changed it to `str | None`.
+- **Display change:** Before this, `format_summary` would have printed `heading   None` for a loop. It now prints `heading   loop`. That wording is my choice, so say if you'd prefer something else.

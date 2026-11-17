@@ -1,0 +1,11 @@
+`mypy` now passes with no issues, `ruff check` is clean, and all 50 tests pass (48 existing plus 2 new). I didn't use `# type: ignore`, `cast`, `Any` or change the mypy config.
+
+**The cause:** `Point.ele` is `float | None` because the GPS can lose elevation on some points. The ascent, highest/lowest, steepest-grade and walking-time code used `point.ele` as if it were always a number, so a track with a gap would have crashed when you ran it. The README already says how gaps should be filled: take the nearest earlier elevation, or if there isn't one, the nearest later one. That rule just wasn't written in code.
+
+**The fix:**
+- **`src/trailhead/track.py`:** added `Track.elevations()`, which returns one elevation per point as a plain number, with gaps filled by the README rule.
+- **`elevation.py`, `pace.py`, `report.py`:** these now call `track.elevations()` instead of reading `point.ele` directly. That clears all 8 errors and makes gappy tracks work as the README describes.
+
+**One behaviour change to check:** if *no* point in a track has an elevation, there's nothing to fill the gaps from. Rather than make up a value, `parse_track` now rejects such a file with `TrackError("no point has an elevation")`, and the CLI reports that cleanly. I added a line to the README saying so. If you'd rather accept these tracks, for example treating them as flat, that's a small change to `elevations()` and the parser.
+
+The two new tests in `tests/test_track.py` cover the gap filling and the no-elevation rejection.

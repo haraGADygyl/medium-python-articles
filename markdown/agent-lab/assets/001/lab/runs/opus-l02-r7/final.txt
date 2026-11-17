@@ -1,0 +1,5 @@
+`mypy` now passes in strict mode with no errors. All 48 tests pass and `ruff` is clean. I didn't use any `# type: ignore`, `cast` or `Any`, and I left the config alone.
+
+- **`src/trailhead/geo.py`**: `initial_bearing` had no type annotations, so I typed it as `(lat1: float, lon1: float, lat2: float, lon2: float) -> float`. That fixed both the missing-annotation error and the "untyped call" error in `report.py`.
+- **`src/trailhead/report.py`**: the third error pointed to a real bug, not just a typing slip. When a route ends where it started (finish within 0.1 km of the start), `_heading` returned `None`, so the summary printed `heading   None`. The README says this case should show `loop`. `_heading` now returns `"loop"` there, and its return type is `str`, which matches the `Summary.heading: str` field.
+- **`tests/test_report.py`**: no existing test covered a route that ends at its start, so I added one that checks the heading is `"loop"`.

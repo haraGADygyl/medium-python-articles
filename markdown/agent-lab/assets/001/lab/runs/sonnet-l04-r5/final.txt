@@ -1,0 +1,11 @@
+`mypy` now passes with no errors, and the 48 existing tests pass. I didn't use `# type: ignore`, `cast` or `Any`, and I didn't touch the mypy configuration.
+
+All the errors came from `Point.ele` being `float | None` while the elevation code assumed `float`. I added `filled_elevations(track)` in `src/trailhead/elevation.py`, which gives each point an elevation. It follows the README: a point with no elevation takes the one from the nearest earlier point that has one, or from the nearest later point if there is none earlier. These now use it:
+- `highest_and_lowest`
+- `steepest_grade`
+- `leg_hours` in `pace.py`
+- `summarise` in `report.py`
+
+If a track has no elevation values at all, `filled_elevations` raises `ValueError("the track has no elevation data")`. The README doesn't say what should happen in that case, so I picked this. I didn't check what the CLI does with that error. If you'd prefer a different outcome, such as treating the track as flat, that's an easy change.
+
+I didn't add tests for the gap-filling. The existing tests don't cover it.
