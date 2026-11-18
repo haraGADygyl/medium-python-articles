@@ -9,7 +9,7 @@ repo. This lab's harness is the one batch 2 (#3–#11) reuses.
 
 | Path | What it is |
 | --- | --- |
-| `trailhead/` | The golden repo: a small Python 3.12 hiking planner (track parsing, distance, ascent, Naismith time, day plans, summary, CLI), a README contract, 47 passing tests, clean under `ruff` and `mypy --strict` (ascent rule shared by summary and plan, settings apply to the whole file) |
+| `trailhead/` | The golden repo: a small Python 3.12 hiking planner (379 lines: track parsing, distance, ascent, Naismith time, day plans, summary, CLI), a README contract, 47 passing tests, clean under `ruff` and `mypy --strict` (ascent rule shared by summary and plan, settings apply to the whole file) |
 | `tasks/<id>/task.json` | The prompt, the setup edits that turn the golden repo into the task (string edits, deletions, attached files), whether it is a baseline task, the grading spec, a reference solution and a sample bad solution |
 | `tasks/<id>/hidden.py` | Tests the agent never sees (hidden and lint tasks) |
 | `tasks/<id>/reference_test.py`, `weak_test.py` | A test file that kills every mutant, and a happy-path one that should not pass (tests tasks) |
