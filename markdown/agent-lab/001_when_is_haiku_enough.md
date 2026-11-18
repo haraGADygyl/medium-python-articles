@@ -150,7 +150,9 @@ The missing-elevation task looks the same. None of the 12 failures mentioned the
 
 ### Why the narrow request matters
 
-The transcripts suggest a reason, though they cannot prove it. Haiku and Sonnet read "make `mypy` pass" as the whole job. They treated the code as the description of what was intended. The function returned `None` for loops, so `None` must be intended, and the type was what was wrong. Opus and Fable read the README before deciding which of the two was the bug.
+The transcripts show what separated the passes from the failures: whether the agent opened the README at all. On the missing-elevation task, all 36 passing runs read it, whichever model they came from, and none of the 12 failing runs did. On the heading task, Fable read it in all 12 runs and Opus in 8. Haiku and Sonnet read it in only 3 of their 20 failures. I counted a run as reading the README when one of its tool calls named the file.
+
+The runs that skipped it took "make `mypy` pass" as the whole job, and treated the code as the description of what was intended. The function returned `None` for loops, so `None` must be intended, and the type was what was wrong.
 
 The bug reports, by contrast, describe a symptom the user wants gone, so the target is clear. That is where Haiku tied everyone.
 

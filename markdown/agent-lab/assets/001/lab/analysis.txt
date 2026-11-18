@@ -68,3 +68,8 @@ the same version). Grader unchanged (v2). Every new failure read by hand; all ho
     touching a gap, as in the grid.
   Haiku's l04 drop (4/4 -> 4/8) is within what 4 runs can hide; with the version change
   it cannot be attributed to either cause. Opus and Fable: 24/24 each on these two tasks.
+
+README reads (tool calls naming README.md), l02 and l04, all 12 repeats:
+  l04: passes 36/36 read it (haiku 8/8, sonnet 4/4, opus 12/12, fable 12/12); failures 0/12.
+  l02: fable 12/12, opus 8/12 (all passes); haiku failures 2/12, sonnet failures 1/8,
+       sonnet passes 0/4. A search that happened to print the README is not counted.
