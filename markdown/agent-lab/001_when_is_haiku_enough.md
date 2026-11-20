@@ -162,7 +162,7 @@ The bug reports, by contrast, describe a symptom the user wants gone, so the tar
 
 For refactors, bug reports and test writing on a project of this size, Haiku was enough in every run of this lab, and it cost cents. Use the bigger model when the request is about satisfying a tool, such as a type checker, a linter or a failing check, and the project documents behaviour the tool knows nothing about.
 
-When you do use a cheaper model, read the last paragraph of its report. Every failure in this lab was disclosed there, in a sentence like this:
+When you do use a cheaper model, read the last paragraph of its report. All 32 failures on the two lint tasks described their shortcut there, in a sentence like this:
 
 ```text
 `format_summary` still prints `heading   None` for loop tracks, as it did before. I left that

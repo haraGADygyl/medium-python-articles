@@ -1,0 +1,214 @@
+<!doctype html>
+<meta charset="utf-8">
+<!--
+  Cover template for the agent-lab series: a hand-drawn notebook page (copied from claude-code).
+  Rules: rules/agent-lab/06-cover-contract.md
+
+  Copy to assets/NNN/cover.html (the font paths assume that depth), then edit the
+  four slots marked EDIT. The example content is article 022; replace all of it.
+  Everything outside the slots (paper, fonts, palette, notebook, sticky) is fixed.
+
+  Vocabulary inside the notebook:
+    .h               blue handwritten section heading (+ .mono for a name in Caveat)
+    .txt             body text in Patrick Hand
+    .box.sketch      blue wobbly box          .box.sketch.trap  red-tinted box (max one)
+    .code            inline monospace in blue
+    .tl              two-column timeline / table (bold mono left column)
+    .out             icon / text / orange tag rows (outcomes, verdicts)
+    .note            orange Caveat annotation, absolutely positioned
+  Also set the jitter seed at the bottom to the article number.
+  Render: ./render.sh cover NNN   (1500x750 JPEG), then read the image back.
+-->
+<style>
+  @font-face { font-family: Oswald; src: url(../../fonts/Oswald.ttf); font-weight: 200 700; }
+  @font-face { font-family: Caveat; src: url(../../fonts/Caveat.ttf); font-weight: 400 700; }
+  @font-face { font-family: "Patrick Hand"; src: url(../../fonts/PatrickHand.ttf); }
+  @font-face { font-family: "Courier Prime"; src: url(../../fonts/CourierPrime.ttf); }
+  @font-face { font-family: "Courier Prime"; src: url(../../fonts/CourierPrime-Bold.ttf); font-weight: 700; }
+
+  :root {
+    --paper: #eee8da; --ink: #141414; --muted: #3d3b37;
+    --blue: #1f4fa8; --orange: #e0612b; --red: #d9573b; --redbg: #f7d9cf;
+    --green: #2f7d32; --sticky: #f5d97e; --page: #f8f5ee; --grid: #d9dde3;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1600px; height: 900px; }
+  body {
+    position: relative; overflow: hidden; color: var(--ink);
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(255,255,255,.55), transparent 60%),
+      radial-gradient(ellipse at 100% 100%, rgba(120,100,70,.18), transparent 55%),
+      var(--paper);
+  }
+  .grain { position: absolute; inset: 0; opacity: .35; mix-blend-mode: multiply; pointer-events: none; }
+
+  /* ---- left column --------------------------------------------------- */
+  .title {
+    position: absolute; left: 56px; top: 44px; width: 760px;
+    font: 700 86px/0.98 Oswald, sans-serif; letter-spacing: -1.5px;
+  }
+  .sub {
+    position: absolute; left: 58px; top: 448px; width: 700px;
+    font: 400 25px/1.45 "Courier Prime", monospace; color: var(--muted);
+  }
+  .sub b { font-weight: 700; color: var(--ink); }
+  .rule { position: absolute; left: 58px; top: 600px; width: 120px; height: 5px;
+          border-radius: 3px; background: var(--blue); }
+
+  /* ---- hand-drawn primitives ---------------------------------------- */
+  .hand { font-family: "Patrick Hand", cursive; }
+  .note { font-family: Caveat, cursive; color: var(--orange); font-weight: 600; }
+  .sketch { position: relative; }
+  .sketch::before {
+    content: ""; position: absolute; inset: 0; border: 2.2px solid currentColor;
+    border-radius: 3px; filter: url(#rough); pointer-events: none;
+  }
+
+  /* ---- bottom-left flow ---------------------------------------------- */
+  .flow { position: absolute; left: 58px; top: 640px; width: 740px; height: 240px; }
+  .card { position: absolute; color: var(--ink); background: rgba(255,255,255,.55);
+          padding: 12px 16px; font-size: 25px; line-height: 1.15; }
+  .card small { display: block; font-size: 19px; color: var(--muted); margin-top: 4px; }
+
+  /* ---- notebook ------------------------------------------------------ */
+  .book { position: absolute; left: 820px; top: 26px; width: 742px; height: 852px;
+          transform: rotate(-1.4deg); }
+  .book .stack { position: absolute; inset: 6px -8px -10px 8px; background: #e4dfd3;
+                 border-radius: 6px; box-shadow: 0 18px 40px rgba(0,0,0,.28); }
+  .book .stack2 { position: absolute; inset: 3px -4px -5px 4px; background: #efebe1;
+                  border-radius: 6px; }
+  .book .page {
+    position: absolute; inset: 0; border-radius: 6px 10px 10px 6px; overflow: hidden;
+    background: var(--page);
+    box-shadow: inset 14px 0 18px -14px rgba(0,0,0,.25);
+  }
+  .book .band { position: absolute; right: 26px; top: -6px; bottom: -6px; width: 16px;
+                background: linear-gradient(90deg, #1d1d1d, #3a3a3a 50%, #1d1d1d);
+                border-radius: 4px; box-shadow: 2px 0 6px rgba(0,0,0,.35); }
+  .content { position: absolute; inset: 30px 70px 24px 38px; }
+  .h { font: 400 25px/1 "Patrick Hand", cursive; color: var(--blue); text-transform: uppercase;
+       letter-spacing: 1px; display: inline-block; border-bottom: 2.5px solid var(--blue);
+       padding-bottom: 3px; margin-bottom: 10px; }
+  .h .mono { font-family: Caveat, cursive; text-transform: none; font-size: 34px;
+             color: var(--ink); letter-spacing: 0; margin-left: 8px; }
+  .txt { font: 400 21px/1.32 "Patrick Hand", cursive; color: #2a2a2a; }
+  .box { color: var(--blue); padding: 10px 14px; margin-top: 2px; }
+  .box .txt { color: #26324a; }
+  .code { font-family: "Courier Prime", monospace; font-size: 17px; color: var(--blue); }
+  .trap { color: var(--red); background: var(--redbg); }
+  .trap .txt { color: #3b2320; }
+  .row { display: flex; gap: 22px; }
+  .tl { display: grid; grid-template-columns: 74px 1fr; row-gap: 3px;
+        font: 400 21px/1.25 "Patrick Hand", cursive; color: #3b2320; }
+  .tl b { font-family: "Courier Prime", monospace; font-weight: 700; font-size: 18px; color: var(--red); }
+  .out { display: grid; grid-template-columns: 40px 1fr auto; align-items: center;
+         column-gap: 12px; row-gap: 8px; font: 400 21px/1.2 "Patrick Hand", cursive; }
+  .out .ico { font-size: 28px; text-align: center; }
+  .out .tag { font: 600 23px/1 Caveat, cursive; color: var(--orange); }
+
+  .sticky { position: absolute; left: 1336px; top: 22px; width: 238px; height: 214px;
+            background: linear-gradient(170deg, #f8e294, var(--sticky));
+            transform: rotate(4deg); box-shadow: 0 12px 22px rgba(0,0,0,.22);
+            padding: 24px 20px; font: 600 33px/1.08 Caveat, cursive; color: #2a2414; }
+
+  /* Published at 1500x750: the page is drawn at 1600x900 inside .zoomer and scaled
+     to 750 px tall; paper and grain span the full canvas so there is no seam. */
+  html, body { width: 1500px; height: 750px; }
+  .zoomer { position: absolute; left: 83px; top: 0; width: 1600px; height: 900px;
+            transform: scale(0.8333333); transform-origin: 0 0; }
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+  <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2"/></filter>
+  <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/>
+    <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.40  0 0 0 0 0.33  0 0 0 0.55 0"/></filter>
+</svg>
+<svg class="grain" width="1500" height="750"><rect width="100%" height="100%" filter="url(#paper)"/></svg>
+<div class="zoomer">
+
+<!-- ===== EDIT 1: title (the article title, verbatim) and subtitle (2-3 lines, <b> on the key phrases) -->
+<div class="title" style="font-size:80px">When Is Haiku Enough? I Ran Four Claude Models 304 Times to Find Out</div>
+<div class="sub" style="top:398px">I gave four Claude models the same <b>15 coding tasks</b>. Haiku tied on every
+  bug fix and refactor, and fell behind <b>only when the README mattered</b>.</div>
+<div class="rule" style="top:552px"></div>
+
+<!-- ===== EDIT 2: bottom-left sketch: 2-3 cards, arrows, 1-2 orange or green notes -->
+<div class="flow" style="top:612px">
+  <div class="card sketch hand" style="left:0; top:72px; width:210px">mypy error<small>loops return None</small></div>
+  <div class="card sketch hand" style="left:300px; top:6px; width:250px">heading: str | None<small>prints "heading None"</small></div>
+  <div class="card sketch hand" style="left:300px; top:138px; width:250px; color:var(--blue)">return "loop"<small style="color:#26324a">what the README says</small></div>
+  <div class="note" style="position:absolute; left:572px; top:16px; font-size:25px; line-height:1.05; width:170px">✗ Haiku 0/12<br>Sonnet 4/12</div>
+  <div class="note" style="position:absolute; left:572px; top:150px; font-size:25px; line-height:1.05; width:170px; color:var(--green)">✓ Opus, Fable<br>12/12</div>
+  <svg width="740" height="240" style="position:absolute; left:0; top:0; overflow:visible">
+    <g fill="none" stroke="#1f4fa8" stroke-width="2.6" stroke-linecap="round" filter="url(#rough)">
+      <path d="M214 98 C 238 82, 262 60, 292 46"/><path d="M280 40 l13 6 -10 10"/>
+      <path d="M214 132 C 238 150, 262 168, 292 178"/><path d="M279 184 l14 -5 -7 -12"/>
+    </g>
+  </svg>
+</div>
+
+<!-- ===== EDIT 3: notebook, 3-4 sections; facts and numbers only from the article -->
+<div class="book">
+  <div class="stack"></div><div class="stack2"></div>
+  <div class="page">
+    <!-- grid as vector lines: CSS gradients turn into broken stair-steps under the tilt -->
+    <svg class="gridlines" width="742" height="852" style="position:absolute; inset:0"><g stroke="#d6dbe2" stroke-width="1"><line x1="30" y1="0" x2="30" y2="852"/><line x1="60" y1="0" x2="60" y2="852"/><line x1="90" y1="0" x2="90" y2="852"/><line x1="120" y1="0" x2="120" y2="852"/><line x1="150" y1="0" x2="150" y2="852"/><line x1="180" y1="0" x2="180" y2="852"/><line x1="210" y1="0" x2="210" y2="852"/><line x1="240" y1="0" x2="240" y2="852"/><line x1="270" y1="0" x2="270" y2="852"/><line x1="300" y1="0" x2="300" y2="852"/><line x1="330" y1="0" x2="330" y2="852"/><line x1="360" y1="0" x2="360" y2="852"/><line x1="390" y1="0" x2="390" y2="852"/><line x1="420" y1="0" x2="420" y2="852"/><line x1="450" y1="0" x2="450" y2="852"/><line x1="480" y1="0" x2="480" y2="852"/><line x1="510" y1="0" x2="510" y2="852"/><line x1="540" y1="0" x2="540" y2="852"/><line x1="570" y1="0" x2="570" y2="852"/><line x1="600" y1="0" x2="600" y2="852"/><line x1="630" y1="0" x2="630" y2="852"/><line x1="660" y1="0" x2="660" y2="852"/><line x1="690" y1="0" x2="690" y2="852"/><line x1="720" y1="0" x2="720" y2="852"/><line x1="0" y1="30" x2="742" y2="30"/><line x1="0" y1="60" x2="742" y2="60"/><line x1="0" y1="90" x2="742" y2="90"/><line x1="0" y1="120" x2="742" y2="120"/><line x1="0" y1="150" x2="742" y2="150"/><line x1="0" y1="180" x2="742" y2="180"/><line x1="0" y1="210" x2="742" y2="210"/><line x1="0" y1="240" x2="742" y2="240"/><line x1="0" y1="270" x2="742" y2="270"/><line x1="0" y1="300" x2="742" y2="300"/><line x1="0" y1="330" x2="742" y2="330"/><line x1="0" y1="360" x2="742" y2="360"/><line x1="0" y1="390" x2="742" y2="390"/><line x1="0" y1="420" x2="742" y2="420"/><line x1="0" y1="450" x2="742" y2="450"/><line x1="0" y1="480" x2="742" y2="480"/><line x1="0" y1="510" x2="742" y2="510"/><line x1="0" y1="540" x2="742" y2="540"/><line x1="0" y1="570" x2="742" y2="570"/><line x1="0" y1="600" x2="742" y2="600"/><line x1="0" y1="630" x2="742" y2="630"/><line x1="0" y1="660" x2="742" y2="660"/><line x1="0" y1="690" x2="742" y2="690"/><line x1="0" y1="720" x2="742" y2="720"/><line x1="0" y1="750" x2="742" y2="750"/><line x1="0" y1="780" x2="742" y2="780"/><line x1="0" y1="810" x2="742" y2="810"/><line x1="0" y1="840" x2="742" y2="840"/></g></svg>
+    <div class="content">
+      <div class="h">The project: <span class="mono">trailhead</span></div>
+      <div class="txt" style="width:470px">A hike planner I wrote for the lab: 379 lines, 47 tests and a README that states what the code must do.</div>
+      <div class="txt" style="width:470px; margin-top:6px">• 15 tasks, five kinds, four models<br>• 4 runs each, 12 for the two that split them</div>
+
+      <div class="row" style="margin-top:22px">
+        <div style="flex:1">
+          <div class="h">Haiku tied</div>
+          <div class="box sketch"><div class="txt">Every refactor, bug fix and two-file bug: 4 of 4, like Opus and Fable.</div></div>
+        </div>
+        <div style="flex:1.05">
+          <div class="h">60 runs cost</div>
+          <div class="box sketch"><div class="txt">Haiku <span class="code">$0.66</span> · Sonnet <span class="code">$6.19</span><br>Opus <span class="code">$15.82</span> · Fable <span class="code">$31.01</span></div></div>
+        </div>
+      </div>
+
+      <div style="margin-top:26px; display:flex; gap:18px; align-items:flex-start">
+        <div style="flex:1">
+          <div class="h">The trap: README vs mypy</div>
+          <div class="box sketch trap"><div class="tl">
+            <b>rule</b><span>a loop's heading says <span class="code" style="color:#3b2320">loop</span></span>
+            <b>0/12</b><span>Haiku kept it</span>
+            <b>4/12</b><span>Sonnet kept it</span>
+            <b>12/12</b><span>Opus and Fable</span>
+          </div></div>
+        </div>
+        <div class="note" style="width:150px; font-size:26px; line-height:1.05; margin-top:58px">every lint<br>miss was in<br>the report ↙</div>
+      </div>
+
+      <div style="border-top: 2px dashed #9aa3b5; margin: 26px 0 16px"></div>
+      <div class="h">What came out</div>
+      <div class="out">
+        <span class="ico" style="color:var(--green)">✓</span><span>bug fixes, refactors, tests:<br>the cheap model is enough</span><span class="tag">← Haiku</span>
+        <span class="ico" style="color:var(--blue)">↻</span><span>"make the checker pass"<br>against a README contract</span><span class="tag">← bigger model</span>
+        <span class="ico" style="color:var(--red)">✗</span><span>str | None, and loops<br>print "heading None"</span><span class="tag" style="color:var(--red)">← the miss</span>
+      </div>
+    </div>
+  </div>
+  <div class="band"></div>
+</div>
+
+<!-- ===== EDIT 4: sticky note, the one-line lesson, about 12 words ===== -->
+<div class="sticky">Cheap model for the fixes. Big model when the README matters.</div>
+</div>
+<script>
+  (function () {
+    let seed = 1;   // EDIT: the article number, so each cover's jitter is stable
+    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const targets = '.content .h, .content .txt, .tl > span, .tl > b, .out > span, .note, .card, .sticky';
+    document.querySelectorAll(targets).forEach(el => {
+      const deg = (rand() - 0.5) * 1.2;              // within +/-0.6 degrees
+      const dy = (rand() - 0.5) * 2;                 // within +/-1 px
+      const base = getComputedStyle(el).transform;
+      const keep = base && base !== 'none' ? base + ' ' : '';
+      el.style.transform = keep + `translateY(${dy.toFixed(2)}px) rotate(${deg.toFixed(2)}deg)`;
+    });
+  })();
+</script>
