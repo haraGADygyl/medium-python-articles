@@ -1,0 +1,24 @@
+50000 records, pyarrow 26.0.1, duckdb 2.0.0, best of 5, 5,000-row groups
+  buoy.json               20,790,509 bytes
+  buoy.jsonl              20,790,508 bytes
+  buoy.parquet             2,320,298 bytes
+  buoy-sorted.parquet      2,312,748 bytes
+
+Q1: mean wave height at NE-07, the whole year
+  JSON, json.loads                       312.0 ms  read  20,790,509  -> 3.8560
+  JSON Lines, line by line               316.0 ms  read  20,790,508  -> 3.8560
+  Parquet, 2 columns + filter              2.2 ms  read     176,842  -> 3.8560
+
+Q2: mean wave height at NE-07, one week (2026-06-01 to 2026-06-08)
+  JSON, json.loads                       309.3 ms  read  20,790,509  -> 4.0784
+  Parquet, time-ordered file               1.8 ms  read     114,907  -> 4.0784
+  row groups whose recorded_at range overlaps the week: 1 of 10
+
+Q1 again: statistics only skip what the sort order clusters
+  buoy.parquet           group 0 buoy_id HB-214..SW-42    groups kept 10 of 10  read   176,842     2.2 ms  -> 3.8560
+  buoy-sorted.parquet    group 0 buoy_id HB-214..HB-214   groups kept  3 of 10  read    93,163     1.4 ms  -> 3.8560
+
+the same SQL, the same engine (DuckDB), two files
+  read_json('buoy.json')         164.1 ms  -> 3.856
+  'buoy.parquet'                   1.5 ms  -> 3.856
+  (one thread, so the comparison is the format, not the core count)

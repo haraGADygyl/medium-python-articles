@@ -1,0 +1,4 @@
+50000 10 14
+['sensors.list.element.tag', 'sensors.list.element.status', 'sensors.list.element.samples']
+2026-02-11 00:00:00+00:00 2026-03-17 17:10:00+00:00
+0.2 7.49 0 4748

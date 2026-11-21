@@ -1,0 +1,4 @@
+JSON Lines, last 200 bytes lost: 14,999 of 15,000 records read back
+Parquet, three row groups flushed, footer not yet written: 689,751 bytes
+  ArrowInvalid: Could not open Parquet input source 'buoy-live.parquet': Parquet magic bytes not found in footer. Either the file is corrupted or this is not a parquet file.
+  after close(): 696,326 bytes, 15,000 records read back
