@@ -1,0 +1,8 @@
+mode versioned: 1,000 sailings, 32 readers, 400 reprices/s for 60 s
+  stalls injected: 496 fills (2% of misses), p50 198 ms, max 2852 ms
+  reads 822,926, hit ratio 96.8%, misses 26,466 (388/s to Postgres)
+  reprices: 23,996, fills refused as older 37, already there 2,232
+  stale reads (older than a reprice > 1 s old): 478 (0.060% of hits)
+  reprices undone by a late fill: 18 (0.08%)
+    fixed by a later reprice: 18, stale p50 2.58 s, max 9.19 s
+  still stale 6 s after the last reprice: 0 sailings

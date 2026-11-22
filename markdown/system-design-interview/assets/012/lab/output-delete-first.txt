@@ -1,0 +1,8 @@
+mode delete-first: 1,000 sailings, 32 readers, 400 reprices/s for 60 s
+  stalls injected: 527 fills (2% of misses), p50 193 ms, max 4000 ms
+  reads 835,072, hit ratio 96.8%, misses 26,424 (388/s to Postgres)
+  reprices: 23,996
+  stale reads (older than a reprice > 1 s old): 8,724 (1.079% of hits)
+  reprices undone by a late fill: 262 (1.09%)
+    fixed by a later reprice: 247, stale p50 2.80 s, max 15.49 s
+  still stale 6 s after the last reprice: 15 sailings, TTL left 3587-3594 s, wrong by 43.59 EUR median

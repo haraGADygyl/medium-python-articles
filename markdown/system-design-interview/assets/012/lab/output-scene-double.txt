@@ -1,0 +1,9 @@
+scene double (500 ms delay, 700 ms stall)
+      9.2 ms  reader  GET fare:42 -> None (miss)
+     10.0 ms  reader  SELECT -> 89.00 EUR, version 7
+     10.0 ms  reader  stalls for 700 ms
+     61.0 ms  writer  UPDATE -> 119.00 EUR, version 8, COMMIT
+     61.1 ms  writer  DEL fare:42
+    561.5 ms  writer  DEL fare:42 again, 500 ms later
+    710.4 ms  reader  SET fare:42 = v7|8900
+   1711.5 ms  check   database v8|11900, cache 7|8900, TTL 3599 s

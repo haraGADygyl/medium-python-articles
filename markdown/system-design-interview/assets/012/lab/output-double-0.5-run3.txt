@@ -1,0 +1,8 @@
+mode double 500 ms: 1,000 sailings, 32 readers, 400 reprices/s for 60 s
+  stalls injected: 977 fills (2% of misses), p50 197 ms, max 3889 ms
+  reads 772,462, hit ratio 93.6%, misses 49,114 (715/s to Postgres)
+  reprices: 24,001, second deletes 24,001
+  stale reads (older than a reprice > 1.5 s old): 708 (0.098% of hits)
+  reprices undone by a late fill: 21 (0.09%)
+    fixed by a later reprice: 21, stale p50 4.43 s, max 10.35 s
+  still stale 6 s after the last reprice: 0 sailings

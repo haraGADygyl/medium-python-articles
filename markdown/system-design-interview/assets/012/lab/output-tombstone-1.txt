@@ -1,0 +1,7 @@
+mode tombstone: 1,000 sailings, 32 readers, 400 reprices/s for 60 s
+  stalls injected: 544 fills (2% of misses), p50 193 ms, max 4000 ms
+  reads 829,796, hit ratio 96.8%, misses 26,472 (388/s to Postgres)
+  reprices: 24,001, fills refused as older 90, already there 2,203
+  stale reads (older than a reprice > 1 s old): 0 (0.000% of hits)
+  reprices undone by a late fill: 0 (0.00%)
+  still stale 6 s after the last reprice: 0 sailings

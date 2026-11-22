@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant R as Reader
+    participant C as Redis
+    participant D as Postgres
+    participant W as Repricer
+    R->>C: GET fare:42
+    C-->>R: miss
+    R->>D: SELECT fare
+    D-->>R: 89.00, v7
+    rect rgb(253,236,238)
+    Note over R: stalls 300 ms
+    W->>D: UPDATE 119.00, v8<br/>COMMIT
+    W->>C: DEL fare:42
+    end
+    R->>C: SET fare:42<br/>= 89.00, v7
+    Note over C: wrong fare<br/>for 3,600 s

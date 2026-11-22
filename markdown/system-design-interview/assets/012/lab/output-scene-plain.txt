@@ -1,0 +1,8 @@
+scene plain
+      8.5 ms  reader  GET fare:42 -> None (miss)
+      9.4 ms  reader  SELECT -> 89.00 EUR, version 7
+      9.4 ms  reader  stalls for 300 ms
+     61.4 ms  writer  UPDATE -> 119.00 EUR, version 8, COMMIT
+     61.7 ms  writer  DEL fare:42
+    309.8 ms  reader  SET fare:42 = v7|8900
+   1310.9 ms  check   database v8|11900, cache 7|8900, TTL 3599 s

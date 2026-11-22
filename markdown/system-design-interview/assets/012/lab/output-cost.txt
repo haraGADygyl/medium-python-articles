@@ -1,0 +1,16 @@
+one client, 20,000 calls each, keys fare:0..19999
+  SET fare EX 3600 (plain fill)        p50   97.2 us   p99  152.3 us
+  DEL fare (plain invalidate)          p50   83.3 us   p99  123.4 us
+  set-if-newer, key absent (fill)      p50  108.4 us   p99  151.5 us
+  set-if-newer, newer version (fill)   p50  110.9 us   p99  165.4 us
+  set-if-newer, older version (refused) p50  101.8 us   p99  142.7 us
+  tombstone (invalidate)               p50  104.4 us   p99  157.2 us
+
+  SET fare EX 3600 (plain fill)        p50   90.6 us   p99  129.4 us
+  DEL fare (plain invalidate)          p50   85.2 us   p99  129.4 us
+  set-if-newer, key absent (fill)      p50  101.1 us   p99  141.9 us
+  set-if-newer, newer version (fill)   p50  106.1 us   p99  166.4 us
+  set-if-newer, older version (refused) p50  101.4 us   p99  152.4 us
+  tombstone (invalidate)               p50  104.4 us   p99  162.1 us
+
+100,000 tombstones: 9.2 MB (92 bytes each), MEMORY USAGE of one: 48 bytes

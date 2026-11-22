@@ -1,0 +1,8 @@
+scene tombstone
+      7.5 ms  reader  GET fare:42 -> None (miss)
+      8.3 ms  reader  SELECT -> 89.00 EUR, version 7
+      8.3 ms  reader  stalls for 300 ms
+     59.2 ms  writer  UPDATE -> 119.00 EUR, version 8, COMMIT
+     59.4 ms  writer  tombstone v8|-
+    308.7 ms  reader  set-if-newer v7 -> refused
+   1309.7 ms  check   database v8|11900, cache 8|-, TTL 3599 s

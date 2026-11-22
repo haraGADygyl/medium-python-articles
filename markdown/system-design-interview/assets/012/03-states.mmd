@@ -1,0 +1,12 @@
+flowchart LR
+    start@{ shape: sm-circ }
+    start -- "miss,<br/>fill v7" --> v7(["89.00<br/>v7"])
+    v7 -- "reprice v8<br/>commits,<br/>tombstone v8" --> t8(["tombstone<br/>v8"])
+    t8 -- "next miss,<br/>fill v8" --> v8(["119.00<br/>v8"])
+    t8 -. "late fill v7<br/>refused" .-> t8
+    v8 -. "late fill v7<br/>refused" .-> v8
+    classDef ok fill:#d4edda,stroke:#2f7a45,stroke-width:2px,color:#14401f
+    classDef warn fill:#fff3cd,stroke:#a07a10,stroke-width:2px,color:#4d3a05
+    class v7 ok
+    class v8 ok
+    class t8 warn
