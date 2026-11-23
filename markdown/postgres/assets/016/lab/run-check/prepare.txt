@@ -1,0 +1,7 @@
+ALTER TABLE
+Timing is on.
+ALTER TABLE
+Time: 1314.246 ms (00:01.314)
+PHASE index
+CREATE INDEX
+Time: 7060.797 ms (00:07.061)

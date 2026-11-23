@@ -1,0 +1,5 @@
+      tableoid      | count 
+--------------------+-------
+ parcel_scan_legacy | 23997
+(1 row)
+

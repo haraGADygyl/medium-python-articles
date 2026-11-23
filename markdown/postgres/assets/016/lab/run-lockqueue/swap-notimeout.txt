@@ -1,0 +1,16 @@
+Timing is on.
+BEGIN
+Time: 0.099 ms
+ALTER TABLE
+Time: 8940.614 ms (00:08.941)
+psql:/swap-notimeout.sql:7: NOTICE:  ALTER TABLE / ADD CONSTRAINT USING INDEX will rename index "parcel_scan_id_time_key" to "parcel_scan_legacy_pkey"
+ALTER TABLE
+Time: 2.287 ms
+ALTER TABLE
+Time: 0.152 ms
+ALTER TABLE
+Time: 0.817 ms
+ALTER SEQUENCE
+Time: 0.133 ms
+COMMIT
+Time: 13.340 ms

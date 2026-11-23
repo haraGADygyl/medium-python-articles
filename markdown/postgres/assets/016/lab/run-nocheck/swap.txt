@@ -1,0 +1,17 @@
+Timing is on.
+BEGIN
+Time: 0.095 ms
+SET
+Time: 0.052 ms
+ALTER TABLE
+Time: 0.441 ms
+ALTER TABLE
+Time: 1.459 ms
+ALTER TABLE
+Time: 0.122 ms
+ALTER TABLE
+Time: 1444.403 ms (00:01.444)
+ALTER SEQUENCE
+Time: 0.202 ms
+COMMIT
+Time: 11.897 ms

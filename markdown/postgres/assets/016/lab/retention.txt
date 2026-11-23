@@ -1,0 +1,23 @@
+You are now connected to database "monthly" as user "postgres".
+CHECKPOINT
+Timing is on.
+DELETE 1110597
+Time: 952.990 ms
+Timing is off.
+ delete_wal | heap_after_delete 
+------------+-------------------
+ 146 MB     | 1563 MB
+(1 row)
+
+CHECKPOINT
+Timing is on.
+ALTER TABLE
+Time: 5.544 ms
+DROP TABLE
+Time: 13.517 ms
+Timing is off.
+ detach_drop_wal 
+-----------------
+ 269 kB
+(1 row)
+

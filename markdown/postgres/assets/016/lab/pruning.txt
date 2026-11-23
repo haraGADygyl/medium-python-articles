@@ -1,0 +1,276 @@
+You are now connected to database "monthly" as user "postgres".
+SET
+=== P1 constant range: plan-time pruning
+                                                                                      QUERY PLAN                                                                                       
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate (actual time=75.704..75.705 rows=1.00 loops=1)
+   Buffers: shared hit=814 read=1789
+   ->  Index Only Scan using parcel_scan_monthly_2026_10_depot_id_scanned_at_idx on parcel_scan_monthly_2026_10 parcel_scan_monthly (actual time=0.077..63.087 rows=259139.00 loops=1)
+         Index Cond: ((scanned_at >= '2026-10-01 00:00:00+00'::timestamp with time zone) AND (scanned_at < '2026-10-08 00:00:00+00'::timestamp with time zone))
+         Heap Fetches: 0
+         Index Searches: 401
+         Buffers: shared hit=814 read=1789
+ Planning:
+   Buffers: shared hit=278 read=14
+ Planning Time: 1.701 ms
+ Execution Time: 75.749 ms
+(11 rows)
+
+=== P2 now(): run-time pruning at executor start
+                                                                                          QUERY PLAN                                                                                           
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate (actual time=55.109..55.110 rows=1.00 loops=1)
+   Buffers: shared hit=2590
+   ->  Append (actual time=0.034..44.517 rows=257264.00 loops=1)
+         Buffers: shared hit=2590
+         Subplans Removed: 17
+         ->  Index Only Scan using parcel_scan_monthly_2026_11_depot_id_scanned_at_idx on parcel_scan_monthly_2026_11 parcel_scan_monthly_1 (actual time=0.033..28.076 rows=257264.00 loops=1)
+               Index Cond: (scanned_at >= (now() - '7 days'::interval))
+               Heap Fetches: 0
+               Index Searches: 401
+               Buffers: shared hit=2590
+         ->  Seq Scan on parcel_scan_monthly_2026_12 parcel_scan_monthly_2 (actual time=0.019..0.019 rows=0.00 loops=1)
+               Filter: (scanned_at >= (now() - '7 days'::interval))
+ Planning:
+   Buffers: shared hit=1198 read=51
+ Planning Time: 7.546 ms
+ Execution Time: 55.155 ms
+(16 rows)
+
+=== P3 cast on the key: no pruning
+                                                           QUERY PLAN                                                           
+--------------------------------------------------------------------------------------------------------------------------------
+ Aggregate (actual time=2708.891..2708.896 rows=1.00 loops=1)
+   Buffers: shared hit=1 read=200008
+   ->  Append (actual time=2527.402..2707.212 rows=37020.00 loops=1)
+         Buffers: shared hit=1 read=200008
+         ->  Seq Scan on parcel_scan_monthly_2025_06 parcel_scan_monthly_1 (actual time=142.955..142.955 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1110597
+               Buffers: shared read=11106
+         ->  Seq Scan on parcel_scan_monthly_2025_07 parcel_scan_monthly_2 (actual time=175.873..175.873 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1147617
+               Buffers: shared read=11477
+         ->  Seq Scan on parcel_scan_monthly_2025_08 parcel_scan_monthly_3 (actual time=165.750..165.750 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1147617
+               Buffers: shared read=11477
+         ->  Seq Scan on parcel_scan_monthly_2025_09 parcel_scan_monthly_4 (actual time=161.828..161.828 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1110597
+               Buffers: shared read=11106
+         ->  Seq Scan on parcel_scan_monthly_2025_10 parcel_scan_monthly_5 (actual time=150.698..150.698 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1147617
+               Buffers: shared read=11477
+         ->  Seq Scan on parcel_scan_monthly_2025_11 parcel_scan_monthly_6 (actual time=148.974..148.974 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1110597
+               Buffers: shared read=11106
+         ->  Seq Scan on parcel_scan_monthly_2025_12 parcel_scan_monthly_7 (actual time=149.393..149.393 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1147617
+               Buffers: shared read=11477
+         ->  Seq Scan on parcel_scan_monthly_2026_01 parcel_scan_monthly_8 (actual time=156.216..156.216 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1147617
+               Buffers: shared read=11477
+         ->  Seq Scan on parcel_scan_monthly_2026_02 parcel_scan_monthly_9 (actual time=155.049..155.049 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1036557
+               Buffers: shared read=10366
+         ->  Seq Scan on parcel_scan_monthly_2026_03 parcel_scan_monthly_10 (actual time=149.267..149.267 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1147617
+               Buffers: shared read=11477
+         ->  Seq Scan on parcel_scan_monthly_2026_04 parcel_scan_monthly_11 (actual time=162.797..162.797 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1110596
+               Buffers: shared hit=1 read=11105
+         ->  Seq Scan on parcel_scan_monthly_2026_05 parcel_scan_monthly_12 (actual time=179.838..179.838 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1147617
+               Buffers: shared read=11477
+         ->  Seq Scan on parcel_scan_monthly_2026_06 parcel_scan_monthly_13 (actual time=159.415..159.415 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1110597
+               Buffers: shared read=11106
+         ->  Seq Scan on parcel_scan_monthly_2026_07 parcel_scan_monthly_14 (actual time=140.592..140.592 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1147617
+               Buffers: shared read=11477
+         ->  Seq Scan on parcel_scan_monthly_2026_08 parcel_scan_monthly_15 (actual time=136.410..136.410 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1147617
+               Buffers: shared read=11477
+         ->  Seq Scan on parcel_scan_monthly_2026_09 parcel_scan_monthly_16 (actual time=130.298..130.298 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1110597
+               Buffers: shared read=11106
+         ->  Seq Scan on parcel_scan_monthly_2026_10 parcel_scan_monthly_17 (actual time=62.026..140.127 rows=37020.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 1110597
+               Buffers: shared read=11477
+         ->  Seq Scan on parcel_scan_monthly_2026_11 parcel_scan_monthly_18 (actual time=99.396..99.396 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+               Rows Removed by Filter: 823692
+               Buffers: shared read=8237
+         ->  Seq Scan on parcel_scan_monthly_2026_12 parcel_scan_monthly_19 (actual time=0.051..0.051 rows=0.00 loops=1)
+               Filter: ((scanned_at)::date = '2026-10-15'::date)
+ Planning:
+   Buffers: shared hit=9
+ Planning Time: 0.279 ms
+ Execution Time: 2708.992 ms
+(82 rows)
+
+=== P3b same day, written as a range
+                                                                                      QUERY PLAN                                                                                      
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate (actual time=37.744..37.745 rows=1.00 loops=1)
+   Buffers: shared hit=804 read=683
+   ->  Index Only Scan using parcel_scan_monthly_2026_10_depot_id_scanned_at_idx on parcel_scan_monthly_2026_10 parcel_scan_monthly (actual time=0.143..36.195 rows=37020.00 loops=1)
+         Index Cond: ((scanned_at >= '2026-10-15 00:00:00+00'::timestamp with time zone) AND (scanned_at < '2026-10-16 00:00:00+00'::timestamp with time zone))
+         Heap Fetches: 0
+         Index Searches: 402
+         Buffers: shared hit=804 read=683
+ Planning Time: 0.103 ms
+ Execution Time: 37.761 ms
+(9 rows)
+
+=== P3c unpartitioned, cast
+                                      QUERY PLAN                                      
+--------------------------------------------------------------------------------------
+ Aggregate (actual time=2485.816..2485.817 rows=1.00 loops=1)
+   Buffers: shared read=200000
+   ->  Seq Scan on parcel_scan (actual time=2309.107..2484.308 rows=37020.00 loops=1)
+         Filter: ((scanned_at)::date = '2026-10-15'::date)
+         Rows Removed by Filter: 19962980
+         Buffers: shared read=200000
+ Planning:
+   Buffers: shared hit=45 read=3
+ Planning Time: 0.521 ms
+ Execution Time: 2485.833 ms
+(10 rows)
+
+=== P4 lookup without the key
+                                                                         QUERY PLAN                                                                         
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Append (actual time=2.542..3.878 rows=1.00 loops=1)
+   Buffers: shared hit=3 read=55
+   ->  Index Scan using parcel_scan_monthly_2025_06_pkey on parcel_scan_monthly_2025_06 parcel_scan_monthly_1 (actual time=0.267..0.267 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared hit=3 read=3
+   ->  Index Scan using parcel_scan_monthly_2025_07_pkey on parcel_scan_monthly_2025_07 parcel_scan_monthly_2 (actual time=0.242..0.242 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2025_08_pkey on parcel_scan_monthly_2025_08 parcel_scan_monthly_3 (actual time=0.232..0.232 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2025_09_pkey on parcel_scan_monthly_2025_09 parcel_scan_monthly_4 (actual time=0.214..0.214 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2025_10_pkey on parcel_scan_monthly_2025_10 parcel_scan_monthly_5 (actual time=0.219..0.219 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2025_11_pkey on parcel_scan_monthly_2025_11 parcel_scan_monthly_6 (actual time=0.216..0.216 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2025_12_pkey on parcel_scan_monthly_2025_12 parcel_scan_monthly_7 (actual time=0.210..0.210 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2026_01_pkey on parcel_scan_monthly_2026_01 parcel_scan_monthly_8 (actual time=0.216..0.216 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2026_02_pkey on parcel_scan_monthly_2026_02 parcel_scan_monthly_9 (actual time=0.211..0.211 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2026_03_pkey on parcel_scan_monthly_2026_03 parcel_scan_monthly_10 (actual time=0.220..0.220 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2026_04_pkey on parcel_scan_monthly_2026_04 parcel_scan_monthly_11 (actual time=0.292..0.293 rows=1.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=4
+   ->  Index Scan using parcel_scan_monthly_2026_05_pkey on parcel_scan_monthly_2026_05 parcel_scan_monthly_12 (actual time=0.182..0.182 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2026_06_pkey on parcel_scan_monthly_2026_06 parcel_scan_monthly_13 (actual time=0.185..0.185 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2026_07_pkey on parcel_scan_monthly_2026_07 parcel_scan_monthly_14 (actual time=0.184..0.184 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2026_08_pkey on parcel_scan_monthly_2026_08 parcel_scan_monthly_15 (actual time=0.183..0.183 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2026_09_pkey on parcel_scan_monthly_2026_09 parcel_scan_monthly_16 (actual time=0.193..0.193 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2026_10_pkey on parcel_scan_monthly_2026_10 parcel_scan_monthly_17 (actual time=0.189..0.189 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Index Scan using parcel_scan_monthly_2026_11_pkey on parcel_scan_monthly_2026_11 parcel_scan_monthly_18 (actual time=0.214..0.214 rows=0.00 loops=1)
+         Index Cond: (scan_id = 12345678)
+         Index Searches: 1
+         Buffers: shared read=3
+   ->  Seq Scan on parcel_scan_monthly_2026_12 parcel_scan_monthly_19 (actual time=0.003..0.003 rows=0.00 loops=1)
+         Filter: (scan_id = 12345678)
+ Planning:
+   Buffers: shared hit=232
+ Planning Time: 0.624 ms
+ Execution Time: 3.914 ms
+(80 rows)
+
+=== P4b same lookup, unpartitioned
+                                          QUERY PLAN                                           
+-----------------------------------------------------------------------------------------------
+ Index Scan using parcel_scan_pkey on parcel_scan (actual time=0.297..0.298 rows=1.00 loops=1)
+   Index Cond: (scan_id = 12345678)
+   Index Searches: 1
+   Buffers: shared read=4
+ Planning:
+   Buffers: shared hit=18
+ Planning Time: 0.099 ms
+ Execution Time: 0.307 ms
+(8 rows)
+
+=== P5 generic plan for a prepared statement
+PREPARE
+SET
+                                                                                          QUERY PLAN                                                                                           
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate (actual time=69.710..69.711 rows=1.00 loops=1)
+   Buffers: shared hit=802 read=1830
+   ->  Append (actual time=0.226..57.432 rows=268394.00 loops=1)
+         Buffers: shared hit=802 read=1830
+         Subplans Removed: 17
+         ->  Index Only Scan using parcel_scan_monthly_2026_11_depot_id_scanned_at_idx on parcel_scan_monthly_2026_11 parcel_scan_monthly_1 (actual time=0.226..40.636 rows=268394.00 loops=1)
+               Index Cond: (scanned_at >= $1)
+               Heap Fetches: 0
+               Index Searches: 401
+               Buffers: shared hit=802 read=1830
+         ->  Seq Scan on parcel_scan_monthly_2026_12 parcel_scan_monthly_2 (actual time=0.006..0.006 rows=0.00 loops=1)
+               Filter: (scanned_at >= $1)
+ Planning:
+   Buffers: shared hit=3
+ Planning Time: 0.387 ms
+ Execution Time: 69.746 ms
+(16 rows)
+

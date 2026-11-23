@@ -1,0 +1,10 @@
+Time: 2.023 ms
+Time: 20.507 ms
+PHASE copy
+Time: 20186.200 ms (00:20.186)
+PHASE indexes
+Time: 6733.567 ms (00:06.734)
+Time: 7118.995 ms (00:07.119)
+Time: 9336.813 ms (00:09.337)
+PHASE analyze
+Time: 5748.241 ms (00:05.748)

@@ -1,0 +1,19 @@
+BEGIN
+ALTER SEQUENCE
+psql:/cascade.sql:4: NOTICE:  drop cascades to 7 other objects
+DETAIL:  drop cascades to default value for column scan_id of table parcel_scan
+drop cascades to default value for column scan_id of table parcel_scan_2026_12
+drop cascades to default value for column scan_id of table parcel_scan_2027_01
+drop cascades to default value for column scan_id of table parcel_scan_2027_02
+drop cascades to default value for column scan_id of table parcel_scan_2027_03
+drop cascades to default value for column scan_id of table parcel_scan_2027_04
+drop cascades to default value for column scan_id of table parcel_scan_2027_05
+DROP TABLE
+ column_default 
+----------------
+ 
+(1 row)
+
+psql:/cascade.sql:8: ERROR:  null value in column "scan_id" of relation "parcel_scan_2026_12" violates not-null constraint
+DETAIL:  Failing row contains (null, 1, 1, SORT, HS-0042, 1200, 2026-12-02 10:00:00+00).
+ROLLBACK

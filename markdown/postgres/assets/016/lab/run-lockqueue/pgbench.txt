@@ -1,0 +1,29 @@
+pgbench (18.6 (Debian 18.6-1.pgdg13+2))
+transaction type: multiple scripts
+scaling factor: 1
+query mode: simple
+number of clients: 8
+number of threads: 4
+maximum number of tries: 1
+duration: 40 s
+number of transactions actually processed: 15877
+number of failed transactions: 0 (0.000%)
+latency average = 1126.595 ms
+latency stddev = 2282.253 ms
+rate limit schedule lag: avg 1120.308 (max 8936.135) ms
+initial connection time = 6.237 ms
+tps = 396.991724 (without initial connection time)
+SQL script 1: /insert.sql
+ - weight: 4 (targets 80.0% of total)
+ - 12704 transactions (80.0% of total)
+ - number of transactions actually processed: 12704 (tps = 317.653390)
+ - number of failed transactions: 0 (0.000%)
+ - latency average = 1115.843 ms
+ - latency stddev = 2269.976 ms
+SQL script 2: /lookup.sql
+ - weight: 1 (targets 20.0% of total)
+ - 3163 transactions (19.9% of total)
+ - number of transactions actually processed: 3163 (tps = 79.088293)
+ - number of failed transactions: 0 (0.000%)
+ - latency average = 1159.579 ms
+ - latency stddev = 2323.691 ms

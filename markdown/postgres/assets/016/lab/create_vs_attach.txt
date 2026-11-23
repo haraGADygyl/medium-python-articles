@@ -1,0 +1,23 @@
+Timing is on.
+SET
+Time: 0.129 ms
+=== CREATE TABLE ... PARTITION OF
+psql:/create_vs_attach.sql:7: ERROR:  canceling statement due to lock timeout
+Time: 1000.384 ms (00:01.000)
+=== CREATE standalone, then ATTACH
+CREATE TABLE
+Time: 12.782 ms
+ALTER TABLE
+Time: 0.856 ms
+ALTER TABLE
+Time: 2.356 ms
+      inhrelid       
+---------------------
+ parcel_scan_legacy
+ parcel_scan_2026_12
+ parcel_scan_2027_01
+ parcel_scan_2027_02
+ parcel_scan_2027_03
+(5 rows)
+
+Time: 0.680 ms

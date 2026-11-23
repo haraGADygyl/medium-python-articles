@@ -1,0 +1,35 @@
+CREATE FUNCTION
+Timing is on.
+SET
+Time: 0.071 ms
+ create_scan_partition 
+-----------------------
+ 
+ 
+ 
+ 
+ 
+ 
+(6 rows)
+
+Time: 8.461 ms
+Timing is off.
+      partition      
+---------------------
+ parcel_scan_legacy
+ parcel_scan_2026_12
+ parcel_scan_2027_01
+ parcel_scan_2027_02
+ parcel_scan_2027_03
+ parcel_scan_2027_04
+ parcel_scan_2027_05
+(7 rows)
+
+BEGIN
+DROP TABLE
+ sequence_survived 
+-------------------
+ t
+(1 row)
+
+ROLLBACK

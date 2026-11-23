@@ -1,0 +1,17 @@
+Timing is on.
+BEGIN
+Time: 0.085 ms
+SET
+Time: 0.058 ms
+psql:/swap.sql:5: ERROR:  canceling statement due to lock timeout
+Time: 2000.340 ms (00:02.000)
+psql:/swap.sql:8: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+Time: 2.197 ms
+Time: 0.062 ms
+psql:/swap.sql:9: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/swap.sql:12: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+Time: 0.086 ms
+psql:/swap.sql:13: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+Time: 0.067 ms
+ROLLBACK
+Time: 0.046 ms

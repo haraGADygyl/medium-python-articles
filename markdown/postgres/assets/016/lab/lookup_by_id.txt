@@ -1,0 +1,18 @@
+== parcel_scan
+latency average = 0.125 ms
+tps = 8000.918505 (without initial connection time)
+== parcel_scan, with the key range
+latency average = 0.134 ms
+== parcel_scan_monthly
+latency average = 0.372 ms
+tps = 2688.389933 (without initial connection time)
+== parcel_scan_monthly, with the key range
+latency average = 0.416 ms
+== parcel_scan_monthly, constant key range (plan-time pruning)
+latency average = 0.101 ms
+== parcel_scan_monthly, now() key range, prepared statements (-M prepared)
+latency average = 0.037 ms
+== parcel_scan_monthly, no key, prepared statements (-M prepared)
+latency average = 0.140 ms
+== parcel_scan, no key, prepared statements (-M prepared)
+latency average = 0.117 ms
