@@ -1,0 +1,11 @@
+jsonschema 4.26.0, rfc3339-validator 0.1.4
+formats this FormatChecker knows: ['date', 'date-time', 'email', 'idn-email', 'ipv4', 'ipv6', 'regex', 'time', 'uuid']
+'yesterday at noon', no format checker:   valid=True
+'yesterday at noon', FormatChecker():     valid=False
+no 'notes' key, schema says default null: valid, 'notes' in record after validate()=False
+
+jsonschema 4.26.0, rfc3339-validator not installed
+formats this FormatChecker knows: ['date', 'email', 'idn-email', 'ipv4', 'ipv6', 'regex', 'time', 'uuid']
+'yesterday at noon', no format checker:   valid=True
+'yesterday at noon', FormatChecker():     valid=True
+no 'notes' key, schema says default null: valid, 'notes' in record after validate()=False

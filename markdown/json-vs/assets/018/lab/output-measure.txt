@@ -1,0 +1,13 @@
+jsonschema 4.26.0, fastjsonschema 2.22.3, rfc3339-validator 0.1.4
+50,000 records, 20,740,508 bytes of JSON Lines; schema 1,370 bytes compact
+
+step                              records         ms   us/record   x parse
+json.loads per line                50,000      383.7        7.67       1.0
+jsonschema, built once             50,000    11899.6      237.99      31.0
+jsonschema + FormatChecker         50,000    12496.0      249.92      32.6
+fastjsonschema, compiled           50,000      609.0       12.18       1.6
+fastjsonschema + formats           50,000      632.8       12.66       1.6
+jsonschema.validate() per call      5,000    29839.0     5967.79     777.6
+
+fastjsonschema.compile() itself: 5.8 ms
+generated validator source: 176 lines

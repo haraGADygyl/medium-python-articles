@@ -1,0 +1,20 @@
+jsonschema 4.26.0, fastjsonschema 2.22.3
+
+1. the seven faults, strict schema with formats
+fault                       jsonschema  fastjsonschema
+stringified_number               1,000           1,000
+truthy_string                    1,000           1,000
+sentinel_value                   1,000           1,000
+naive_timestamp                  1,000           1,000
+misspelled_optional_key          1,000           1,000
+uppercase_enum                   1,000           1,000
+swapped_coordinates                  0               0
+clean                                0               0
+
+2. a 2020-12 keyword: position as a [lat, lon] pair
+  [57.21621, -2.37579]         jsonschema: valid   fastjsonschema: invalid (data must not be there)
+  [57.21621, -2.37579, 4.0]    jsonschema: invalid   fastjsonschema: invalid (data must not be there)
+
+3. `default`: does validating change the record?
+  jsonschema:     'notes' in record after validate: False
+  fastjsonschema: 'notes' in record after validate: True  (value None, returned object is the input: True)

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/buoy-observation.json",
+  "title": "Buoy observation",
+  "type": "object",
+  "required": ["observation_id", "buoy_id", "recorded_at", "position",
+               "wave_height_m", "water_temp_c", "wind_gust_ms", "battery_v",
+               "qc_passed", "sensors"],
+  "additionalProperties": false,
+  "properties": {
+    "observation_id": {"type": "integer", "minimum": 1},
+    "buoy_id": {"type": "string", "pattern": "^[A-Z]{2}-[0-9]{2,3}$"},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "position": {
+      "type": "object",
+      "required": ["lat", "lon"],
+      "additionalProperties": false,
+      "properties": {
+        "lat": {"type": "number", "minimum": -90, "maximum": 90},
+        "lon": {"type": "number", "minimum": -180, "maximum": 180}
+      }
+    },
+    "wave_height_m": {"type": "number", "minimum": 0, "maximum": 30},
+    "water_temp_c": {"type": "number", "minimum": -2, "maximum": 40},
+    "wind_gust_ms": {"type": "number", "minimum": 0, "maximum": 90},
+    "battery_v": {"type": "number", "minimum": 0, "maximum": 24},
+    "qc_passed": {"type": "boolean"},
+    "notes": {"type": ["string", "null"], "default": null},
+    "sensors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/sensor"}
+    }
+  },
+  "$defs": {
+    "sensor": {
+      "type": "object",
+      "required": ["tag", "status", "samples"],
+      "additionalProperties": false,
+      "properties": {
+        "tag": {"enum": ["accelerometer", "thermistor", "anemometer", "gps"]},
+        "status": {"enum": ["ok", "degraded", "offline"]},
+        "samples": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+records: 50,000   corrupted: 7,000   json.loads rejected: 0
+
+fault                                  first draft   first draft + formats        strict + formats
+stringified_number                           1,000                   1,000                   1,000
+truthy_string                                1,000                   1,000                   1,000
+sentinel_value                                   0                       0                   1,000
+naive_timestamp                                  0                   1,000                   1,000
+misspelled_optional_key                          0                       0                   1,000
+uppercase_enum                                   0                       0                   1,000
+swapped_coordinates                              0                       0                       0
+caught of 7,000                              2,000                   3,000                   6,000
+clean records rejected                           0                       0                       0
+
+what a dashboard computes from the unvalidated feed
+  mean wave height, clean feed:         3.858 m
+  mean wave height, numeric values only: -16.606 m  (49,000 values)
+  sum over every value: TypeError: unsupported operand type(s) for +: 'float' and 'str'
+  records passing `if r['qc_passed']`: clean 46,053, feed 46,127
+  notes sent under 'note', seen by r.get('notes'): 0 of 1,000
+
+every error for one record of each fault, strict + formats
+  truthy_string:
+    $.qc_passed: 'false' is not of type 'boolean'
+  sentinel_value:
+    $.wave_height_m: -999.0 is less than the minimum of 0
+  swapped_coordinates:
+    (valid)
+  naive_timestamp:
+    $.recorded_at: '2026-02-11T02:30:00' is not a 'date-time'
+  stringified_number:
+    $.wave_height_m: '5.57' is not of type 'number'
+  uppercase_enum:
+    $.sensors[0].status: 'OK' is not one of ['ok', 'degraded', 'offline']
+  misspelled_optional_key:
+    $: Additional properties are not allowed ('note' was unexpected)

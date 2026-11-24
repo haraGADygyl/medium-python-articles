@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/buoy-observation.loose.json",
+  "title": "Buoy observation, first draft",
+  "type": "object",
+  "required": ["observation_id", "buoy_id", "recorded_at", "position",
+               "wave_height_m", "water_temp_c", "wind_gust_ms", "battery_v",
+               "qc_passed", "sensors"],
+  "properties": {
+    "observation_id": {"type": "integer"},
+    "buoy_id": {"type": "string"},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "position": {
+      "type": "object",
+      "required": ["lat", "lon"],
+      "properties": {
+        "lat": {"type": "number"},
+        "lon": {"type": "number"}
+      }
+    },
+    "wave_height_m": {"type": "number"},
+    "water_temp_c": {"type": "number"},
+    "wind_gust_ms": {"type": "number"},
+    "battery_v": {"type": "number"},
+    "qc_passed": {"type": "boolean"},
+    "notes": {"type": ["string", "null"]},
+    "sensors": {"type": "array", "items": {"$ref": "#/$defs/sensor"}}
+  },
+  "$defs": {
+    "sensor": {
+      "type": "object",
+      "required": ["tag", "status", "samples"],
+      "properties": {
+        "tag": {"type": "string"},
+        "status": {"type": "string"},
+        "samples": {"type": "integer"}
+      }
+    }
+  }
+}

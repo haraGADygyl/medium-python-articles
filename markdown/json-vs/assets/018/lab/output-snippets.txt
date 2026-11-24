@@ -1,0 +1,6 @@
+True None
+$: Additional properties are not allowed ('note' was unexpected)
+$.qc_passed: 'false' is not of type 'boolean'
+$.recorded_at: '2026-02-11T00:00:00' is not a 'date-time'
+$.sensors[0].status: 'OFFLINE' is not one of ['ok', 'degraded', 'offline']
+$.wave_height_m: -999.0 is less than the minimum of 0
