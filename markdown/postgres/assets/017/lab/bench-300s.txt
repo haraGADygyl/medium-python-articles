@@ -1,0 +1,75 @@
+ALTER TABLE
+=== v4, 8 clients, 300 s (one checkpoint_timeout)
+progress: 10.0 s, 4035.8 tps, lat 1.978 ms stddev 1.426, 0 failed
+progress: 20.0 s, 9315.0 tps, lat 0.856 ms stddev 0.278, 0 failed
+progress: 30.0 s, 7099.7 tps, lat 1.123 ms stddev 0.883, 0 failed
+progress: 40.0 s, 1760.0 tps, lat 4.543 ms stddev 3.447, 0 failed
+progress: 50.0 s, 1308.7 tps, lat 6.110 ms stddev 6.408, 0 failed
+progress: 60.0 s, 1765.0 tps, lat 4.529 ms stddev 3.221, 0 failed
+progress: 70.0 s, 1689.2 tps, lat 4.731 ms stddev 3.923, 0 failed
+progress: 80.0 s, 1171.9 tps, lat 6.828 ms stddev 7.697, 0 failed
+progress: 90.0 s, 1601.5 tps, lat 4.992 ms stddev 4.596, 0 failed
+progress: 100.0 s, 1763.3 tps, lat 4.534 ms stddev 3.947, 0 failed
+progress: 110.0 s, 1736.8 tps, lat 4.603 ms stddev 2.593, 0 failed
+progress: 120.0 s, 1452.1 tps, lat 5.496 ms stddev 7.782, 0 failed
+progress: 130.0 s, 1639.8 tps, lat 4.885 ms stddev 3.963, 0 failed
+progress: 140.0 s, 1753.9 tps, lat 4.560 ms stddev 2.799, 0 failed
+progress: 150.0 s, 1834.7 tps, lat 4.356 ms stddev 2.468, 0 failed
+progress: 160.0 s, 1555.4 tps, lat 5.141 ms stddev 3.658, 0 failed
+progress: 170.0 s, 1616.0 tps, lat 4.948 ms stddev 3.841, 0 failed
+progress: 180.0 s, 1629.7 tps, lat 4.905 ms stddev 4.183, 0 failed
+progress: 190.0 s, 1632.8 tps, lat 4.896 ms stddev 3.542, 0 failed
+progress: 200.0 s, 1453.4 tps, lat 5.501 ms stddev 5.167, 0 failed
+progress: 210.0 s, 1630.5 tps, lat 4.899 ms stddev 1.914, 0 failed
+progress: 220.0 s, 1674.6 tps, lat 4.775 ms stddev 2.093, 0 failed
+progress: 230.0 s, 1850.5 tps, lat 4.324 ms stddev 1.666, 0 failed
+progress: 240.0 s, 1890.6 tps, lat 4.228 ms stddev 1.251, 0 failed
+progress: 250.0 s, 1780.9 tps, lat 4.489 ms stddev 1.777, 0 failed
+progress: 260.0 s, 1639.1 tps, lat 4.878 ms stddev 1.803, 0 failed
+progress: 270.0 s, 1547.2 tps, lat 5.163 ms stddev 3.474, 0 failed
+progress: 280.0 s, 1702.4 tps, lat 4.701 ms stddev 1.488, 0 failed
+progress: 290.0 s, 1721.2 tps, lat 4.645 ms stddev 1.701, 0 failed
+progress: 300.0 s, 1708.0 tps, lat 4.681 ms stddev 1.985, 0 failed
+number of transactions actually processed: 649605
+latency average = 3.692 ms
+tps = 2165.373350 (without initial connection time)
+v4: 649605 rows, WAL 1893 MB (3056 bytes/row), FPI 313566 (0.48/row), records 3.03/row
+v4: pkey blocks read 446403, hit 2160240 (82.9% hit), checkpoints 3
+v4: leaf pages +4055 (160 rows per new leaf), density 69.91% -> 69.35%
+=== v7, 8 clients, 300 s (one checkpoint_timeout)
+progress: 10.0 s, 2118.4 tps, lat 3.769 ms stddev 1.058, 0 failed
+progress: 20.0 s, 1939.2 tps, lat 4.123 ms stddev 3.671, 0 failed
+progress: 30.0 s, 1697.6 tps, lat 4.711 ms stddev 4.702, 0 failed
+progress: 40.0 s, 1723.2 tps, lat 4.640 ms stddev 4.581, 0 failed
+progress: 50.0 s, 1524.3 tps, lat 5.247 ms stddev 5.769, 0 failed
+progress: 60.0 s, 1991.2 tps, lat 4.015 ms stddev 2.806, 0 failed
+progress: 70.0 s, 1804.4 tps, lat 4.431 ms stddev 4.649, 0 failed
+progress: 80.0 s, 1830.6 tps, lat 4.366 ms stddev 3.195, 0 failed
+progress: 90.0 s, 1915.8 tps, lat 4.172 ms stddev 2.707, 0 failed
+progress: 100.0 s, 1676.7 tps, lat 4.770 ms stddev 3.891, 0 failed
+progress: 110.0 s, 1955.7 tps, lat 4.088 ms stddev 2.312, 0 failed
+progress: 120.0 s, 1823.8 tps, lat 4.384 ms stddev 2.935, 0 failed
+progress: 130.0 s, 1894.6 tps, lat 4.218 ms stddev 2.310, 0 failed
+progress: 140.0 s, 1808.7 tps, lat 4.420 ms stddev 2.904, 0 failed
+progress: 150.0 s, 1916.9 tps, lat 4.170 ms stddev 1.911, 0 failed
+progress: 160.0 s, 1962.3 tps, lat 4.074 ms stddev 2.367, 0 failed
+progress: 170.0 s, 1991.9 tps, lat 4.014 ms stddev 1.986, 0 failed
+progress: 180.0 s, 1836.9 tps, lat 4.352 ms stddev 2.598, 0 failed
+progress: 190.0 s, 1940.2 tps, lat 4.120 ms stddev 2.168, 0 failed
+progress: 200.0 s, 1831.5 tps, lat 4.366 ms stddev 2.986, 0 failed
+progress: 210.0 s, 1918.9 tps, lat 4.166 ms stddev 2.856, 0 failed
+progress: 220.0 s, 1931.4 tps, lat 4.137 ms stddev 1.957, 0 failed
+progress: 230.0 s, 1868.3 tps, lat 4.278 ms stddev 2.445, 0 failed
+progress: 240.0 s, 1943.8 tps, lat 4.112 ms stddev 2.208, 0 failed
+progress: 250.0 s, 1964.0 tps, lat 4.073 ms stddev 2.121, 0 failed
+progress: 260.0 s, 1804.0 tps, lat 4.433 ms stddev 2.765, 0 failed
+progress: 270.0 s, 1860.6 tps, lat 4.298 ms stddev 2.629, 0 failed
+progress: 280.0 s, 2159.4 tps, lat 3.701 ms stddev 0.553, 0 failed
+progress: 290.0 s, 1855.4 tps, lat 4.309 ms stddev 2.651, 0 failed
+progress: 300.0 s, 1731.0 tps, lat 4.619 ms stddev 3.090, 0 failed
+number of transactions actually processed: 562215
+latency average = 4.266 ms
+tps = 1874.068135 (without initial connection time)
+v7: 562215 rows, WAL 117 MB (218 bytes/row), FPI 903 (0.00/row), records 3.01/row
+v7: pkey blocks read 3, hit 999763 (100.0% hit), checkpoints 1
+v7: leaf pages +2154 (261 rows per new leaf), density 89.99% -> 89.99%

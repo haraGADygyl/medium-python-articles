@@ -1,0 +1,58 @@
+                  v7                  | ver |          created           
+--------------------------------------+-----+----------------------------
+ 01a20ec7-bce5-7cb0-bac4-b53430a3f6e9 |   7 | 2026-11-24 18:18:20.773+00
+
+                  v4                  | ver | created 
+--------------------------------------+-----+---------
+ 832d86b5-01a9-493a-b282-021f98c8ff6a |   4 | 
+
+  ids   | distinct_ms | strictly_increasing 
+--------+-------------+---------------------
+ 999999 |        1410 | t
+
+         back_dated         
+----------------------------
+ 2026-10-25 18:18:23.047+00
+
+             delivery_id              |     leaked_created_at      
+--------------------------------------+----------------------------
+ 01a20ec7-9e9a-7f0e-b632-a59a5f6f508c | 2026-11-24 18:18:13.018+00
+
+                                               QUERY PLAN                                                
+---------------------------------------------------------------------------------------------------------
+ Limit (actual time=1560.619..1563.924 rows=50.00 loops=1)
+   Buffers: shared hit=1549 read=172332
+   I/O Timings: shared read=7.337
+   ->  Gather Merge (actual time=1560.618..1563.920 rows=50.00 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=1549 read=172332
+         I/O Timings: shared read=7.337
+         ->  Sort (actual time=1557.804..1557.806 rows=35.67 loops=3)
+               Sort Key: attempted_at DESC
+               Sort Method: top-N heapsort  Memory: 28kB
+               Buffers: shared hit=1549 read=172332
+               I/O Timings: shared read=7.337
+               Worker 0:  Sort Method: top-N heapsort  Memory: 28kB
+               Worker 1:  Sort Method: top-N heapsort  Memory: 28kB
+               ->  Parallel Seq Scan on delivery_v4 (actual time=0.219..622.525 rows=6951946.67 loops=3)
+                     Buffers: shared hit=1473 read=172332
+                     I/O Timings: shared read=7.337
+ Planning:
+   Buffers: shared hit=32 read=1 dirtied=1
+   I/O Timings: shared read=0.131
+ Planning Time: 0.217 ms
+ Execution Time: 1563.941 ms
+
+                                                  QUERY PLAN                                                   
+---------------------------------------------------------------------------------------------------------------
+ Limit (actual time=0.009..0.026 rows=50.00 loops=1)
+   Buffers: shared hit=51
+   ->  Index Scan Backward using delivery_v7_pkey on delivery_v7 (actual time=0.009..0.023 rows=50.00 loops=1)
+         Index Searches: 1
+         Buffers: shared hit=51
+ Planning:
+   Buffers: shared hit=6
+ Planning Time: 0.076 ms
+ Execution Time: 0.034 ms
+

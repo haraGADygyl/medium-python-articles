@@ -1,0 +1,54 @@
+=== serial, 8 clients, 60 s
+progress: 10.0 s, 2150.7 tps, lat 3.711 ms stddev 0.630, 0 failed
+progress: 20.0 s, 2184.8 tps, lat 3.658 ms stddev 0.439, 0 failed
+progress: 30.0 s, 1370.2 tps, lat 5.835 ms stddev 7.498, 0 failed
+progress: 40.0 s, 1386.4 tps, lat 5.767 ms stddev 7.025, 0 failed
+progress: 50.0 s, 1528.4 tps, lat 5.231 ms stddev 6.112, 0 failed
+progress: 60.0 s, 1403.3 tps, lat 5.697 ms stddev 6.988, 0 failed
+number of transactions actually processed: 100246
+latency average = 4.784 ms
+tps = 1670.733057 (without initial connection time)
+serial: 100246 rows, WAL 18 MB (191 bytes/row), FPI 10 (0.00/row), records 3.03/row
+serial: pkey blocks read 54840, hit 144134 (72.4% hit), checkpoints 0
+serial: leaf pages +274 (366 rows per new leaf), density 90.04% -> 90.04%
+=== v4, 8 clients, 60 s
+progress: 10.0 s, 1725.1 tps, lat 4.630 ms stddev 4.384, 0 failed
+progress: 20.0 s, 1734.2 tps, lat 4.607 ms stddev 3.692, 0 failed
+progress: 30.0 s, 1594.0 tps, lat 5.016 ms stddev 4.736, 0 failed
+progress: 40.0 s, 1756.9 tps, lat 4.551 ms stddev 0.872, 0 failed
+progress: 50.0 s, 1418.5 tps, lat 5.629 ms stddev 5.407, 0 failed
+progress: 60.0 s, 1411.3 tps, lat 5.669 ms stddev 6.405, 0 failed
+number of transactions actually processed: 96408
+latency average = 4.977 ms
+tps = 1606.159571 (without initial connection time)
+v4: 96408 rows, WAL 365 MB (3968 bytes/row), FPI 61160 (0.63/row), records 3.01/row
+v4: pkey blocks read 174459, hit 311312 (64.1% hit), checkpoints 0
+v4: leaf pages +649 (149 rows per new leaf), density 70.19% -> 70.07%
+=== v7, 8 clients, 60 s
+progress: 10.0 s, 1822.2 tps, lat 4.382 ms stddev 2.735, 0 failed
+progress: 20.0 s, 2034.6 tps, lat 3.929 ms stddev 0.563, 0 failed
+progress: 30.0 s, 1950.5 tps, lat 4.098 ms stddev 2.536, 0 failed
+progress: 40.0 s, 1679.8 tps, lat 4.759 ms stddev 4.817, 0 failed
+progress: 50.0 s, 1471.3 tps, lat 5.432 ms stddev 6.119, 0 failed
+progress: 60.0 s, 1569.6 tps, lat 5.095 ms stddev 5.730, 0 failed
+number of transactions actually processed: 105288
+latency average = 4.555 ms
+tps = 1754.798947 (without initial connection time)
+v7: 105288 rows, WAL 21 MB (205 bytes/row), FPI 10 (0.00/row), records 3.00/row
+v7: pkey blocks read 77011, hit 192137 (71.4% hit), checkpoints 0
+v7: leaf pages +403 (261 rows per new leaf), density 89.99% -> 89.99%
+=== migrate: delivery_v4 default -> uuidv7()
+ALTER TABLE
+Timing is on.
+progress: 10.0 s, 1807.6 tps, lat 4.420 ms stddev 4.211, 0 failed
+progress: 20.0 s, 1819.0 tps, lat 4.396 ms stddev 3.612, 0 failed
+progress: 30.0 s, 1542.4 tps, lat 5.184 ms stddev 5.501, 0 failed
+progress: 40.0 s, 1783.8 tps, lat 4.483 ms stddev 3.187, 0 failed
+progress: 50.0 s, 2155.0 tps, lat 3.709 ms stddev 0.756, 0 failed
+progress: 60.0 s, 1874.4 tps, lat 4.267 ms stddev 3.475, 0 failed
+number of transactions actually processed: 109827
+latency average = 4.368 ms
+tps = 1830.468335 (without initial connection time)
+v4: 109827 rows, WAL 24 MB (227 bytes/row), FPI 12 (0.00/row), records 3.01/row
+v4: pkey blocks read 71222, hit 470271 (86.8% hit), checkpoints 0
+v4: leaf pages +757 (145 rows per new leaf), density 70.07% -> 69.91%

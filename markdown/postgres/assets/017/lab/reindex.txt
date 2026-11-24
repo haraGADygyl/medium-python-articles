@@ -1,0 +1,14 @@
+ before | density_before 
+--------+----------------
+ 815 MB |          69.35
+(1 row)
+
+Timing is on.
+REINDEX
+Time: 13409.301 ms (00:13.409)
+Timing is off.
+ after  | density_after | rows_v4  | v7_pkey | rows_v7  
+--------+---------------+----------+---------+----------
+ 627 MB |         89.99 | 20855840 | 622 MB  | 20667503
+(1 row)
+
