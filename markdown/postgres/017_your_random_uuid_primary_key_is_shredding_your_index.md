@@ -52,15 +52,16 @@ FROM generate_series(1, 1000000);
 
 `EXPLAIN ANALYZE` on an `INSERT` really inserts the rows, and the `WAL` option adds the log volume and the number of full-page images the statement produced. The `delivery_id` comes from the column default, so the same statement exercises each key type.
 
-| | bigint identity | UUIDv4 | UUIDv7 |
-| --- | --- | --- | --- |
-| Total load time | 47.8 s | 280.3 s | 90.5 s |
-| 20th million alone | 2.3 s | 46.0 s | 5.8 s |
-| WAL written | 2,977 MB | 13,687 MB | 3,248 MB |
-| Full-page images | 23 | 1,842,717 | 29 |
-| Checkpoints during load | 8 | 28 | 9 |
-| Primary key size | 428 MB | 772 MB | 602 MB |
-| Leaf page density | 90.0% | 70.2% | 90.0% |
+```text
+20M-row load         bigint id      UUIDv4     UUIDv7
+total time              47.8 s     280.3 s     90.5 s
+20th million alone       2.3 s      46.0 s      5.8 s
+WAL written           2,977 MB   13,687 MB   3,248 MB
+full-page images            23   1,842,717         29
+checkpoints                  8          28          9
+primary key size        428 MB      772 MB     602 MB
+leaf page density        90.0%       70.2%      90.0%
+```
 
 The v4 load did not slow down evenly. The first million took 4.7 s and the tenth 8.0 s. The batches got much slower when the index outgrew `shared_buffers`: the sixth batch read 2,775 blocks from outside the buffer cache, the seventh read 62,427, and the twentieth read 662,507. The v7 load stayed between 3.6 and 6.0 seconds per million and read almost nothing from outside the cache, because every insert goes to the same right-hand edge of the index, and that edge is always in memory.
 
